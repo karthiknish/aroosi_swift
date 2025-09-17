@@ -13,8 +13,11 @@ import 'screens/home/favorites_screen.dart';
 import 'screens/home/profile_screen.dart';
 import 'screens/details_screen.dart';
 import 'screens/settings_screen.dart';
+import 'features/auth/auth_controller.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final auth = ref.watch(authControllerProvider);
+
   return GoRouter(
     initialLocation: '/splash',
     routes: [
@@ -92,16 +95,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
-      // Placeholder: after implementing auth, redirect based on login state
-      final loggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/signup' || state.matchedLocation == '/forgot';
-      // Simple splash -> dashboard redirect
-      if (state.matchedLocation == '/splash') {
-        return '/dashboard';
+      final isSplash = state.matchedLocation == '/splash';
+      final isAuthRoute = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup' ||
+          state.matchedLocation == '/forgot';
+
+      if (auth.loading) return null; // hold routing until ready
+
+      if (isSplash) {
+        return auth.isAuthenticated ? '/dashboard' : '/login';
       }
-      if (!loggingIn) {
-        // TODO: check auth state from a provider
-        // If not authenticated, send to login
-        // return '/login';
+      if (!auth.isAuthenticated && !isAuthRoute) {
+        return '/login';
+      }
+      if (auth.isAuthenticated && isAuthRoute) {
+        return '/dashboard';
       }
       return null;
     },

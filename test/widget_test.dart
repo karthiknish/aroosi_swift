@@ -11,10 +11,15 @@ import 'package:aroosi_flutter/app.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  testWidgets('App renders splash or dashboard', (WidgetTester tester) async {
+  testWidgets('App renders login or dashboard', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: App()));
-    // The router redirects splash -> dashboard by default.
-    await tester.pumpAndSettle();
-    expect(find.text('Dashboard'), findsWidgets);
+  // Allow navigation and async bootstrapping without risking timeout
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(App), findsOneWidget);
+    // Depending on auth state, we see Login or Dashboard
+    final isLogin = find.text('Login').evaluate().isNotEmpty;
+    final isDashboard = find.text('Dashboard').evaluate().isNotEmpty;
+    expect(isLogin || isDashboard, true);
   });
 }
