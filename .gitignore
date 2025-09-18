@@ -43,3 +43,34 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets & environment
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# Firebase configuration (keep out of VCS unless you intentionally commit)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Android signing keys (never commit real keystores)
+*.jks
+*.keystore
+key.properties
+android/key.properties
+
+# iOS signing/provisioning (managed outside Git)
+*.mobileprovision
+*.provisionprofile
+*.cert
+*.p12
+*.cer
+
+# Crash/coverage artifacts that may include paths
+**/crashlytics-build.properties
+**/fabric.properties
+coverage/
+.env
+.env

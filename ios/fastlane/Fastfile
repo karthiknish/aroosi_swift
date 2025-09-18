@@ -1,0 +1,24 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload App Store metadata (from repo)"
+  lane :upload_metadata do
+    app_identifier = ENV['IOS_APP_IDENTIFIER'] || 'com.example.aroosi'
+
+    app_store_connect_api_key(
+      key_id: ENV['APPSTORE_API_KEY_ID'],
+      issuer_id: ENV['APPSTORE_API_ISSUER_ID'],
+      key: 'api_key.p8',
+      in_house: false
+    )
+
+    deliver(
+      app_identifier: app_identifier,
+      metadata_path: "./fastlane/metadata/ios",
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
+end

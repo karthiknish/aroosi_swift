@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/auth/auth_controller.dart';
+
+import 'package:aroosi_flutter/features/auth/auth_controller.dart';
+import 'package:aroosi_flutter/widgets/app_scaffold.dart';
+import 'package:aroosi_flutter/widgets/input_field.dart';
+import 'package:aroosi_flutter/widgets/primary_button.dart';
+import 'package:aroosi_flutter/theme/motion.dart';
+import 'package:aroosi_flutter/widgets/animations/motion.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,41 +32,87 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authControllerProvider);
     final authCtrl = ref.read(authControllerProvider.notifier);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return AppScaffold(
+      title: 'Login',
+      child: FadeThrough(
+        delay: AppMotionDurations.fast,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (auth.error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(auth.error!, style: const TextStyle(color: Colors.red)),
+              FadeIn(
+                duration: AppMotionDurations.short,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    auth.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
               ),
-            TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
+            FadeSlideIn(
+              duration: AppMotionDurations.medium,
+              beginOffset: const Offset(0, 0.08),
+              child: InputField(controller: _email, label: 'Email'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _password, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+            FadeSlideIn(
+              delay: AppMotionDurations.fast,
+              beginOffset: const Offset(0, 0.1),
+              child: InputField(
+                controller: _password,
+                label: 'Password',
+                obscure: true,
+              ),
+            ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: auth.loading
-                  ? null
-                  : () async {
-                      await authCtrl.login(_email.text, _password.text);
-                      if (context.mounted && ref.read(authControllerProvider).isAuthenticated) {
-                        if (!context.mounted) return;
-                        context.go('/dashboard');
-                      }
-                    },
-              child: auth.loading ? const CircularProgressIndicator() : const Text('Sign in'),
+            FadeScaleIn(
+              delay: AppMotionDurations.fast,
+              child: PrimaryButton(
+                label: 'Sign in',
+                loading: auth.loading,
+                onPressed: () async {
+                  await authCtrl.login(_email.text, _password.text);
+                  if (context.mounted &&
+                      ref.read(authControllerProvider).isAuthenticated) {
+                    context.go('/dashboard');
+                  }
+                },
+              ),
             ),
-            TextButton(
-              onPressed: () => context.go('/forgot'),
-              child: const Text('Forgot password?'),
+            const SizedBox(height: 8),
+            FadeIn(
+              delay: const Duration(milliseconds: 200),
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.login),
+                label: const Text('Continue with Google'),
+                onPressed: auth.loading
+                    ? null
+                    : () async {
+                        await authCtrl.loginWithGoogle();
+                        if (context.mounted &&
+                            ref.read(authControllerProvider).isAuthenticated) {
+                          context.go('/dashboard');
+                        }
+                      },
+              ),
             ),
-            TextButton(
-              onPressed: () => context.go('/signup'),
-              child: const Text('Create account'),
+            const SizedBox(height: 12),
+            FadeIn(
+              delay: const Duration(milliseconds: 220),
+              child: TextButton(
+                onPressed: () => context.go('/forgot'),
+                child: const Text('Forgot password?'),
+              ),
+            ),
+            FadeIn(
+              delay: const Duration(milliseconds: 260),
+              child: TextButton(
+                onPressed: () => context.go('/signup'),
+                child: const Text('Create account'),
+              ),
             ),
           ],
         ),

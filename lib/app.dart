@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:aroosi_flutter/core/toast_service.dart';
+import 'package:aroosi_flutter/theme/theme.dart';
+import 'package:aroosi_flutter/core/api_client.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/foundation.dart';
+
 import 'router.dart';
 
 class App extends ConsumerWidget {
@@ -7,14 +14,23 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Attach Firebase bearer-token interceptor (mirrors RN Axios setup)
+    // Only enable on mobile where Firebase is initialized by main().
+    final platform = defaultTargetPlatform;
+    final isMobile =
+        !kIsWeb &&
+        (platform == TargetPlatform.iOS || platform == TargetPlatform.android);
+    if (isMobile) {
+      enableBearerTokenAuth(
+        FirebaseAuthTokenProvider(fb.FirebaseAuth.instance),
+      );
+    }
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
       title: 'Aroosi',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       routerConfig: router,
+      scaffoldMessengerKey: toastMessengerKey,
     );
   }
 }

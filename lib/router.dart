@@ -2,48 +2,120 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'screens/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/signup_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/home/home_shell.dart';
-import 'screens/home/dashboard_screen.dart';
-import 'screens/home/search_screen.dart';
-import 'screens/home/favorites_screen.dart';
-import 'screens/home/profile_screen.dart';
-import 'screens/details_screen.dart';
-import 'screens/settings_screen.dart';
-import 'features/auth/auth_controller.dart';
+import 'package:aroosi_flutter/features/auth/auth_controller.dart';
+import 'package:aroosi_flutter/platform/platform_utils.dart';
+import 'package:aroosi_flutter/theme/motion.dart';
+import 'package:aroosi_flutter/screens/auth/forgot_password_screen.dart';
+import 'package:aroosi_flutter/screens/auth/login_screen.dart';
+import 'package:aroosi_flutter/screens/auth/reset_password_screen.dart';
+import 'package:aroosi_flutter/screens/auth/signup_screen.dart';
+import 'package:aroosi_flutter/screens/details_screen.dart';
+import 'package:aroosi_flutter/screens/home/dashboard_screen.dart';
+import 'package:aroosi_flutter/screens/home/favorites_screen.dart';
+import 'package:aroosi_flutter/screens/home/home_shell.dart';
+import 'package:aroosi_flutter/screens/home/profile_screen.dart';
+import 'package:aroosi_flutter/screens/home/search_screen.dart';
+import 'package:aroosi_flutter/screens/main/chat_screen.dart';
+import 'package:aroosi_flutter/screens/main/conversation_list_screen.dart';
+import 'package:aroosi_flutter/screens/main/edit_profile_screen.dart';
+import 'package:aroosi_flutter/screens/main/icebreakers_screen.dart';
+import 'package:aroosi_flutter/screens/main/interests_screen.dart';
+import 'package:aroosi_flutter/screens/main/matches_screen.dart';
+import 'package:aroosi_flutter/screens/main/quick_picks_screen.dart';
+import 'package:aroosi_flutter/screens/main/shortlists_screen.dart';
+import 'package:aroosi_flutter/screens/main/subscription_screen.dart';
+import 'package:aroosi_flutter/screens/onboarding/onboarding_checklist_screen.dart';
+import 'package:aroosi_flutter/screens/onboarding/onboarding_complete_screen.dart';
+import 'package:aroosi_flutter/screens/onboarding/profile_setup_wizard_screen.dart';
+import 'package:aroosi_flutter/screens/onboarding/welcome_screen.dart';
+import 'package:aroosi_flutter/screens/settings/about_screen.dart';
+import 'package:aroosi_flutter/screens/settings/blocked_users_screen.dart';
+import 'package:aroosi_flutter/screens/settings/notification_settings_screen.dart';
+import 'package:aroosi_flutter/screens/settings/privacy_settings_screen.dart';
+import 'package:aroosi_flutter/screens/settings/safety_guidelines_screen.dart';
+import 'package:aroosi_flutter/screens/settings/settings_screen.dart';
+import 'package:aroosi_flutter/screens/startup_screen.dart';
+import 'package:aroosi_flutter/screens/support/ai_chatbot_screen.dart';
+import 'package:aroosi_flutter/screens/support/contact_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authControllerProvider);
 
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/onboarding',
     routes: [
       GoRoute(
-        path: '/splash',
-        name: 'splash',
-        builder: (context, state) => const SplashScreen(),
+        path: '/startup',
+        name: 'startup',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const StartupScreen()),
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const LoginScreen()),
       ),
       GoRoute(
         path: '/signup',
         name: 'signup',
-        builder: (context, state) => const SignupScreen(),
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const SignupScreen()),
       ),
       GoRoute(
         path: '/forgot',
         name: 'forgot',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const ForgotPasswordScreen()),
       ),
-      // Home shell with tabs
+      GoRoute(
+        path: '/reset',
+        name: 'reset',
+        builder: (context, state) => const ResetPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboardingWelcome',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const WelcomeScreen()),
+        routes: [
+          GoRoute(
+            path: 'profile-setup',
+            name: 'onboardingProfileSetup',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const ProfileSetupScreen()),
+          ),
+          GoRoute(
+            path: 'checklist',
+            name: 'onboardingChecklist',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const OnboardingChecklistScreen()),
+          ),
+          GoRoute(
+            path: 'complete',
+            name: 'onboardingComplete',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const OnboardingCompleteScreen()),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/support',
+        name: 'support',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const ContactScreen()),
+        routes: [
+          GoRoute(
+            path: 'ai-chatbot',
+            name: 'supportAiChatbot',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const AIChatbotScreen()),
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => HomeShell(shell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            HomeShell(shell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -84,31 +156,136 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: '/main',
+        name: 'mainConversations',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const ConversationListScreen()),
+        routes: [
+          GoRoute(
+            path: 'chat',
+            name: 'mainChat',
+            pageBuilder: (context, state) {
+              final convId = state.uri.queryParameters['conversationId'];
+              final toUserId = state.uri.queryParameters['toUserId'];
+              return _adaptivePage(
+                state,
+                ChatScreen(conversationId: convId, toUserId: toUserId),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'edit-profile',
+            name: 'mainEditProfile',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const EditProfileScreen()),
+          ),
+          GoRoute(
+            path: 'icebreakers',
+            name: 'mainIcebreakers',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const IcebreakersScreen()),
+          ),
+          GoRoute(
+            path: 'interests',
+            name: 'mainInterests',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const InterestsScreen()),
+          ),
+          GoRoute(
+            path: 'matches',
+            name: 'mainMatches',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const MatchesScreen()),
+          ),
+          GoRoute(
+            path: 'quick-picks',
+            name: 'mainQuickPicks',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const QuickPicksScreen()),
+          ),
+          GoRoute(
+            path: 'shortlists',
+            name: 'mainShortlists',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const ShortlistsScreen()),
+          ),
+          GoRoute(
+            path: 'subscription',
+            name: 'mainSubscription',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const SubscriptionScreen()),
+          ),
+        ],
+      ),
+      GoRoute(
         path: '/details/:id',
         name: 'details',
-        builder: (context, state) => DetailsScreen(id: state.pathParameters['id'] ?? ''),
+        pageBuilder: (context, state) => _adaptivePage(
+          state,
+          DetailsScreen(id: state.pathParameters['id'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/settings',
         name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const SettingsScreen()),
+        routes: [
+          GoRoute(
+            path: 'about',
+            name: 'settingsAbout',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const AboutScreen()),
+          ),
+          GoRoute(
+            path: 'blocked-users',
+            name: 'settingsBlockedUsers',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const BlockedUsersScreen()),
+          ),
+          GoRoute(
+            path: 'notifications',
+            name: 'settingsNotifications',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const NotificationSettingsScreen()),
+          ),
+          GoRoute(
+            path: 'privacy',
+            name: 'settingsPrivacy',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const PrivacySettingsScreen()),
+          ),
+          GoRoute(
+            path: 'safety',
+            name: 'settingsSafety',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const SafetyGuidelinesScreen()),
+          ),
+        ],
       ),
     ],
     redirect: (context, state) {
-      final isSplash = state.matchedLocation == '/splash';
-      final isAuthRoute = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup' ||
-          state.matchedLocation == '/forgot';
+      if (auth.loading) return null;
 
-      if (auth.loading) return null; // hold routing until ready
+      final location = state.matchedLocation;
+      final isAuthRoute =
+          location == '/login' ||
+          location == '/signup' ||
+          location == '/forgot' ||
+          location == '/reset';
+      final isOnboardingRoute = location.startsWith('/onboarding');
+      final isSupportRoute = location.startsWith('/support');
+      final isPublic =
+          location == '/startup' ||
+          isAuthRoute ||
+          isOnboardingRoute ||
+          isSupportRoute;
 
-      if (isSplash) {
-        return auth.isAuthenticated ? '/dashboard' : '/login';
+      if (!auth.isAuthenticated && !isPublic) {
+        return '/startup';
       }
-      if (!auth.isAuthenticated && !isAuthRoute) {
-        return '/login';
-      }
-      if (auth.isAuthenticated && isAuthRoute) {
+      if (auth.isAuthenticated &&
+          (location == '/startup' || isAuthRoute || isOnboardingRoute)) {
         return '/dashboard';
       }
       return null;
@@ -119,3 +296,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+Page<dynamic> _adaptivePage(
+  GoRouterState state,
+  Widget child, {
+  bool iosNoAnimation = false,
+}) {
+  if (isCupertinoPlatform()) {
+    if (iosNoAnimation) {
+      return CustomTransitionPage(
+        key: state.pageKey,
+        child: child,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        transitionsBuilder: (c, a, sA, w) => w,
+      );
+    }
+    return CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: AppMotionDurations.page,
+      reverseTransitionDuration: AppMotionDurations.page,
+      transitionsBuilder: (context, animation, secondaryAnimation, widget) {
+        final curve = CurvedAnimation(
+          parent: animation,
+          curve: AppMotionCurves.easeOut,
+        );
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(curve),
+          child: widget,
+        );
+      },
+    );
+  }
+  return MaterialPage(child: child, key: state.pageKey);
+}
