@@ -1,4 +1,4 @@
-app_identifier ENV['IOS_APP_IDENTIFIER'] || 'com.example.aroosi'
-apple_id ENV['APPLE_ID'] || 'your-apple-id@example.com'
-itc_team_id ENV['APPSTORE_TEAM_ID'] if ENV['APPSTORE_TEAM_ID']
-team_id ENV['APPLE_TEAM_ID'] if ENV['APPLE_TEAM_ID']
+app_identifier(ENV['IOS_APP_IDENTIFIER'] || 'com.aroosi.mobile')
+apple_id(ENV['APPLE_ID'] || 'contact@aroosi.app')
+itc_team_id(ENV['APPSTORE_TEAM_ID']) if ENV['APPSTORE_TEAM_ID']
+team_id(ENV['APPLE_TEAM_ID']) if ENV['APPLE_TEAM_ID']

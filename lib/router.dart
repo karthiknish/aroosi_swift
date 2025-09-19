@@ -11,7 +11,7 @@ import 'package:aroosi_flutter/screens/auth/reset_password_screen.dart';
 import 'package:aroosi_flutter/screens/auth/signup_screen.dart';
 import 'package:aroosi_flutter/screens/details_screen.dart';
 import 'package:aroosi_flutter/screens/home/dashboard_screen.dart';
-import 'package:aroosi_flutter/screens/home/favorites_screen.dart';
+
 import 'package:aroosi_flutter/screens/home/home_shell.dart';
 import 'package:aroosi_flutter/screens/home/profile_screen.dart';
 import 'package:aroosi_flutter/screens/home/search_screen.dart';
@@ -34,21 +34,54 @@ import 'package:aroosi_flutter/screens/settings/notification_settings_screen.dar
 import 'package:aroosi_flutter/screens/settings/privacy_settings_screen.dart';
 import 'package:aroosi_flutter/screens/settings/safety_guidelines_screen.dart';
 import 'package:aroosi_flutter/screens/settings/settings_screen.dart';
-import 'package:aroosi_flutter/screens/startup_screen.dart';
 import 'package:aroosi_flutter/screens/support/ai_chatbot_screen.dart';
 import 'package:aroosi_flutter/screens/support/contact_screen.dart';
+import 'package:aroosi_flutter/utils/debug_logger.dart';
+import 'features/auth/auth_state.dart';
+
+/// ChangeNotifier that listens to auth state and notifies GoRouter without
+/// forcing a full router reconstruction (prevents losing navigation actions
+/// mid-transition such as a manual context.go from a screen listener).
+class GoRouterRefresh extends ChangeNotifier {
+  GoRouterRefresh(this.ref) {
+    _auth = ref.read(authControllerProvider);
+    ref.listen<AuthState>(authControllerProvider, (prev, next) {
+      _prevAuth = prev;
+      _auth = next;
+      notifyListeners();
+    });
+  }
+  final Ref ref;
+  late AuthState _auth;
+  AuthState? _prevAuth;
+  AuthState get auth => _auth;
+  AuthState? get prevAuth => _prevAuth;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+}
+
+final goRouterRefreshProvider = Provider<GoRouterRefresh>((ref) {
+  final notifier = GoRouterRefresh(ref);
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  final refresh = ref.watch(goRouterRefreshProvider); // stable instance
 
-  return GoRouter(
-    initialLocation: '/onboarding',
+  final router = GoRouter(
+    initialLocation: '/startup',
+    refreshListenable: refresh,
+    observers: [_RouteObserver()],
     routes: [
       GoRoute(
         path: '/startup',
         name: 'startup',
         pageBuilder: (context, state) =>
-            _adaptivePage(state, const StartupScreen()),
+            _adaptivePage(state, const WelcomeScreen()),
       ),
       GoRoute(
         path: '/login',
@@ -82,8 +115,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'profile-setup',
             name: 'onboardingProfileSetup',
-            pageBuilder: (context, state) =>
-                _adaptivePage(state, const ProfileSetupScreen()),
+            builder: (context, state) => const ProfileSetupScreen(),
           ),
           GoRoute(
             path: 'checklist',
@@ -132,15 +164,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: '/search',
                 name: 'search',
                 builder: (context, state) => const SearchScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/favorites',
-                name: 'favorites',
-                builder: (context, state) => const FavoritesScreen(),
               ),
             ],
           ),
@@ -265,6 +288,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
+      final auth = refresh.auth;
       if (auth.loading) return null;
 
       final location = state.matchedLocation;
@@ -274,20 +298,58 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location == '/forgot' ||
           location == '/reset';
       final isOnboardingRoute = location.startsWith('/onboarding');
+      final isLoginRoute = location == '/login';
       final isSupportRoute = location.startsWith('/support');
-      final isPublic =
-          location == '/startup' ||
-          isAuthRoute ||
-          isOnboardingRoute ||
-          isSupportRoute;
+      final isStartup = location == '/startup';
+      final isPublic = isStartup || isAuthRoute || isSupportRoute;
 
+      final needsProfile = auth.isAuthenticated && auth.profile == null;
+
+      // Unauthenticated users should always see /startup unless navigating to a public route
       if (!auth.isAuthenticated && !isPublic) {
+        logRouter('redirect: unauthenticated -> /startup (from=$location)');
         return '/startup';
       }
-      if (auth.isAuthenticated &&
-          (location == '/startup' || isAuthRoute || isOnboardingRoute)) {
-        return '/dashboard';
+
+      // If authenticated but profile is missing, force onboarding
+      if (needsProfile && !isOnboardingRoute && !isLoginRoute) {
+        logRouter(
+          'redirect: needsProfile -> /onboarding/profile-setup (from=$location)',
+        );
+        return '/onboarding/profile-setup';
       }
+
+      // If on login and just authenticated, go to dashboard or onboarding
+      if (isLoginRoute && auth.isAuthenticated) {
+        final wasUnauth = refresh.prevAuth?.isAuthenticated == false;
+        if (wasUnauth) {
+          if (needsProfile) {
+            logRouter('redirect: login->onboarding/profile-setup');
+            return '/onboarding/profile-setup';
+          }
+          logRouter('redirect: login->dashboard');
+          return '/dashboard';
+        }
+      }
+
+      // If authenticated and on a public route (but not startup), go to dashboard (if profile present) or onboarding (if profile missing)
+      if (auth.isAuthenticated && isPublic && !isStartup) {
+        if (auth.profile != null) {
+          logRouter(
+            'redirect: authenticated+profile on public route -> /dashboard (from=$location)',
+          );
+          return '/dashboard';
+        } else {
+          logRouter(
+            'redirect: authenticated but no profile on public route -> /onboarding/profile-setup (from=$location)',
+          );
+          return '/onboarding/profile-setup';
+        }
+      }
+
+      logRouter(
+        'redirect: no change (location=$location auth=${auth.isAuthenticated} needsProfile=$needsProfile profileNull=${auth.profile == null})',
+      );
       return null;
     },
     errorBuilder: (context, state) => Scaffold(
@@ -295,7 +357,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       body: Center(child: Text('No route defined for ${state.uri}')),
     ),
   );
+  ref.onDispose(router.dispose);
+  return router;
 });
+
+class _RouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    logRouter(
+      'observer: didPush name=${route.settings.name} path=${route.settings} from=${previousRoute?.settings.name}',
+    );
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    logRouter(
+      'observer: didReplace old=${oldRoute?.settings.name} new=${newRoute?.settings.name}',
+    );
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    logRouter(
+      'observer: didPop name=${route.settings.name} to=${previousRoute?.settings.name}',
+    );
+    super.didPop(route, previousRoute);
+  }
+}
 
 Page<dynamic> _adaptivePage(
   GoRouterState state,
@@ -332,5 +422,6 @@ Page<dynamic> _adaptivePage(
       },
     );
   }
-  return MaterialPage(child: child, key: state.pageKey);
+  // Only use state.pageKey at the top MaterialPage, not in children
+  return MaterialPage(key: state.pageKey, child: child);
 }

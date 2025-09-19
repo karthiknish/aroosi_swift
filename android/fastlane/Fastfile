@@ -3,7 +3,11 @@ default_platform(:android)
 platform :android do
   desc "Upload Play Store metadata (from repo)"
   lane :upload_metadata do
-    package_name = ENV['ANDROID_PACKAGE_NAME'] || 'com.example.aroosi'
+    package_name = ENV['ANDROID_PACKAGE_NAME'] || 'com.aroosi.mobile'
+
+    unless ENV['GOOGLE_PLAY_SERVICE_ACCOUNT_JSON']&.strip&.length&.positive?
+      UI.user_error!("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON environment variable is required to authenticate with Google Play")
+    end
 
     supply(
       package_name: package_name,

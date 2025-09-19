@@ -15,43 +15,107 @@ import 'package:aroosi_flutter/platform/adaptive_dialogs.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Always fetch latest profile on mount
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(authControllerProvider.notifier).refreshProfileOnly();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Fetch latest profile when screen regains focus (like RN useFocusEffect)
+    // Note: addScopedWillPopCallback is deprecated, but keeping functionality for now
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      route.addScopedWillPopCallback(_onFocus);
+    }
+  }
+
+  Future<bool> _onFocus() async {
+    await ref.read(authControllerProvider.notifier).refreshProfileOnly();
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final authCtrl = ref.read(authControllerProvider.notifier);
     final access = ref.watch(featureAccessProvider);
     final usage = ref.watch(featureUsageControllerProvider);
     final usageController = ref.read(featureUsageControllerProvider.notifier);
 
-    final name = auth.profile?.fullName ?? 'Guest';
+    if (auth.loading || auth.profile == null) {
+      return const AppScaffold(
+        title: 'Profile',
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final name = (auth.profile?.fullName?.trim().isNotEmpty ?? false)
+        ? auth.profile!.fullName!.trim()
+        : 'Your Name';
     final email = auth.profile?.email ?? '';
     final avatar = auth.profile?.avatarUrl;
     final plan = auth.profile?.plan ?? 'free';
     final expires = auth.profile?.subscriptionExpiresAt;
+    final formattedPlan = _formatPlan(plan);
+    final formattedExpiry = expires != null
+        ? _formatDate(expires.toLocal())
+        : null;
+
     return AppScaffold(
       title: 'Profile',
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (auth.loading) const CircularProgressIndicator(),
-            if (!auth.loading) ...[
-              if (avatar != null && avatar.isNotEmpty) ...[
-                CircleAvatar(radius: 36, backgroundImage: NetworkImage(avatar)),
-                const SizedBox(height: 12),
+      child: RefreshIndicator(
+        key: UniqueKey(),
+        onRefresh: () async {
+          await authCtrl.refresh();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            24,
+            20,
+            MediaQuery.of(context).padding.bottom + 80,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ProfileHeader(
+                name: name,
+                email: email,
+                avatarUrl: avatar,
+                planLabel: formattedPlan,
+                planExpires: formattedExpiry,
+              ),
+              const SizedBox(height: 24),
+              _ProfileQuickActions(
+                onEditProfile: () => context.push('/main/edit-profile'),
+                onManageSubscription: () => context.push('/main/subscription'),
+                onPrivacySettings: () => context.push('/settings/privacy'),
+                onSupport: () => context.push('/support'),
+              ),
+              if (email.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _AccountDetailsCard(email: email, plan: formattedPlan),
               ],
-              Text(auth.isAuthenticated ? name : 'Logged out'),
-              if (email.isNotEmpty) ...[const SizedBox(height: 8), Text(email)],
-              const SizedBox(height: 8),
-              Text('Plan: ${plan.toUpperCase()}'),
-              if (expires != null) Text('Expires: ${expires.toLocal()}'),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               _FeatureHighlights(access: access),
               if (access.plan == SubscriptionPlan.free) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 InlineUpgradeBanner(
                   message:
                       'Upgrade to Premium to unlock unlimited likes, full profile details, and more.',
@@ -59,44 +123,275 @@ class ProfileScreen extends ConsumerWidget {
                   onPressed: () => context.push('/main/subscription'),
                 ),
               ] else if (access.plan == SubscriptionPlan.premium) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 InlineUpgradeBanner(
                   message:
-                      'Go Premium Plus for unlimited boosts, incognito mode, and spotlight badge.',
+                      'Go Premium Plus for unlimited boosts, incognito mode, and a spotlight badge.',
                   ctaLabel: 'Upgrade to Premium Plus',
                   onPressed: () => context.push('/main/subscription'),
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               _BoostControls(
                 access: access,
                 usage: usage,
                 usageNotifier: usageController,
               ),
-            ],
-            PrimaryButton(
-              label: 'Logout',
-              onPressed: auth.isAuthenticated
-                  ? () async {
-                      final confirm = await showAdaptiveConfirm(
-                        context,
-                        title: 'Logout',
-                        message: 'Are you sure you want to log out?',
-                        confirmText: 'Logout',
-                        cancelText: 'Cancel',
-                      );
-                      if (!context.mounted) return;
-                      if (confirm) {
-                        await authCtrl.logout();
+              const SizedBox(height: 32),
+              PrimaryButton(
+                label: 'Log out',
+                onPressed: auth.isAuthenticated
+                    ? () async {
+                        final confirm = await showAdaptiveConfirm(
+                          context,
+                          title: 'Log out',
+                          message: 'Are you sure you want to log out?',
+                          confirmText: 'Log out',
+                          cancelText: 'Cancel',
+                        );
+                        if (!context.mounted) return;
+                        if (confirm) {
+                          await authCtrl.logout();
+                        }
                       }
-                    }
-                  : null,
-            ),
-          ],
+                    : null,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.avatarUrl,
+    required this.planLabel,
+    this.planExpires,
+  });
+
+  final String name;
+  final String email;
+  final String? avatarUrl;
+  final String planLabel;
+  final String? planExpires;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.primaryContainer.withOpacity(0.2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (avatarUrl != null && avatarUrl!.isNotEmpty)
+            CircleAvatar(radius: 42, backgroundImage: NetworkImage(avatarUrl!))
+          else
+            CircleAvatar(
+              radius: 42,
+              backgroundColor: theme.colorScheme.primary,
+              child: Text(
+                name.trim().isNotEmpty
+                    ? name.trim().substring(0, 1).toUpperCase()
+                    : 'A',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Text(
+            name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (email.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              email,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Chip(
+                avatar: const Icon(Icons.workspace_premium, size: 18),
+                label: Text(planLabel),
+              ),
+              if (planExpires != null)
+                Chip(
+                  avatar: const Icon(Icons.schedule, size: 18),
+                  label: Text('Renews $planExpires'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileQuickActions extends StatelessWidget {
+  const _ProfileQuickActions({
+    required this.onEditProfile,
+    required this.onManageSubscription,
+    required this.onPrivacySettings,
+    required this.onSupport,
+  });
+
+  final VoidCallback onEditProfile;
+  final VoidCallback onManageSubscription;
+  final VoidCallback onPrivacySettings;
+  final VoidCallback onSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _ActionButton(
+          icon: Icons.edit,
+          label: 'Edit profile',
+          onTap: onEditProfile,
+        ),
+        _ActionButton(
+          icon: Icons.workspace_premium,
+          label: 'Manage subscription',
+          onTap: onManageSubscription,
+        ),
+        _ActionButton(
+          icon: Icons.privacy_tip,
+          label: 'Privacy settings',
+          onTap: onPrivacySettings,
+        ),
+        _ActionButton(
+          icon: Icons.support_agent,
+          label: 'Support',
+          onTap: onSupport,
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountDetailsCard extends StatelessWidget {
+  const _AccountDetailsCard({required this.email, required this.plan});
+
+  final String email;
+  final String plan;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.email_outlined),
+            title: const Text('Email'),
+            subtitle: Text(email),
+          ),
+          const Divider(height: 0),
+          ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined),
+            title: const Text('Current plan'),
+            subtitle: Text(plan),
+            trailing: TextButton(
+              onPressed: () => context.push('/main/subscription'),
+              child: const Text('View options'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: Icon(icon, size: 20),
+      label: Text(label),
+      onPressed: onTap,
+    );
+  }
+}
+
+String _formatPlan(String plan) {
+  if (plan.isEmpty || plan.toLowerCase() == 'free') return 'Free';
+  final normalized = plan
+      .replaceAll('_', ' ')
+      .replaceAll('-', ' ')
+      .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+      .trim();
+  if (normalized.isEmpty) return 'Free';
+  return normalized
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      })
+      .join(' ');
+}
+
+String _formatDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final month = months[(date.month - 1).clamp(0, months.length - 1)];
+  final day = date.day.toString().padLeft(2, '0');
+  return '$month $day, ${date.year}';
 }
 
 class _FeatureHighlights extends StatelessWidget {

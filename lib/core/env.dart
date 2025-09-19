@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:aroosi_flutter/firebase_options.dart';
 
 /// Mirrors the environment switching used in aroosi-mobile so both apps hit
 /// the same backend tiers by default.
@@ -55,5 +56,17 @@ class Env {
     return trimmed.endsWith('/')
         ? trimmed.substring(0, trimmed.length - 1)
         : trimmed;
+  }
+
+  /// Firebase Storage bucket, overridable via env (FIREBASE_STORAGE_BUCKET).
+  /// Falls back to the bucket in DefaultFirebaseOptions.
+  static String get storageBucket {
+    final override = _read('FIREBASE_STORAGE_BUCKET').trim();
+    if (override.isNotEmpty) return override;
+    try {
+      return DefaultFirebaseOptions.currentPlatform.storageBucket ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 }

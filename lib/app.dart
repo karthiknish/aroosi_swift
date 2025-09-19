@@ -14,6 +14,9 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Get the messenger key from provider for scaffold messenger
+    final messengerKey = ref.read(toastMessengerKeyProvider);
+
     // Attach Firebase bearer-token interceptor (mirrors RN Axios setup)
     // Only enable on mobile where Firebase is initialized by main().
     final platform = defaultTargetPlatform;
@@ -30,7 +33,7 @@ class App extends ConsumerWidget {
       title: 'Aroosi',
       theme: buildAppTheme(),
       routerConfig: router,
-      scaffoldMessengerKey: toastMessengerKey,
+      scaffoldMessengerKey: messengerKey,
     );
   }
 }

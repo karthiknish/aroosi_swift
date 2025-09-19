@@ -39,6 +39,44 @@ ThemeData buildAppTheme() {
   return base.copyWith(
     scaffoldBackgroundColor: AppColors.background,
     textTheme: textTheme,
+    datePickerTheme: DatePickerThemeData(
+      headerHeadlineStyle: GoogleFonts.nunitoSans(
+        fontSize: 20,
+        fontWeight: FontWeight.w700, // Bold month name
+        color: AppColors.text,
+      ),
+      headerHelpStyle: GoogleFonts.nunitoSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.muted,
+      ),
+      dayStyle: GoogleFonts.nunitoSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.text,
+      ),
+      yearStyle: GoogleFonts.nunitoSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w700, // Bold year selection text
+        color: AppColors.text,
+      ),
+      weekdayStyle: GoogleFonts.nunitoSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.muted,
+      ),
+      dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return AppColors.onPrimary;
+        if (states.contains(WidgetState.disabled)) {
+          return AppColors.muted.withValues(alpha: 0.4);
+        }
+        return AppColors.text;
+      }),
+      dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return AppColors.primary;
+        return Colors.transparent;
+      }),
+    ),
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: GoogleFonts.nunitoSans(
         fontSize: 16,

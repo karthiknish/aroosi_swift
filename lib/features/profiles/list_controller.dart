@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'models.dart';
 import 'profiles_repository.dart';
+import 'package:aroosi_flutter/utils/debug_logger.dart';
 
 class ProfilesListState {
   const ProfilesListState({
@@ -11,6 +12,8 @@ class ProfilesListState {
     this.loading = false,
     this.error,
     this.filters,
+    this.nextPage,
+    this.nextCursor,
   });
 
   final List<ProfileSummary> items;
@@ -19,6 +22,8 @@ class ProfilesListState {
   final bool loading;
   final String? error;
   final SearchFilters? filters;
+  final int? nextPage;
+  final String? nextCursor;
 
   ProfilesListState copyWith({
     List<ProfileSummary>? items,
@@ -28,15 +33,22 @@ class ProfilesListState {
     String? error,
     bool setError = false,
     SearchFilters? filters,
+    Object? nextPage = _sentinel,
+    Object? nextCursor = _sentinel,
   }) => ProfilesListState(
-    items: items ?? this.items,
-    page: page ?? this.page,
-    hasMore: hasMore ?? this.hasMore,
-    loading: loading ?? this.loading,
-    error: setError ? error : this.error,
-    filters: filters ?? this.filters,
-  );
+        items: items ?? this.items,
+        page: page ?? this.page,
+        hasMore: hasMore ?? this.hasMore,
+        loading: loading ?? this.loading,
+        error: setError ? error : this.error,
+        filters: filters ?? this.filters,
+        nextPage: nextPage == _sentinel ? this.nextPage : nextPage as int?,
+        nextCursor:
+            nextCursor == _sentinel ? this.nextCursor : nextCursor as String?,
+      );
 }
+
+const Object _sentinel = Object();
 
 class MatchesController extends Notifier<ProfilesListState> {
   MatchesController() : _repo = ProfilesRepository();
@@ -121,52 +133,121 @@ class SearchController extends Notifier<ProfilesListState> {
   ProfilesListState build() => const ProfilesListState();
 
   Future<void> search(SearchFilters filters) async {
+    logDebug('SearchController: Starting search', data: {
+      'filters': filters.toQuery(),
+      'currentState': {
+        'itemsCount': state.items.length,
+        'loading': state.loading,
+        'hasMore': state.hasMore,
+        'error': state.error,
+      }
+    });
+    
     state = state.copyWith(
       loading: true,
       setError: true,
       error: null,
       page: 1,
       filters: filters,
+      nextPage: null,
+      nextCursor: null,
     );
+    
     try {
-      final page = await _repo.search(filters: filters, page: 1, pageSize: 20);
+      final page = await _repo.search(
+        filters: filters,
+        page: 1,
+        pageSize: filters.pageSize ?? 20,
+      );
+      
+      logDebug('SearchController: Search completed successfully', data: {
+        'returnedItems': page.items.length,
+        'page': page.page,
+        'hasMore': page.hasMore,
+        'nextPage': page.nextPage,
+        'nextCursor': page.nextCursor,
+        'total': page.total,
+      });
+      
       state = state.copyWith(
         items: page.items,
-        page: 1,
+        page: page.page,
         hasMore: page.hasMore,
         loading: false,
+        nextPage: page.nextPage,
+        nextCursor: page.nextCursor,
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
       state = state.copyWith(
         loading: false,
         setError: true,
         error: 'Search failed',
+        nextPage: null,
+        nextCursor: null,
       );
     }
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore || state.loading || state.filters == null) return;
+    if (!state.hasMore || state.loading || state.filters == null) {
+      logDebug('SearchController: Load more skipped', data: {
+        'hasMore': state.hasMore,
+        'loading': state.loading,
+        'hasFilters': state.filters != null,
+      });
+      return;
+    }
+    
+    logDebug('SearchController: Starting load more', data: {
+      'currentPage': state.page,
+      'currentItems': state.items.length,
+      'nextCursor': state.nextCursor,
+      'nextPage': state.nextPage,
+    });
+    
     state = state.copyWith(loading: true);
     try {
-      final next = state.page + 1;
+      final filters = state.filters!;
+      final nextCursor = state.nextCursor;
+      final nextPage = state.nextPage ?? (state.page + 1);
       final page = await _repo.search(
-        filters: state.filters!,
-        page: next,
-        pageSize: 20,
+        filters: filters.copyWith(cursor: nextCursor),
+        page: nextPage,
+        pageSize: filters.pageSize ?? 20,
       );
+      
+      logDebug('SearchController: Load more completed', data: {
+        'newItems': page.items.length,
+        'totalItems': state.items.length + page.items.length,
+        'page': page.page,
+        'hasMore': page.hasMore,
+        'nextPage': page.nextPage,
+        'nextCursor': page.nextCursor,
+      });
+      
       state = state.copyWith(
         items: [...state.items, ...page.items],
-        page: next,
+        page: page.page,
         hasMore: page.hasMore,
         loading: false,
+        nextPage: page.nextPage,
+        nextCursor: page.nextCursor,
+        filters: filters.copyWith(cursor: page.nextCursor),
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logDebug('SearchController: Load more failed', error: e, stackTrace: stackTrace);
       state = state.copyWith(loading: false);
     }
   }
 
   void clear() {
+    logDebug('SearchController: Clearing search state', data: {
+      'previousItems': state.items.length,
+      'previousPage': state.page,
+      'hadFilters': state.filters != null,
+    });
+    
     state = const ProfilesListState(
       items: [],
       page: 1,

@@ -32,7 +32,12 @@ class AdaptiveRefresh extends StatelessWidget {
       );
     }
 
-    final content = child ?? (slivers != null ? CustomScrollView(controller: controller, slivers: slivers!) : const SizedBox.shrink());
-    return RefreshIndicator(onRefresh: onRefresh, child: content);
+    if (slivers != null) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: CustomScrollView(controller: controller, slivers: slivers!),
+      );
+    }
+    return RefreshIndicator(onRefresh: onRefresh, child: child ?? const SizedBox.shrink());
   }
 }

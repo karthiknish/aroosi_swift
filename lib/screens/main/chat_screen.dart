@@ -10,6 +10,7 @@ import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:aroosi_flutter/core/permissions.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:aroosi_flutter/features/chat/typing_presence_controller.dart';
 import 'package:aroosi_flutter/core/realtime/realtime_service.dart';
@@ -211,6 +212,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ToastService.instance.info('Start a conversation to send images.');
       return;
     }
+    final ok = await AppPermissions.ensurePhotoAccess();
+    if (!ok) return;
     final allowed = ref
         .read(featureUsageControllerProvider.notifier)
         .requestUsage(UsageMetric.messageSent);
@@ -522,8 +525,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                                       InkWell(
                                                         onTap: () {
                                                           final myId = me?.id;
-                                                          if (myId == null)
+                                                          if (myId == null) {
                                                             return;
+                                                          }
                                                           final hasReacted =
                                                               entry.value
                                                                   .contains(

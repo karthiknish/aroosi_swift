@@ -67,6 +67,7 @@ android/key.properties
 *.cert
 *.p12
 *.cer
+fastlane/asc_api_key.p8
 
 # Crash/coverage artifacts that may include paths
 **/crashlytics-build.properties

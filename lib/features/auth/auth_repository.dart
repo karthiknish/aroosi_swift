@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import 'package:aroosi_flutter/core/api_client.dart';
 import 'package:aroosi_flutter/core/google_signin_helper.dart';
+import 'package:aroosi_flutter/utils/debug_logger.dart';
 
 class AuthRepository {
   final Dio _dio;
@@ -19,43 +20,58 @@ class AuthRepository {
 
   /// Sign in with Google using Firebase (mirrors RN). Backend auth uses bearer tokens via interceptor.
   Future<void> signInWithGoogle() async {
+    logApi('🔐 Starting Google sign-in flow');
+    
     final googleSignIn = buildGoogleSignIn();
     GoogleSignInAccount? account = await googleSignIn.signIn();
     if (account == null) {
+      logApi('❌ Google sign-in canceled by user');
       throw DioException(
         requestOptions: RequestOptions(path: '/auth/google'),
         error: 'Google sign-in canceled',
       );
     }
+    
+    logApi('✅ Google account selected: ${account.email}');
     final auth = await account.authentication;
     final idToken = auth.idToken;
     final accessToken = auth.accessToken;
+    
     if (idToken == null && accessToken == null) {
+      logApi('❌ Missing Google tokens from authentication');
       throw DioException(
         requestOptions: RequestOptions(path: '/auth/google'),
         error: 'Missing Google tokens',
       );
     }
+    
+    logApi('🔑 Google tokens obtained, creating Firebase credential');
     final credential = fb.GoogleAuthProvider.credential(
       idToken: idToken,
       accessToken: accessToken,
     );
     await fb.FirebaseAuth.instance.signInWithCredential(credential);
+    logApi('✅ Google sign-in completed successfully');
     // No direct backend call here; bearer token interceptor will authenticate subsequent requests.
   }
 
   /// Sign in with email/password via Firebase
   Future<void> signin({required String email, required String password}) async {
+    logApi('🔐 Starting email sign-in for: $email');
+    
     try {
       await fb.FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      logApi('✅ Email sign-in successful for: $email');
     } on fb.FirebaseAuthException catch (e) {
       String msg = 'Sign in failed';
       if (e.code == 'user-not-found') msg = 'No account for this email';
       if (e.code == 'wrong-password') msg = 'Invalid password';
       if (e.code == 'too-many-requests') msg = 'Too many attempts. Try later';
+      
+      logApi('❌ Email sign-in failed for: $email | Error: $msg | Code: ${e.code}');
       throw DioException(
         requestOptions: RequestOptions(path: '/auth/login'),
         error: msg,
@@ -69,8 +85,10 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
+    logApi('📝 Starting sign-up for: $email | Name: $name');
+    
     try {
-      await _dio.post(
+      final response = await _dio.post(
         '/auth/signup',
         data: {
           'email': email,
@@ -80,6 +98,8 @@ class AuthRepository {
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
+      
+      logApi('✅ Sign-up successful for: $email | Status: ${response.statusCode}');
       // Some backends require a subsequent reset-password to finalize password; skip unless needed.
     } on DioException catch (e) {
       final msg = e.response?.data is Map
@@ -87,6 +107,8 @@ class AuthRepository {
                 (e.response?.data as Map)['message'] ??
                 'Sign up failed')
           : 'Sign up failed';
+      
+      logApi('❌ Sign-up failed for: $email | Error: $msg | Status: ${e.response?.statusCode}');
       throw DioException(
         requestOptions: e.requestOptions,
         error: msg,
@@ -98,21 +120,34 @@ class AuthRepository {
 
   /// Check current session; returns true if authenticated
   Future<bool> me() async {
+    logApi('🔍 Checking current authentication session');
+    
     try {
       // RN uses /api/auth/me with bearer; support both
       Response res;
+      String endpoint = '/api/auth/me';
       try {
-        res = await _dio.get('/api/auth/me');
+        logApi('📡 Trying primary endpoint: $endpoint');
+        res = await _dio.get(endpoint);
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
-          res = await _dio.get('/auth/me');
+          endpoint = '/auth/me';
+          logApi('📡 Trying fallback endpoint: $endpoint');
+          res = await _dio.get(endpoint);
         } else {
           rethrow;
         }
       }
-      return res.statusCode == 200;
+      
+      final isAuthenticated = res.statusCode == 200;
+      logApi('🔐 Session check result: ${isAuthenticated ? "Authenticated" : "Not authenticated"} | Endpoint: $endpoint | Status: ${res.statusCode}');
+      return isAuthenticated;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return false;
+      if (e.response?.statusCode == 401) {
+        logApi('🔐 Session check: Not authenticated (401)');
+        return false;
+      }
+      logApi('❌ Session check failed: ${e.message}');
       return false;
     }
   }
@@ -136,13 +171,22 @@ class AuthRepository {
   /// Fetch the current user's profile
   Future<Map<String, dynamic>?> getProfile() async {
     try {
-      // RN updates profile via /api/user/me
+      // RN primary: /api/user/me
       Response res;
       try {
         res = await _dio.get('/api/user/me');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
-          res = await _dio.get('/profile');
+          // Fallbacks: /user/profile (current), /profile (legacy)
+          try {
+            res = await _dio.get('/user/profile');
+          } on DioException catch (e2) {
+            if (e2.response?.statusCode == 404) {
+              res = await _dio.get('/profile');
+            } else {
+              rethrow;
+            }
+          }
         } else {
           rethrow;
         }

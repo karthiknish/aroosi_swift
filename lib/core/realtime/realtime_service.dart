@@ -79,13 +79,14 @@ class RealTimeService {
   }
 
   void onTyping(void Function(String conversationId, bool isTyping) handler) {
-    final fn = (dynamic data) {
+    void fn(dynamic data) {
       try {
         final conv = data['conversationId']?.toString() ?? '';
         final v = data['isTyping'] == true;
         if (conv.isNotEmpty) handler(conv, v);
       } catch (_) {}
-    };
+    }
+
     _typingHandlers[handler] = fn;
     _socket?.on('typing', fn);
     _socket?.on('user:typing', fn);

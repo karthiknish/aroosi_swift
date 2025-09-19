@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
+import 'package:aroosi_flutter/features/auth/auth_state.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/input_field.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 import 'package:aroosi_flutter/theme/motion.dart';
 import 'package:aroosi_flutter/widgets/animations/motion.dart';
+import 'package:aroosi_flutter/utils/debug_logger.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -20,9 +22,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  ProviderSubscription<AuthState>? _sub;
+  bool _navigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = ref.listenManual<AuthState>(authControllerProvider, (prev, next) {
+      if (!mounted) return;
+      logNav(
+        'signup_screen listener: prevAuth=${prev?.isAuthenticated} -> nextAuth=${next.isAuthenticated} loading=${next.loading} error=${next.error} profile=${next.profile == null ? 'null' : 'present'}',
+      );
+      if (!_navigated && next.isAuthenticated) {
+        logNav('signup_screen: trigger navigation to /dashboard');
+        _navigated = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/dashboard');
+        });
+      }
+    }, fireImmediately: false);
+  }
 
   @override
   void dispose() {
+    _sub?.close();
     _name.dispose();
     _email.dispose();
     _password.dispose();
@@ -81,17 +104,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: PrimaryButton(
                 label: 'Create account',
                 loading: auth.loading,
-                onPressed: () async {
-                  await authCtrl.signup(
-                    _name.text,
-                    _email.text,
-                    _password.text,
-                  );
-                  if (context.mounted &&
-                      ref.read(authControllerProvider).isAuthenticated) {
-                    context.go('/dashboard');
-                  }
-                },
+                onPressed: auth.loading
+                    ? null
+                    : () {
+                        logNav(
+                          'signup_screen: Create account pressed name=${_name.text} email=${_email.text}',
+                        );
+                        authCtrl.signup(
+                          _name.text,
+                          _email.text,
+                          _password.text,
+                        );
+                      },
               ),
             ),
           ],

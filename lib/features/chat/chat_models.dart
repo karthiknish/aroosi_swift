@@ -14,6 +14,9 @@ class ChatMessage extends Equatable {
     this.caption,
     this.replyTo,
     this.reactions = const {},
+    this.audioStorageId,
+    this.duration,
+    this.fileSize,
   });
 
   final String id;
@@ -32,6 +35,10 @@ class ChatMessage extends Equatable {
   // Map emoji -> list of userIds who reacted
   final Map<String, List<String>> reactions;
 
+  final String? audioStorageId; // for type 'voice'
+  final int? duration; // voice duration seconds
+  final int? fileSize; // bytes for voice/image
+
   ChatMessage copyWith({
     String? id,
     String? conversationId,
@@ -45,6 +52,9 @@ class ChatMessage extends Equatable {
     String? caption,
     String? replyTo,
     Map<String, List<String>>? reactions,
+    String? audioStorageId,
+    int? duration,
+    int? fileSize,
   }) => ChatMessage(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -58,6 +68,9 @@ class ChatMessage extends Equatable {
     caption: caption ?? this.caption,
     replyTo: replyTo ?? this.replyTo,
     reactions: reactions ?? this.reactions,
+    audioStorageId: audioStorageId ?? this.audioStorageId,
+    duration: duration ?? this.duration,
+    fileSize: fileSize ?? this.fileSize,
   );
 
   static ChatMessage fromJson(Map<String, dynamic> json) {
@@ -87,7 +100,17 @@ class ChatMessage extends Equatable {
       replyTo:
           json['replyTo']?.toString() ?? json['replyMessageId']?.toString(),
       reactions: _parseReactions(json['reactions']),
+      audioStorageId:
+          json['audioStorageId']?.toString() ?? json['storageId']?.toString(),
+      duration: _parseInt(json['duration']),
+      fileSize: _parseInt(json['fileSize']),
     );
+  }
+
+  static int? _parseInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    return int.tryParse(v.toString());
   }
 
   static Map<String, List<String>> _parseReactions(dynamic raw) {
@@ -130,6 +153,9 @@ class ChatMessage extends Equatable {
     caption,
     replyTo,
     reactions,
+    audioStorageId,
+    duration,
+    fileSize,
   ];
 }
 

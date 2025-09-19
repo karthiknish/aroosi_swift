@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:aroosi_flutter/theme/motion.dart';
 import 'package:aroosi_flutter/widgets/animations/motion.dart';
+import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final auth = ref.watch(authControllerProvider);
 
     return Scaffold(
       body: Stack(
@@ -82,35 +85,25 @@ class WelcomeScreen extends StatelessWidget {
                     FadeScaleIn(
                       delay: AppMotionDurations.fast,
                       child: FilledButton(
-                        onPressed: () =>
-                            context.push('/onboarding/profile-setup'),
-                        child: const Text('Get Started'),
+                        onPressed: () => context.push('/signup'),
+                        child: const Text('Create Account'),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // White Google sign-in lookalike that routes to Login (actual Google sign-in happens on Login screen)
                     FadeIn(
-                      delay: const Duration(milliseconds: 180),
-                      child: OutlinedButton.icon(
+                      delay: const Duration(milliseconds: 200),
+                      child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black87,
                           side: const BorderSide(color: Colors.transparent),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        icon: const Icon(Icons.login, color: Colors.black87),
-                        label: const Text(
-                          'Continue with Google',
-                          style: TextStyle(color: Colors.black87),
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         onPressed: () => context.push('/login'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FadeIn(
-                      delay: const Duration(milliseconds: 220),
-                      child: TextButton(
-                        onPressed: () => context.push('/login'),
-                        child: const Text('Sign In'),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -119,6 +112,14 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
           ),
+          // Loader overlay
+          if (auth.loading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.4),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
         ],
       ),
     );

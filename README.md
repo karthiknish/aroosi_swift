@@ -1,16 +1,21 @@
-# aroosi_flutter
+# Aroosi Flutter
 
-A new Flutter project.
+Flutter client that mirrors the production bundle identifiers and store
+configuration used by `aroosi-mobile`.
 
-## Getting Started
+## Development
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+Environment variables are loaded from `.env` (see `lib/core/env.dart`).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Releases
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Android package id: `com.aroosi.mobile`
+- iOS bundle id: `com.aroosi.mobile`
+- Versioning, build numbers, and fastlane metadata live alongside the Flutter
+  project. See [docs/release.md](docs/release.md) for the full workflow, required
+  secrets, and helper scripts (`scripts/bump-version.js`).

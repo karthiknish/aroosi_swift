@@ -26,7 +26,10 @@ class AppScaffold extends StatelessWidget {
     if (isCupertinoPlatform(context)) {
       final content = SafeArea(
         bottom: false,
-        child: Padding(padding: const EdgeInsets.all(Spacing.md), child: child),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.md),
+          child: Material(type: MaterialType.transparency, child: child),
+        ),
       );
       return CupertinoPageScaffold(
         navigationBar: CupertinoNavigationBar(
@@ -58,7 +61,9 @@ class AppScaffold extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const EmailVerificationBanner(),
-            Expanded(child: child),
+            const SizedBox(height: Spacing.md),
+            // Remove Expanded to allow sliver-based children to layout correctly
+            child,
           ],
         ),
       ),

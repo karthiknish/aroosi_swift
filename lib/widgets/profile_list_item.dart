@@ -17,6 +17,8 @@ class ProfileListItem extends StatelessWidget {
   final VoidCallback? onLongPress;
   final Widget? trailing;
 
+  static const _placeholderAsset = 'assets/images/placeholder.png';
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -25,14 +27,21 @@ class ProfileListItem extends StatelessWidget {
       if (profile.age != null) '${profile.age}',
     ].join(' • ');
 
+    final hasAvatar =
+        profile.avatarUrl != null && profile.avatarUrl!.trim().isNotEmpty;
+    final avatar = hasAvatar
+        ? FadeInImage.assetNetwork(
+            placeholder: _placeholderAsset,
+            image: profile.avatarUrl!,
+            fit: BoxFit.cover,
+            imageErrorBuilder: (_, __, ___) =>
+                Image.asset(_placeholderAsset, fit: BoxFit.cover),
+          )
+        : Image.asset(_placeholderAsset, fit: BoxFit.cover);
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        backgroundImage: profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
-        child: profile.avatarUrl == null
-            ? Text(profile.displayName.isNotEmpty ? profile.displayName.characters.first : '?')
-            : null,
-      ),
+      leading: SizedBox(width: 48, height: 48, child: ClipOval(child: avatar)),
       title: Text(profile.displayName, style: theme.textTheme.bodyLarge),
       subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
       trailing: trailing,
@@ -59,7 +68,10 @@ class ProfileListSkeleton extends StatelessWidget {
         baseColor: base,
         highlightColor: hilite,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           leading: Container(
             width: 44,
             height: 44,

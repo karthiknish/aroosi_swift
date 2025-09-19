@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aroosi_flutter/core/api_client.dart';
+import 'package:aroosi_flutter/utils/debug_logger.dart';
 
 import 'subscription_models.dart';
 
@@ -15,15 +16,23 @@ class SubscriptionRepository {
   final Dio _dio;
 
   Future<SubscriptionStatus?> fetchStatus() async {
+    logApi('💳 Fetching subscription status');
+    
     try {
       final response = await _dio.get('/subscription/status');
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        return SubscriptionStatus.fromJson(
+        final status = SubscriptionStatus.fromJson(
           response.data as Map<String, dynamic>,
         );
+        logApi('✅ Subscription status fetched | Plan: ${status.plan} | Active: ${status.isActive}');
+        return status;
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return null;
+      if (e.response?.statusCode == 401) {
+        logApi('🔐 Subscription status fetch failed: Unauthorized (401)');
+        return null;
+      }
+      logApi('❌ Subscription status fetch failed | Error: ${e.message}');
     }
     return null;
   }
@@ -75,6 +84,8 @@ class SubscriptionRepository {
     required String purchaseToken,
     String? receiptData,
   }) async {
+    logApi('💳 Validating purchase | Platform: $platform | Product: $productId');
+    
     try {
       final payload = <String, dynamic>{
         'platform': platform,
@@ -88,15 +99,19 @@ class SubscriptionRepository {
       if (res.statusCode == 200) {
         final data = res.data;
         if (data is Map && data['success'] == true) {
+          logApi('✅ Purchase validation successful | Product: $productId');
           return true;
         }
       }
+      logApi('❌ Purchase validation failed | Status: ${res.statusCode} | Response: ${res.data}');
       return false;
     } on DioException catch (e) {
       if (e.response?.data is Map &&
           (e.response?.data as Map)['success'] == true) {
+        logApi('✅ Purchase validation successful (via error response) | Product: $productId');
         return true;
       }
+      logApi('❌ Purchase validation failed | Error: ${e.message}');
       return false;
     }
   }

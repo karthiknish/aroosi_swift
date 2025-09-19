@@ -59,9 +59,12 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     _rotation = 0;
   }
 
+  int _currentIndex = 0;
+
   void _animateOff(SwipeDirection direction) async {
-    if (widget.items.isEmpty) return;
-    final item = widget.items.first;
+    if (_currentIndex >= widget.items.length) return;
+    print('Animating off: direction=$direction, currentIndex=$_currentIndex');
+    final item = widget.items[_currentIndex];
     final width = MediaQuery.of(context).size.width;
     final targetX = direction == SwipeDirection.right ? width : -width;
     final tween = Tween<Offset>(
@@ -70,20 +73,23 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     );
     tween.animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     await _controller.forward(from: 0);
+    print('Animation complete, calling onSwipe callback');
     widget.onSwipe?.call(item, direction);
     setState(() {
-      widget.items.removeAt(0);
+      _currentIndex++;
       _resetCard();
-      if (widget.items.isEmpty) widget.onEnd?.call();
+      print('Card advanced, new index=$_currentIndex');
+      if (_currentIndex >= widget.items.length) widget.onEnd?.call();
     });
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
-    if (widget.items.isEmpty) {
+    if (widget.items.isEmpty || _currentIndex >= widget.items.length) {
       return const SizedBox.shrink();
     }
-    // topItem available via widget.items.first if needed
     final direction = _offset.dx == 0
         ? null
         : (_offset.dx > 0 ? SwipeDirection.right : SwipeDirection.left);
@@ -96,12 +102,24 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     return LayoutBuilder(
       builder: (context, constraints) {
         final cards = <Widget>[];
-        // Render a small stack of next cards
-        for (int i = math.min(3, widget.items.length) - 1; i >= 0; i--) {
-          final item = widget.items[i];
+        final maxStack = math.min(3, widget.items.length - _currentIndex);
+        for (int i = maxStack - 1; i >= 0; i--) {
+          final itemIndex = _currentIndex + i;
+          if (itemIndex >= widget.items.length) continue;
+          final item = widget.items[itemIndex];
           final isTop = i == 0;
           final scale = isTop ? 1.0 : 1.0 - (i * 0.04);
           final translateY = isTop ? 0.0 : i * 12.0;
+
+          // Precache next two images if itemBuilder returns an Image inside Hero etc.
+          if (i <= 2) {
+            try {
+              final url = (item as dynamic).avatarUrl;
+              if (url is String && url.trim().isNotEmpty) {
+                precacheImage(NetworkImage(url), context);
+              }
+            } catch (_) {}
+          }
 
           final card = Transform.translate(
             offset: isTop ? _offset : Offset(0, translateY),
@@ -123,6 +141,16 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
                           ),
                         ),
                       ),
+                    if (isTop && widget.overlayBuilder == null)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          ignoring: true,
+                          child: _ProgressSwipeOverlay(
+                            direction: direction,
+                            progress: progress,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -132,21 +160,32 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
           if (isTop) {
             cards.add(
               GestureDetector(
-                onPanUpdate: (d) {
+                onTap: () {
+                  print('Card tapped');
+                },
+                onHorizontalDragStart: (_) {
+                  print('Swipe started');
+                },
+                onHorizontalDragUpdate: (d) {
                   setState(() {
-                    _offset += d.delta;
+                    _offset += Offset(d.delta.dx, 0);
                     _rotation =
                         (_offset.dx / constraints.maxWidth) *
                         widget.maxRotation;
+                    print('Swipe update: offset=$_offset, rotation=$_rotation');
                   });
                 },
-                onPanEnd: (_) {
+                onHorizontalDragEnd: (d) {
+                  print('Swipe ended: offset=$_offset, velocity=${d.primaryVelocity}');
                   final threshold = constraints.maxWidth * 0.32;
                   if (_offset.dx > threshold) {
+                    print('Swiping right');
                     _animateOff(SwipeDirection.right);
                   } else if (_offset.dx < -threshold) {
+                    print('Swiping left');
                     _animateOff(SwipeDirection.left);
                   } else {
+                    print('Resetting card');
                     _resetCard();
                   }
                 },
@@ -157,16 +196,21 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
             cards.add(card);
           }
         }
-
         return Stack(children: cards.reversed.toList());
       },
     );
   }
 
   Widget _buildCard(T item) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Material(elevation: 3, child: widget.itemBuilder(context, item)),
+    return Container(
+      constraints: const BoxConstraints(
+        minHeight: 400,
+        minWidth: 300,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(elevation: 3, child: widget.itemBuilder(context, item)),
+      ),
     );
   }
 }
@@ -191,6 +235,82 @@ class DefaultSwipeOverlay extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _ProgressSwipeOverlay extends StatelessWidget {
+  const _ProgressSwipeOverlay({
+    required this.direction,
+    required this.progress,
+  });
+  final SwipeDirection? direction;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final likeOpacity = direction == SwipeDirection.right ? progress : 0.0;
+    final passOpacity = direction == SwipeDirection.left ? progress : 0.0;
+    return Stack(
+      children: [
+        Align(
+          alignment: Alignment.topLeft,
+          child: Opacity(
+            opacity: passOpacity.clamp(0, 1),
+            child: _AnimatedLabel(
+              text: 'PASS',
+              color: Colors.redAccent,
+              rotation: -12 * passOpacity,
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.topRight,
+          child: Opacity(
+            opacity: likeOpacity.clamp(0, 1),
+            child: _AnimatedLabel(
+              text: 'LIKE',
+              color: Colors.lightGreen,
+              rotation: 12 * likeOpacity,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnimatedLabel extends StatelessWidget {
+  const _AnimatedLabel({
+    required this.text,
+    required this.color,
+    required this.rotation,
+  });
+  final String text;
+  final Color color;
+  final double rotation; // degrees
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: rotation * math.pi / 180,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: color, width: 3),
+          borderRadius: BorderRadius.circular(10),
+          color: color.withOpacity(0.08),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
     );
   }
 }
