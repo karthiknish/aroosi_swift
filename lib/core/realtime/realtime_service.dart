@@ -1,193 +1,347 @@
 import 'dart:async';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:aroosi_flutter/core/env.dart';
 
-/// Realtime service using socket.io compatible transport.
-/// Aligns with aroosi-mobile patterns (rooms per conversation, presence, typing).
+/// Realtime service using raw WebSocket to match aroosi (Next.js) implementation.
+/// Aligns with Next.js WebSocket message types: join_conversation, message, typing, delivery_receipt, read_receipt.
 class RealTimeService {
   RealTimeService._();
   static final RealTimeService instance = RealTimeService._();
 
-  IO.Socket? _socket;
+  WebSocketChannel? _channel;
   final _connectedCtrl = StreamController<bool>.broadcast();
-  final Map<void Function(String, bool), void Function(dynamic)>
+  final Map<void Function(String, bool), void Function(String)>
   _typingHandlers = {};
-  final Map<void Function(String, bool, int?), void Function(dynamic)>
-  _presenceHandlers = {};
-  final Map<void Function(String, Map<String, dynamic>), void Function(dynamic)>
+  final Map<void Function(String, Map<String, dynamic>), void Function(String)>
   _messageHandlers = {};
-  final Map<void Function(Map<String, dynamic>), void Function(dynamic)>
+  final Map<void Function(String, String, String), void Function(String)>
+  _deliveryReceiptHandlers = {};
+  final Map<void Function(String, String, String), void Function(String)>
+  _readReceiptHandlers = {};
+  final Map<void Function(Map<String, dynamic>), void Function(String)>
   _unreadHandlers = {};
-
-  // Optional auth headers supplier for socket connection
-  Map<String, dynamic> Function()? _authSupplier;
+  final Map<void Function(String, bool, int?), void Function(String)>
+  _presenceHandlers = {};
 
   Stream<bool> get connectedStream => _connectedCtrl.stream;
-  bool get isConnected => _socket?.connected == true;
+  bool get isConnected => _channel != null;
 
-  String get _origin {
-    // Strip trailing /api from Env.apiBaseUrl to get socket origin
+  String get _wsUrl {
+    // Convert API base URL to WebSocket URL
     final base = Env.apiBaseUrl;
-    if (base.endsWith('/api')) return base.substring(0, base.length - 4);
+    if (base.startsWith('https://')) {
+      return base.replaceFirst('https://', 'wss://').replaceFirst('/api', '/api/websocket');
+    } else if (base.startsWith('http://')) {
+      return base.replaceFirst('http://', 'ws://').replaceFirst('/api', '/api/websocket');
+    }
     return base;
   }
 
-  void configureAuth(Map<String, dynamic> Function()? supplier) {
-    _authSupplier = supplier;
-  }
-
-  void connect({Map<String, dynamic>? auth}) {
-    if (_socket != null && _socket!.connected) return;
-    final url = '$_origin/';
-    final authMap =
-        auth ??
-        (_authSupplier != null ? _authSupplier!() : <String, dynamic>{});
-    final opts = IO.OptionBuilder()
-        .setTransports(['websocket'])
-        .enableForceNew()
-        .enableReconnection()
-        .setReconnectionAttempts(20)
-        .setReconnectionDelay(1000)
-        .setAuth(Map<dynamic, dynamic>.from(authMap))
-        .build();
-    _socket = IO.io(url, opts);
-    _socket!.on('connect', (_) => _connectedCtrl.add(true));
-    _socket!.on('disconnect', (_) => _connectedCtrl.add(false));
+  void connect() {
+    if (_channel != null) return;
+    
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _connectedCtrl.add(true);
+      
+      _channel?.stream.listen(
+        (message) {
+          _handleMessage(message);
+        },
+        onError: (error) {
+          print('WebSocket error: $error');
+          _connectedCtrl.add(false);
+        },
+        onDone: () {
+          print('WebSocket connection closed');
+          _connectedCtrl.add(false);
+        },
+      );
+    } catch (e) {
+      print('Failed to connect to WebSocket: $e');
+      _connectedCtrl.add(false);
+    }
   }
 
   void disconnect() {
-    _socket?.dispose();
-    _socket = null;
+    _channel?.sink.close();
+    _channel = null;
     _connectedCtrl.add(false);
+  }
+
+  void _handleMessage(String message) {
+    try {
+      final data = jsonDecode(message) as Map<String, dynamic>;
+      final type = data['type'] as String?;
+
+      switch (type) {
+        case 'joined':
+          // Handle successful join response
+          break;
+          
+        case 'message':
+          final conversationId = data['conversationId'] as String?;
+          if (conversationId != null) {
+            _notifyMessageHandlers(conversationId, data);
+          }
+          break;
+          
+        case 'typing':
+          final conversationId = data['conversationId'] as String?;
+          final isTyping = data['isTyping'] as bool?;
+          if (conversationId != null && isTyping != null) {
+            _notifyTypingHandlers(conversationId, isTyping);
+          }
+          break;
+          
+        case 'delivery_receipt':
+          final messageId = data['messageId'] as String?;
+          final conversationId = data['conversationId'] as String?;
+          final userId = data['userId'] as String?;
+          if (messageId != null && conversationId != null && userId != null) {
+            _notifyDeliveryReceiptHandlers(conversationId, messageId, userId);
+          }
+          break;
+          
+        case 'read_receipt':
+          final messageId = data['messageId'] as String?;
+          final conversationId = data['conversationId'] as String?;
+          final userId = data['userId'] as String?;
+          if (messageId != null && conversationId != null && userId != null) {
+            _notifyReadReceiptHandlers(conversationId, messageId, userId);
+          }
+          break;
+          
+        case 'pong':
+          // Handle ping/pong for connection health
+          break;
+          
+        case 'error':
+          print('WebSocket error: ${data['message']}');
+          break;
+      }
+    } catch (e) {
+      print('Error handling WebSocket message: $e');
+    }
+  }
+
+  void _sendMessage(Map<String, dynamic> message) {
+    if (_channel == null) return;
+    
+    try {
+      final jsonMessage = jsonEncode(message);
+      _channel?.sink.add(jsonMessage);
+    } catch (e) {
+      print('Error sending WebSocket message: $e');
+    }
   }
 
   // Rooms
   void joinConversation(String conversationId) {
-    _socket?.emit('conversation:join', {'conversationId': conversationId});
+    _sendMessage({
+      'type': 'join_conversation',
+      'conversationId': conversationId,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   void leaveConversation(String conversationId) {
-    _socket?.emit('conversation:leave', {'conversationId': conversationId});
+    _sendMessage({
+      'type': 'leave_conversation',
+      'conversationId': conversationId,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  // Messages
+  void sendMessage({
+    required String conversationId,
+    required String fromUserId,
+    required String toUserId,
+    required String content,
+    String messageType = 'text',
+  }) {
+    _sendMessage({
+      'type': 'message',
+      'conversationId': conversationId,
+      'fromUserId': fromUserId,
+      'toUserId': toUserId,
+      'message': content,
+      'messageType': messageType,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   // Typing
   void sendTyping(String conversationId, {required bool isTyping}) {
-    _socket?.emit('typing', {
+    _sendMessage({
+      'type': 'typing',
       'conversationId': conversationId,
       'isTyping': isTyping,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
     });
   }
 
-  void onTyping(void Function(String conversationId, bool isTyping) handler) {
-    void fn(dynamic data) {
-      try {
-        final conv = data['conversationId']?.toString() ?? '';
-        final v = data['isTyping'] == true;
-        if (conv.isNotEmpty) handler(conv, v);
-      } catch (_) {}
-    }
+  // Delivery receipts
+  void sendDeliveryReceipt({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+    String status = 'delivered',
+  }) {
+    _sendMessage({
+      'type': 'delivery_receipt',
+      'messageId': messageId,
+      'conversationId': conversationId,
+      'userId': userId,
+      'status': status,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
 
-    _typingHandlers[handler] = fn;
-    _socket?.on('typing', fn);
-    _socket?.on('user:typing', fn);
+  // Read receipts
+  void sendReadReceipt({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+  }) {
+    _sendMessage({
+      'type': 'read_receipt',
+      'messageId': messageId,
+      'conversationId': conversationId,
+      'userId': userId,
+      'status': 'read',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  // Ping for connection health
+  void sendPing() {
+    _sendMessage({'type': 'ping'});
+  }
+
+  // Handler notifications
+  void _notifyTypingHandlers(String conversationId, bool isTyping) {
+    for (final handler in _typingHandlers.keys) {
+      try {
+        handler(conversationId, isTyping);
+      } catch (e) {
+        print('Error in typing handler: $e');
+      }
+    }
+  }
+
+  void _notifyMessageHandlers(String conversationId, Map<String, dynamic> message) {
+    for (final handler in _messageHandlers.keys) {
+      try {
+        handler(conversationId, message);
+      } catch (e) {
+        print('Error in message handler: $e');
+      }
+    }
+  }
+
+  void _notifyDeliveryReceiptHandlers(String conversationId, String messageId, String userId) {
+    for (final handler in _deliveryReceiptHandlers.keys) {
+      try {
+        handler(conversationId, messageId, userId);
+      } catch (e) {
+        print('Error in delivery receipt handler: $e');
+      }
+    }
+  }
+
+  void _notifyReadReceiptHandlers(String conversationId, String messageId, String userId) {
+    for (final handler in _readReceiptHandlers.keys) {
+      try {
+        handler(conversationId, messageId, userId);
+      } catch (e) {
+        print('Error in read receipt handler: $e');
+      }
+    }
+  }
+
+  void _notifyPresenceHandlers(String conversationId, bool isPresent, int? lastSeen) {
+    for (final handler in _presenceHandlers.keys) {
+      try {
+        handler(conversationId, isPresent, lastSeen);
+      } catch (e) {
+        print('Error in presence handler: $e');
+      }
+    }
+  }
+
+  void _notifyUnreadHandlers(Map<String, dynamic> payload) {
+    for (final handler in _unreadHandlers.keys) {
+      try {
+        handler(payload);
+      } catch (e) {
+        print('Error in unread handler: $e');
+      }
+    }
+  }
+
+  // Event handlers
+  void onTyping(void Function(String conversationId, bool isTyping) handler) {
+    _typingHandlers[handler] = (String conversationId) => conversationId;
   }
 
   void offTyping(void Function(String conversationId, bool isTyping) handler) {
-    final fn = _typingHandlers.remove(handler);
-    if (fn != null) {
-      _socket?.off('typing', fn);
-      _socket?.off('user:typing', fn);
-    }
+    _typingHandlers.remove(handler);
   }
 
-  // Presence
-  void onPresence(
-    void Function(String userId, bool isOnline, int? lastSeen) handler,
-  ) {
-    // Support a couple of event names
-    void process(dynamic data) {
-      try {
-        final uid = data['userId']?.toString() ?? data['id']?.toString() ?? '';
-        final online = data['isOnline'] == true || data['online'] == true;
-        final lastSeen = data['lastSeen'] is int
-            ? data['lastSeen'] as int
-            : null;
-        if (uid.isNotEmpty) handler(uid, online, lastSeen);
-      } catch (_) {}
-    }
-
-    _presenceHandlers[handler] = process;
-    _socket?.on('presence', process);
-    _socket?.on('user:presence', process);
-  }
-
-  void offPresence(
-    void Function(String userId, bool isOnline, int? lastSeen) handler,
-  ) {
-    final fn = _presenceHandlers.remove(handler);
-    if (fn != null) {
-      _socket?.off('presence', fn);
-      _socket?.off('user:presence', fn);
-    }
-  }
-
-  // Incoming messages
   void onMessage(
     void Function(String conversationId, Map<String, dynamic> message) handler,
   ) {
-    void process(dynamic data) {
-      try {
-        final map = data is Map
-            ? Map<String, dynamic>.from(data)
-            : <String, dynamic>{};
-        final conv =
-            map['conversationId']?.toString() ??
-            map['convId']?.toString() ??
-            '';
-        if (conv.isNotEmpty) handler(conv, map);
-      } catch (_) {}
-    }
-
-    _messageHandlers[handler] = process;
-    _socket?.on('message:new', process);
-    _socket?.on('message', process);
-    _socket?.on('chat:message', process);
-    _socket?.on('messages:new', process);
+    _messageHandlers[handler] = (String conversationId) => conversationId;
   }
 
   void offMessage(
     void Function(String conversationId, Map<String, dynamic> message) handler,
   ) {
-    final fn = _messageHandlers.remove(handler);
-    if (fn != null) {
-      _socket?.off('message:new', fn);
-      _socket?.off('message', fn);
-      _socket?.off('chat:message', fn);
-      _socket?.off('messages:new', fn);
-    }
+    _messageHandlers.remove(handler);
   }
 
-  // Unread updates
-  void onUnread(void Function(Map<String, dynamic> payload) handler) {
-    void process(dynamic data) {
-      try {
-        final map = data is Map
-            ? Map<String, dynamic>.from(data)
-            : <String, dynamic>{};
-        handler(map);
-      } catch (_) {}
-    }
+  void onDeliveryReceipt(
+    void Function(String conversationId, String messageId, String userId) handler,
+  ) {
+    _deliveryReceiptHandlers[handler] = (String conversationId) => conversationId;
+  }
 
-    _unreadHandlers[handler] = process;
-    _socket?.on('unread:update', process);
-    _socket?.on('conversations:unread', process);
+  void offDeliveryReceipt(
+    void Function(String conversationId, String messageId, String userId) handler,
+  ) {
+    _deliveryReceiptHandlers.remove(handler);
+  }
+
+  void onReadReceipt(
+    void Function(String conversationId, String messageId, String userId) handler,
+  ) {
+    _readReceiptHandlers[handler] = (String conversationId) => conversationId;
+  }
+
+  void offReadReceipt(
+    void Function(String conversationId, String messageId, String userId) handler,
+  ) {
+    _readReceiptHandlers.remove(handler);
+  }
+
+  // Presence methods for typing indicators
+  void onPresence(void Function(String conversationId, bool isPresent, int? lastSeen) handler) {
+    _presenceHandlers[handler] = (String conversationId) => conversationId;
+  }
+
+  void offPresence(void Function(String conversationId, bool isPresent, int? lastSeen) handler) {
+    _presenceHandlers.remove(handler);
+  }
+
+  // Unread message methods
+  void onUnread(void Function(Map<String, dynamic> payload) handler) {
+    _unreadHandlers[handler] = (String conversationId) => conversationId;
   }
 
   void offUnread(void Function(Map<String, dynamic> payload) handler) {
-    final fn = _unreadHandlers.remove(handler);
-    if (fn != null) {
-      _socket?.off('unread:update', fn);
-      _socket?.off('conversations:unread', fn);
-    }
+    _unreadHandlers.remove(handler);
   }
 }

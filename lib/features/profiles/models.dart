@@ -214,6 +214,7 @@ class SearchFilters {
     this.sort,
     this.cursor,
     this.pageSize,
+    this.preferredGender,
   });
 
   static const Object _unset = Object();
@@ -226,6 +227,7 @@ class SearchFilters {
   final String? sort; // e.g., 'recent', 'distance', 'newest'
   final String? cursor;
   final int? pageSize;
+  final String? preferredGender;
 
   SearchFilters copyWith({
     Object? query = _unset,
@@ -236,6 +238,7 @@ class SearchFilters {
     Object? sort = _unset,
     Object? cursor = _unset,
     Object? pageSize = _unset,
+    Object? preferredGender = _unset,
   }) => SearchFilters(
     query: query == _unset ? this.query : query as String?,
     minAge: minAge == _unset ? this.minAge : minAge as int?,
@@ -245,6 +248,7 @@ class SearchFilters {
     sort: sort == _unset ? this.sort : sort as String?,
     cursor: cursor == _unset ? this.cursor : cursor as String?,
     pageSize: pageSize == _unset ? this.pageSize : pageSize as int?,
+    preferredGender: preferredGender == _unset ? this.preferredGender : preferredGender as String?,
   );
 
   bool get hasQuery => query?.trim().isNotEmpty ?? false;
@@ -254,7 +258,8 @@ class SearchFilters {
       maxAge != null ||
       (city?.trim().isNotEmpty ?? false) ||
       (country?.trim().isNotEmpty ?? false) ||
-      (sort?.trim().isNotEmpty ?? false);
+      (sort?.trim().isNotEmpty ?? false) ||
+      (preferredGender?.trim().isNotEmpty ?? false);
 
   bool get hasCriteria => hasQuery || hasFieldFilters;
 
@@ -265,6 +270,7 @@ class SearchFilters {
     final countryValue = country?.trim();
     final s = sort?.trim();
     final cur = cursor?.trim();
+    final pg = preferredGender?.trim();
 
     if (q != null && q.isNotEmpty) m['q'] = q;
     if (minAge != null) m['ageMin'] = minAge;
@@ -274,6 +280,7 @@ class SearchFilters {
       m['country'] = countryValue;
     if (s != null && s.isNotEmpty) m['sort'] = s;
     if (cur != null && cur.isNotEmpty) m['cursor'] = cur;
+    if (pg != null && pg.isNotEmpty) m['gender'] = pg;
     if (pageSize != null && pageSize! > 0) m['pageSize'] = pageSize;
     return m;
   }

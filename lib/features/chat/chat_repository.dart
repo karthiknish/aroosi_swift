@@ -16,16 +16,34 @@ class ChatRepository {
     final qp = <String, dynamic>{};
     if (before != null) qp['before'] = before;
     if (limit != null) qp['limit'] = limit;
-    Response res;
-    // RN primary + web unified: /messages/messages?conversationId=...
+    
+    // Use Next.js primary endpoint first
     try {
       final params = {'conversationId': conversationId, ...qp};
+      final res = await _dio.get('/api/messages', queryParameters: params);
+      return _parseMessagesResponse(res.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Fallback to legacy endpoints for backward compatibility
+        return await _getMessagesLegacy(conversationId, qp);
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<ChatMessage>> _getMessagesLegacy(
+    String conversationId,
+    Map<String, dynamic> queryParams,
+  ) async {
+    Response res;
+    try {
+      final params = {'conversationId': conversationId, ...queryParams};
       res = await _dio.get('/messages/messages', queryParameters: params);
     } on DioException catch (e1) {
       // Fallback 1: legacy mobile unified endpoint
       if (e1.response?.statusCode == 404) {
         try {
-          final params = {'conversationId': conversationId, ...qp};
+          final params = {'conversationId': conversationId, ...queryParams};
           res = await _dio.get('/match-messages', queryParameters: params);
         } on DioException catch (e2) {
           // Fallback 2: conversation-scoped endpoint
@@ -33,7 +51,7 @@ class ChatRepository {
             try {
               res = await _dio.get(
                 '/conversations/$conversationId/messages',
-                queryParameters: qp,
+                queryParameters: queryParams,
               );
             } on DioException {
               rethrow;
@@ -46,7 +64,10 @@ class ChatRepository {
         rethrow;
       }
     }
-    final data = res.data;
+    return _parseMessagesResponse(res.data);
+  }
+
+  List<ChatMessage> _parseMessagesResponse(dynamic data) {
     final list = data is List
         ? data
         : (data is Map && data['messages'] is List)
@@ -63,30 +84,51 @@ class ChatRepository {
     String? toUserId,
     String? replyToMessageId,
   }) async {
-    Response res;
+    // Get current user ID for fromUserId field (required by Next.js API)
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
     final body = {
       'conversationId': conversationId,
+      'fromUserId': currentUser,
       if (toUserId != null) 'toUserId': toUserId,
       'text': text,
       'type': 'text',
       if (replyToMessageId != null) 'replyTo': replyToMessageId,
     };
-    // RN primary + web unified
+    
+    // Use Next.js primary endpoint first
+    try {
+      final res = await _dio.post('/api/messages/send', data: body);
+      return _parseMessageResponse(res.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Fallback to legacy endpoints for backward compatibility
+        return await _sendMessageLegacy(body, conversationId);
+      }
+      rethrow;
+    }
+  }
+
+  Future<ChatMessage> _sendMessageLegacy(
+    Map<String, dynamic> body,
+    String conversationId,
+  ) async {
+    Response res;
     try {
       res = await _dio.post('/messages/send', data: body);
     } on DioException catch (e1) {
       if (e1.response?.statusCode == 404) {
-        // Fallback 1: legacy posting endpoint
         try {
           res = await _dio.post('/messages', data: body);
         } on DioException catch (e2) {
           if (e2.response?.statusCode == 404) {
-            // Fallback 2: legacy mobile endpoint name
             try {
               res = await _dio.post('/match-messages', data: body);
             } on DioException catch (e3) {
               if (e3.response?.statusCode == 404) {
-                // Fallback 3: conversation-scoped create
                 res = await _dio.post(
                   '/conversations/$conversationId/messages',
                   data: body,
@@ -504,5 +546,23 @@ class ChatRepository {
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
     return {'isOnline': false};
+  }
+
+  // Helper methods
+  String? _getCurrentUserId() {
+    // This should be implemented to get the current authenticated user ID
+    // For now, return null and let the caller handle it
+    // In a real implementation, this would get the user from Firebase Auth or similar
+    return null;
+  }
+
+  ChatMessage _parseMessageResponse(dynamic data) {
+    final parsedData = data is Map
+        ? Map<String, dynamic>.from(data as Map)
+        : <String, dynamic>{};
+    final payload = parsedData['message'] is Map<String, dynamic>
+        ? parsedData['message'] as Map<String, dynamic>
+        : parsedData;
+    return ChatMessage.fromJson(payload);
   }
 }

@@ -32,6 +32,17 @@ class SwipeDeck<T> extends StatefulWidget {
   State<SwipeDeck<T>> createState() => _SwipeDeckState<T>();
 }
 
+// Global key to access swipe deck state
+class SwipeDeckGlobalKey<T> {
+  final GlobalKey<_SwipeDeckState<T>> _key;
+  
+  SwipeDeckGlobalKey({String? debugLabel}) : _key = GlobalKey(debugLabel: debugLabel);
+  
+  _SwipeDeckState<T>? get currentState => _key.currentState;
+  
+  GlobalKey<_SwipeDeckState<T>> get key => _key;
+}
+
 class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
@@ -82,6 +93,25 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
       if (_currentIndex >= widget.items.length) widget.onEnd?.call();
     });
   }
+
+  // Public methods for programmatic swipes
+  void swipeLeft() {
+    if (_currentIndex < widget.items.length) {
+      _animateOff(SwipeDirection.left);
+    }
+  }
+
+  void swipeRight() {
+    if (_currentIndex < widget.items.length) {
+      _animateOff(SwipeDirection.right);
+    }
+  }
+
+  bool get hasCards => _currentIndex < widget.items.length;
+  
+  int get currentIndex => _currentIndex;
+  
+  T? get currentCard => _currentIndex < widget.items.length ? widget.items[_currentIndex] : null;
 
   
 
@@ -251,8 +281,22 @@ class _ProgressSwipeOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final likeOpacity = direction == SwipeDirection.right ? progress : 0.0;
     final passOpacity = direction == SwipeDirection.left ? progress : 0.0;
+    
     return Stack(
       children: [
+        // Background color overlay
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: direction == SwipeDirection.right 
+                  ? Colors.green.withOpacity(0.3 * likeOpacity)
+                  : direction == SwipeDirection.left
+                      ? Colors.red.withOpacity(0.3 * passOpacity)
+                      : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
         Align(
           alignment: Alignment.topLeft,
           child: Opacity(

@@ -33,6 +33,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   static const int _defaultPageSize = 12;
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _swipeDeckKey = SwipeDeckGlobalKey<ProfileSummary>();
   SearchFilters _filters = const SearchFilters(pageSize: _defaultPageSize);
   Timer? _debounce;
   bool _cardsView = true;
@@ -213,6 +214,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
+    if (_filters.preferredGender != null && _filters.preferredGender!.trim().isNotEmpty) {
+      chips.add(
+        InputChip(
+          label: Text('Gender: ${_filters.preferredGender}'),
+          onDeleted: () =>
+              _handleFilterRemoval((current) => current.copyWith(preferredGender: null)),
+        ),
+      );
+    }
+
     if (chips.isEmpty) return const SizedBox.shrink();
 
     return Wrap(spacing: 8, runSpacing: 8, children: chips);
@@ -354,6 +365,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         // Card deck with flexible height
         Expanded(
           child: SwipeDeck<ProfileSummary>(
+            key: _swipeDeckKey.key,
             items: deckItems,
             overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
             itemBuilder: (ctx, profile) => _ProfileCard(
@@ -373,10 +385,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 } else {
                   _toast.error('Failed to like');
                 }
+              } else {
+                // Left swipe (pass)
+                _toast.info('Passed on ${profile.displayName}');
               }
               // Update current index after swipe
               setState(() {
-                _currentCardIndex++;
+                _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
               });
             },
             onEnd: () {
@@ -396,8 +411,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 height: 60,
                 child: FilledButton.tonal(
                   onPressed: () {
-                    // Swipe left (pass) - show toast since we can't directly control the deck
-                    _toast.info('Swipe left on the card to pass');
+                    // Swipe left (pass)
+                    if (_swipeDeckKey.currentState?.hasCards == true) {
+                      _swipeDeckKey.currentState?.swipeLeft();
+                    } else {
+                      _toast.info('No more cards to swipe');
+                    }
                   },
                   child: const Icon(Icons.close),
                 ),
@@ -423,8 +442,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 height: 60,
                 child: FilledButton(
                   onPressed: () {
-                    // Swipe right (like) - show toast since we can't directly control the deck
-                    _toast.info('Swipe right on the card to like');
+                    // Swipe right (like)
+                    if (_swipeDeckKey.currentState?.hasCards == true) {
+                      _swipeDeckKey.currentState?.swipeRight();
+                    } else {
+                      _toast.info('No more cards to swipe');
+                    }
                   },
                   child: const Icon(Icons.favorite),
                 ),
@@ -520,6 +543,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       maxAge: null,
       sort: null,
       cursor: null,
+      preferredGender: null,
     );
     unawaited(_setFiltersAndSearch(cleared));
   }
@@ -650,6 +674,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       minAge: selection.minAge,
       maxAge: selection.maxAge,
       sort: selection.sort,
+      preferredGender: selection.preferredGender,
     );
 
     await _setFiltersAndSearch(updated);
@@ -711,8 +736,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     
     logDebug('SearchScreen: Loading all profiles');
     
-    // Create empty filters to get all profiles
-    final emptyFilters = SearchFilters(
+    // Get current user's profile to access preferred gender
+    final auth = ref.read(authControllerProvider);
+    final userProfile = auth.profile;
+    
+    // Create filters with preferred gender if available
+    final filters = SearchFilters(
       pageSize: _defaultPageSize,
       query: null,
       city: null,
@@ -720,9 +749,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       maxAge: null,
       sort: null,
       cursor: null,
+      preferredGender: userProfile?.preferredGender?.isNotEmpty == true 
+          ? userProfile!.preferredGender 
+          : null,
     );
     
-    await ref.read(searchControllerProvider.notifier).search(emptyFilters);
+    await ref.read(searchControllerProvider.notifier).search(filters);
   }
 }
 
@@ -890,12 +922,13 @@ class _ShimmerPainter extends CustomPainter {
 }
 
 class _FilterSelection {
-  const _FilterSelection({this.city, this.minAge, this.maxAge, this.sort});
+  const _FilterSelection({this.city, this.minAge, this.maxAge, this.sort, this.preferredGender});
 
   final String? city;
   final int? minAge;
   final int? maxAge;
   final String? sort;
+  final String? preferredGender;
 }
 
 class _FilterOption {
@@ -909,6 +942,13 @@ const List<_FilterOption> _sortOptions = [
   _FilterOption('recent', 'Recently active'),
   _FilterOption('newest', 'Newest profiles'),
   _FilterOption('distance', 'Closest to you'),
+];
+
+const List<_FilterOption> _genderOptions = [
+  _FilterOption('', 'Any gender'),
+  _FilterOption('male', 'Male'),
+  _FilterOption('female', 'Female'),
+  _FilterOption('non-binary', 'Non-binary'),
 ];
 
 class _SearchFiltersSheet extends StatefulWidget {
@@ -925,6 +965,7 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
   late bool _useAgeFilter;
   late RangeValues _ageRange;
   late String _sort;
+  late String? _gender;
 
   static const double _minAge = 18;
   static const double _maxAge = 80;
@@ -944,6 +985,7 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
       maxAge.clamp(_minAge, _maxAge),
     );
     _sort = widget.initial.sort ?? '';
+    _gender = widget.initial.preferredGender;
   }
 
   @override
@@ -1033,6 +1075,23 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
                     .toList(),
                 onChanged: (value) => setState(() => _sort = value ?? ''),
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _gender ?? '',
+                decoration: const InputDecoration(
+                  labelText: 'Gender',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                items: _genderOptions
+                    .map(
+                      (option) => DropdownMenuItem<String>(
+                        value: option.value,
+                        child: Text(option.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => _gender = value?.isEmpty == true ? null : value),
+              ),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -1057,6 +1116,7 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
       _useAgeFilter = false;
       _ageRange = const RangeValues(_defaultMinAge, _defaultMaxAge);
       _sort = '';
+      _gender = null;
     });
   }
 
@@ -1068,6 +1128,7 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
         minAge: _useAgeFilter ? _ageRange.start.round() : null,
         maxAge: _useAgeFilter ? _ageRange.end.round() : null,
         sort: _sort.isEmpty ? null : _sort,
+        preferredGender: _gender?.isEmpty == true ? null : _gender,
       ),
     );
   }
