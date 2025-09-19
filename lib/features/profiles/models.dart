@@ -194,8 +194,9 @@ class PagedResponse<T> {
   final bool? _hasMoreOverride;
 
   bool get hasMore {
-    if (_hasMoreOverride != null)
+    if (_hasMoreOverride != null) {
       return _hasMoreOverride!; // ignore: unnecessary_non_null_assertion
+    }
     if (nextCursor != null && nextCursor!.isNotEmpty) return true;
     final np = nextPage;
     if (np != null) return np > page;
@@ -210,22 +211,9 @@ class SearchFilters {
     this.maxAge,
     this.city,
     this.country,
-    this.gender,
     this.sort,
     this.cursor,
     this.pageSize,
-    this.maritalStatus,
-    this.education,
-    this.occupation,
-    this.diet,
-    this.smoking,
-    this.drinking,
-    this.ethnicity,
-    this.motherTongue,
-    this.language,
-    this.annualIncomeMin,
-    this.heightMin,
-    this.heightMax,
   });
 
   static const Object _unset = Object();
@@ -235,22 +223,9 @@ class SearchFilters {
   final int? maxAge;
   final String? city;
   final String? country;
-  final String? gender;
   final String? sort; // e.g., 'recent', 'distance', 'newest'
   final String? cursor;
   final int? pageSize;
-  final List<String>? maritalStatus;
-  final List<String>? education;
-  final List<String>? occupation;
-  final List<String>? diet;
-  final List<String>? smoking;
-  final List<String>? drinking;
-  final String? ethnicity;
-  final String? motherTongue;
-  final String? language;
-  final int? annualIncomeMin;
-  final String? heightMin;
-  final String? heightMax;
 
   SearchFilters copyWith({
     Object? query = _unset,
@@ -258,59 +233,18 @@ class SearchFilters {
     Object? maxAge = _unset,
     Object? city = _unset,
     Object? country = _unset,
-    Object? gender = _unset,
     Object? sort = _unset,
     Object? cursor = _unset,
     Object? pageSize = _unset,
-    Object? maritalStatus = _unset,
-    Object? education = _unset,
-    Object? occupation = _unset,
-    Object? diet = _unset,
-    Object? smoking = _unset,
-    Object? drinking = _unset,
-    Object? ethnicity = _unset,
-    Object? motherTongue = _unset,
-    Object? language = _unset,
-    Object? annualIncomeMin = _unset,
-    Object? heightMin = _unset,
-    Object? heightMax = _unset,
   }) => SearchFilters(
     query: query == _unset ? this.query : query as String?,
     minAge: minAge == _unset ? this.minAge : minAge as int?,
     maxAge: maxAge == _unset ? this.maxAge : maxAge as int?,
     city: city == _unset ? this.city : city as String?,
     country: country == _unset ? this.country : country as String?,
-    gender: gender == _unset ? this.gender : gender as String?,
     sort: sort == _unset ? this.sort : sort as String?,
     cursor: cursor == _unset ? this.cursor : cursor as String?,
     pageSize: pageSize == _unset ? this.pageSize : pageSize as int?,
-    maritalStatus: maritalStatus == _unset
-        ? _cloneList(this.maritalStatus)
-        : _cloneList(maritalStatus as List<String>?),
-    education: education == _unset
-        ? _cloneList(this.education)
-        : _cloneList(education as List<String>?),
-    occupation: occupation == _unset
-        ? _cloneList(this.occupation)
-        : _cloneList(occupation as List<String>?),
-    diet: diet == _unset
-        ? _cloneList(this.diet)
-        : _cloneList(diet as List<String>?),
-    smoking: smoking == _unset
-        ? _cloneList(this.smoking)
-        : _cloneList(smoking as List<String>?),
-    drinking: drinking == _unset
-        ? _cloneList(this.drinking)
-        : _cloneList(drinking as List<String>?),
-    ethnicity: ethnicity == _unset ? this.ethnicity : ethnicity as String?,
-    motherTongue:
-        motherTongue == _unset ? this.motherTongue : motherTongue as String?,
-    language: language == _unset ? this.language : language as String?,
-    annualIncomeMin: annualIncomeMin == _unset
-        ? this.annualIncomeMin
-        : annualIncomeMin as int?,
-    heightMin: heightMin == _unset ? this.heightMin : heightMin as String?,
-    heightMax: heightMax == _unset ? this.heightMax : heightMax as String?,
   );
 
   bool get hasQuery => query?.trim().isNotEmpty ?? false;
@@ -318,22 +252,9 @@ class SearchFilters {
   bool get hasFieldFilters =>
       minAge != null ||
       maxAge != null ||
-      _hasText(city) ||
-      _hasText(country) ||
-      _hasMeaningfulChoice(gender) ||
-      (sort?.trim().isNotEmpty ?? false) ||
-      (maritalStatus?.isNotEmpty ?? false) ||
-      (education?.isNotEmpty ?? false) ||
-      (occupation?.isNotEmpty ?? false) ||
-      (diet?.isNotEmpty ?? false) ||
-      (smoking?.isNotEmpty ?? false) ||
-      (drinking?.isNotEmpty ?? false) ||
-      _hasMeaningfulChoice(ethnicity) ||
-      _hasMeaningfulChoice(motherTongue) ||
-      _hasMeaningfulChoice(language) ||
-      annualIncomeMin != null ||
-      _hasText(heightMin) ||
-      _hasText(heightMax);
+      (city?.trim().isNotEmpty ?? false) ||
+      (country?.trim().isNotEmpty ?? false) ||
+      (sort?.trim().isNotEmpty ?? false);
 
   bool get hasCriteria => hasQuery || hasFieldFilters;
 
@@ -349,67 +270,11 @@ class SearchFilters {
     if (minAge != null) m['ageMin'] = minAge;
     if (maxAge != null) m['ageMax'] = maxAge;
     if (c != null && c.isNotEmpty) m['city'] = c;
-    if (countryValue != null && countryValue.isNotEmpty) m['country'] = countryValue;
-    final g = gender?.trim();
-    if (_hasMeaningfulChoice(g)) {
-      m['preferredGender'] = g;
-    }
+    if (countryValue != null && countryValue.isNotEmpty)
+      m['country'] = countryValue;
     if (s != null && s.isNotEmpty) m['sort'] = s;
     if (cur != null && cur.isNotEmpty) m['cursor'] = cur;
     if (pageSize != null && pageSize! > 0) m['pageSize'] = pageSize;
-    if (maritalStatus != null && maritalStatus!.isNotEmpty) {
-      m['maritalStatus'] = List<String>.from(maritalStatus!);
-    }
-    if (education != null && education!.isNotEmpty) {
-      m['education'] = List<String>.from(education!);
-    }
-    if (occupation != null && occupation!.isNotEmpty) {
-      m['occupation'] = List<String>.from(occupation!);
-    }
-    if (diet != null && diet!.isNotEmpty) {
-      m['diet'] = List<String>.from(diet!);
-    }
-    if (smoking != null && smoking!.isNotEmpty) {
-      m['smoking'] = List<String>.from(smoking!);
-    }
-    if (drinking != null && drinking!.isNotEmpty) {
-      m['drinking'] = List<String>.from(drinking!);
-    }
-    final eth = ethnicity?.trim();
-    if (_hasMeaningfulChoice(eth)) {
-      m['ethnicity'] = eth;
-    }
-    final mt = motherTongue?.trim();
-    if (_hasMeaningfulChoice(mt)) {
-      m['motherTongue'] = mt;
-    }
-    final lang = language?.trim();
-    if (_hasMeaningfulChoice(lang)) {
-      m['language'] = lang;
-    }
-    if (annualIncomeMin != null && annualIncomeMin! > 0) {
-      m['annualIncomeMin'] = annualIncomeMin;
-    }
-    final hMin = heightMin?.trim();
-    if (hMin != null && hMin.isNotEmpty) {
-      m['heightMin'] = hMin;
-    }
-    final hMax = heightMax?.trim();
-    if (hMax != null && hMax.isNotEmpty) {
-      m['heightMax'] = hMax;
-    }
     return m;
   }
-}
-
-List<String>? _cloneList(List<String>? value) {
-  if (value == null) return null;
-  return List<String>.from(value);
-}
-
-bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
-
-bool _hasMeaningfulChoice(String? value) {
-  if (!_hasText(value)) return false;
-  return value!.trim().toLowerCase() != 'any';
 }
