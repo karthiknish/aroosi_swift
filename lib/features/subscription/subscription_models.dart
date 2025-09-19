@@ -294,10 +294,12 @@ const Map<SubscriptionPlan, SubscriptionPlanInfo> kDefaultPlanCatalog = {
     name: 'Premium',
     priceLabel: 'PKR 1,499 / month',
     features: [
-      'Unlimited interests',
+      'Unlimited messaging',
       'Advanced search filters',
       'See who liked your profile',
       'Priority support',
+      'Read receipts',
+      'Voice messages (10/month)',
     ],
     popular: true,
   ),
@@ -307,8 +309,12 @@ const Map<SubscriptionPlan, SubscriptionPlanInfo> kDefaultPlanCatalog = {
     priceLabel: 'PKR 2,999 / month',
     features: [
       'All Premium features',
-      'Boosted profile visibility',
-      'Concierge matchmaking support',
+      'Unlimited voice messages',
+      'See who viewed your profile',
+      'Profile boosts (unlimited)',
+      'Spotlight badge',
+      'Incognito mode',
+      'Priority matching',
     ],
   ),
 };

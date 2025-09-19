@@ -117,9 +117,9 @@ const Map<SubscriptionPlan, SubscriptionFeatures> kFeatureAccessRules = {
 
 const Map<SubscriptionPlan, Map<UsageMetric, int>> kUsageLimits = {
   SubscriptionPlan.free: {
-    UsageMetric.messageSent: 5,
-    UsageMetric.profileView: 10,
-    UsageMetric.searchPerformed: 20,
+    UsageMetric.messageSent: 20,
+    UsageMetric.profileView: 50,
+    UsageMetric.searchPerformed: 100,
     UsageMetric.interestSent: 3,
     UsageMetric.profileBoostUsed: 0,
     UsageMetric.voiceMessageSent: 0,
@@ -127,7 +127,7 @@ const Map<SubscriptionPlan, Map<UsageMetric, int>> kUsageLimits = {
   SubscriptionPlan.premium: {
     UsageMetric.messageSent: -1,
     UsageMetric.profileView: 50,
-    UsageMetric.searchPerformed: -1,
+    UsageMetric.searchPerformed: 500,
     UsageMetric.interestSent: -1,
     UsageMetric.profileBoostUsed: 1,
     UsageMetric.voiceMessageSent: 10,
@@ -135,7 +135,7 @@ const Map<SubscriptionPlan, Map<UsageMetric, int>> kUsageLimits = {
   SubscriptionPlan.premiumPlus: {
     UsageMetric.messageSent: -1,
     UsageMetric.profileView: -1,
-    UsageMetric.searchPerformed: -1,
+    UsageMetric.searchPerformed: 2000,
     UsageMetric.interestSent: -1,
     UsageMetric.profileBoostUsed: -1,
     UsageMetric.voiceMessageSent: -1,
@@ -221,7 +221,7 @@ typedef FeatureComparisonRow = ({
 final List<FeatureComparisonRow> kFeatureComparison = [
   (
     feature: 'Send Messages',
-    free: '5 / month',
+    free: '20 / month',
     premium: 'Unlimited',
     premiumPlus: 'Unlimited',
   ),
@@ -264,6 +264,18 @@ final List<FeatureComparisonRow> kFeatureComparison = [
   ),
   (feature: 'Incognito Mode', free: false, premium: false, premiumPlus: true),
   (feature: 'Priority Support', free: false, premium: true, premiumPlus: true),
+  (
+    feature: 'Voice Messages',
+    free: false,
+    premium: '10 / month',
+    premiumPlus: 'Unlimited',
+  ),
+  (
+    feature: 'Spotlight Badge',
+    free: false,
+    premium: false,
+    premiumPlus: true,
+  ),
 ];
 
 String planDisplayName(SubscriptionPlan plan) {

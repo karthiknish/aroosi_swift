@@ -14,6 +14,8 @@ import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/widgets/profile_list_item.dart';
 import 'package:aroosi_flutter/widgets/paged_list_footer.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
+import 'package:aroosi_flutter/widgets/empty_states.dart';
+import 'package:aroosi_flutter/widgets/error_states.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/profiles/selection.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
@@ -272,76 +274,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildErrorBanner(BuildContext context, String message) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final background = scheme.errorContainer;
-    final foreground = scheme.onErrorContainer;
+    final isOfflineError = message.toLowerCase().contains('network') ||
+                          message.toLowerCase().contains('connection') ||
+                          message.toLowerCase().contains('timeout');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: foreground),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(color: foreground),
-            ),
-          ),
-          if (_hasSearchCriteria)
-            TextButton(
-              onPressed: () => _scheduleSearch(immediate: true),
-              style: TextButton.styleFrom(foregroundColor: foreground),
-              child: const Text('Retry'),
-            ),
-        ],
-      ),
+    return InlineError(
+      error: message,
+      onRetry: _hasSearchCriteria ? () => _scheduleSearch(immediate: true) : null,
+      showIcon: true,
     );
   }
 
   Widget _buildEmptyState(BuildContext context, {required bool forCards}) {
-    final theme = Theme.of(context);
-    final message = 'No profiles found';
-    final subtext = 'Try adjusting your filters or check back later.';
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.search_off, size: 48, color: theme.colorScheme.outline),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          subtext,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: _onFiltersPressed,
-          icon: const Icon(Icons.tune),
-          label: const Text('Open filters'),
-        ),
-      ],
-    );
-
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: 16,
         vertical: forCards ? 24 : 32,
       ),
-      child: Center(child: content),
+      child: EmptySearchState(
+        searchQuery: _controller.text.isNotEmpty ? _controller.text : null,
+        onClearSearch: _controller.text.isNotEmpty
+            ? () {
+                _controller.clear();
+                _scheduleSearch(immediate: true);
+              }
+            : null,
+        onAction: () => _onFiltersPressed(),
+        actionLabel: 'Open Filters',
+      ),
     );
   }
 

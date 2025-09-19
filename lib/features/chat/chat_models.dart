@@ -1,230 +1,226 @@
 import 'package:equatable/equatable.dart';
 
+/// Chat message model with enhanced properties for better UI/UX
 class ChatMessage extends Equatable {
+  final String id;
+  final String conversationId;
+  final String fromUserId;
+  final String? toUserId;
+  final String text;
+  final String type; // 'text', 'image', 'voice'
+  final DateTime createdAt;
+  final bool isMine;
+  final bool isRead;
+  final Map<String, List<String>> reactions; // emoji -> [userIds]
+  final int? duration; // for voice messages in seconds
+  final String? imageUrl; // for image messages
+  final String? audioUrl; // for voice messages
+
   const ChatMessage({
     required this.id,
     required this.conversationId,
-    required this.text,
-    required this.createdAt,
-    this.fromUserId,
+    required this.fromUserId,
     this.toUserId,
+    required this.text,
     this.type = 'text',
-    this.audioStorageId,
-    this.duration,
-    this.fileSize,
-    this.mimeType,
-    this.readAt,
-    this.isMine,
+    required this.createdAt,
+    this.isMine = false,
+    this.isRead = false,
     this.reactions = const {},
+    this.duration,
+    this.imageUrl,
+    this.audioUrl,
   });
 
-  final String id;
-  final String conversationId;
-  final String text;
-  final int createdAt; // epoch millis
-  final String? fromUserId;
-  final String? toUserId;
-  final String type; // 'text' | 'voice' | 'image'
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id']?.toString() ?? '',
+      conversationId: json['conversationId']?.toString() ?? '',
+      fromUserId: json['fromUserId']?.toString() ?? '',
+      toUserId: json['toUserId']?.toString(),
+      text: json['text']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'text',
+      createdAt: DateTime.parse(json['createdAt']?.toString() ?? DateTime.now().toIso8601String()),
+      isMine: json['isMine'] == true,
+      isRead: json['isRead'] == true,
+      reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
+        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+      ) ?? {},
+      duration: json['duration'] as int?,
+      imageUrl: json['imageUrl']?.toString(),
+      audioUrl: json['audioUrl']?.toString(),
+    );
+  }
 
-  final String? audioStorageId; // for type 'voice'
-  final int? duration; // voice duration seconds
-  final int? fileSize; // bytes for voice/image
-  final String? mimeType; // MIME type for files
-  final int? readAt; // when message was read
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'conversationId': conversationId,
+      'fromUserId': fromUserId,
+      'toUserId': toUserId,
+      'text': text,
+      'type': type,
+      'createdAt': createdAt.toIso8601String(),
+      'isMine': isMine,
+      'isRead': isRead,
+      'reactions': reactions,
+      'duration': duration,
+      'imageUrl': imageUrl,
+      'audioUrl': audioUrl,
+    };
+  }
 
-  /// Convenience flag to mark author's side in UI; when null, compute from fromUserId externally
-  final bool? isMine;
-
-  /// Reactions on this message: {emoji: [userIds]}
-  final Map<String, List<String>> reactions;
+  @override
+  List<Object?> get props => [
+        id,
+        conversationId,
+        fromUserId,
+        toUserId,
+        text,
+        type,
+        createdAt,
+        isMine,
+        isRead,
+        reactions,
+        duration,
+        imageUrl,
+        audioUrl,
+      ];
 
   ChatMessage copyWith({
     String? id,
     String? conversationId,
-    String? text,
-    int? createdAt,
     String? fromUserId,
     String? toUserId,
+    String? text,
     String? type,
+    DateTime? createdAt,
     bool? isMine,
-    String? audioStorageId,
-    int? duration,
-    int? fileSize,
-    String? mimeType,
-    int? readAt,
+    bool? isRead,
     Map<String, List<String>>? reactions,
-  }) => ChatMessage(
-    id: id ?? this.id,
-    conversationId: conversationId ?? this.conversationId,
-    text: text ?? this.text,
-    createdAt: createdAt ?? this.createdAt,
-    fromUserId: fromUserId ?? this.fromUserId,
-    toUserId: toUserId ?? this.toUserId,
-    type: type ?? this.type,
-    isMine: isMine ?? this.isMine,
-    audioStorageId: audioStorageId ?? this.audioStorageId,
-    duration: duration ?? this.duration,
-    fileSize: fileSize ?? this.fileSize,
-    mimeType: mimeType ?? this.mimeType,
-    readAt: readAt ?? this.readAt,
-    reactions: reactions ?? this.reactions,
-  );
-
-  static ChatMessage fromJson(Map<String, dynamic> json) {
-    // Accept various common shapes
-    final created = json['createdAt'] ?? json['created'] ?? json['timestamp'];
-    final text = json['text'] ?? json['message'] ?? json['content'] ?? '';
-    final convId =
-        json['conversationId'] ?? json['convId'] ?? json['threadId'] ?? '';
-    final id =
-        json['id']?.toString() ??
-        json['_id']?.toString() ??
-        '${convId}_${created ?? DateTime.now().millisecondsSinceEpoch}';
-    
-    // Parse reactions if present
-    Map<String, List<String>> reactions = {};
-    if (json['reactions'] is Map) {
-      final reactionsMap = json['reactions'] as Map;
-      reactionsMap.forEach((key, value) {
-        if (value is List) {
-          reactions[key.toString()] = value.map((e) => e.toString()).toList();
-        }
-      });
-    }
-    
+    int? duration,
+    String? imageUrl,
+    String? audioUrl,
+  }) {
     return ChatMessage(
-      id: id,
-      conversationId: convId.toString(),
-      text: text.toString(),
-      createdAt: created is int
-          ? created
-          : int.tryParse(created?.toString() ?? '') ??
-                DateTime.now().millisecondsSinceEpoch,
-      fromUserId: json['fromUserId']?.toString() ?? json['from']?.toString(),
-      toUserId: json['toUserId']?.toString() ?? json['to']?.toString(),
-      type: json['type']?.toString() ?? 'text',
-      isMine: json['isMine'] is bool ? json['isMine'] as bool : null,
-      audioStorageId:
-          json['audioStorageId']?.toString() ?? json['storageId']?.toString(),
-      duration: _parseInt(json['duration']),
-      fileSize: _parseInt(json['fileSize']),
-      mimeType: json['mimeType']?.toString() ?? json['contentType']?.toString(),
-      readAt: _parseInt(json['readAt']),
-      reactions: reactions,
+      id: id ?? this.id,
+      conversationId: conversationId ?? this.conversationId,
+      fromUserId: fromUserId ?? this.fromUserId,
+      toUserId: toUserId ?? this.toUserId,
+      text: text ?? this.text,
+      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+      isMine: isMine ?? this.isMine,
+      isRead: isRead ?? this.isRead,
+      reactions: reactions ?? this.reactions,
+      duration: duration ?? this.duration,
+      imageUrl: imageUrl ?? this.imageUrl,
+      audioUrl: audioUrl ?? this.audioUrl,
     );
   }
 
-  static int? _parseInt(dynamic v) {
-    if (v == null) return null;
-    if (v is int) return v;
-    return int.tryParse(v.toString());
-  }
+  // Helper methods for UI
+  bool get hasReactions => reactions.isNotEmpty;
+  int get totalReactions => reactions.values.fold(0, (sum, list) => sum + list.length);
+  String get timeAgo {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
 
-  @override
-  List<Object?> get props => [
-    id,
-    conversationId,
-    text,
-    createdAt,
-    fromUserId,
-    toUserId,
-    type,
-    isMine,
-    audioStorageId,
-    duration,
-    fileSize,
-    mimeType,
-    readAt,
-    reactions,
-  ];
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'now';
+    }
+  }
 }
 
+/// Conversation summary model for chat list
 class ConversationSummary extends Equatable {
+  final String id;
+  final String partnerId;
+  final String partnerName;
+  final String? partnerAvatarUrl;
+  final String? lastMessageText;
+  final DateTime? lastMessageAt;
+  final int unreadCount;
+  final bool isOnline;
+  final DateTime? lastSeen;
+
   const ConversationSummary({
     required this.id,
-    this.participants = const [],
-    this.lastMessage,
-    this.lastMessageAt,
-    this.createdAt,
-    this.partnerId,
-    this.partnerName,
+    required this.partnerId,
+    required this.partnerName,
     this.partnerAvatarUrl,
+    this.lastMessageText,
+    this.lastMessageAt,
     this.unreadCount = 0,
+    this.isOnline = false,
+    this.lastSeen,
   });
 
-  final String id;
-  final List<String> participants;
-  final ChatMessage? lastMessage;
-  final int? lastMessageAt;
-  final int? createdAt;
-  final String? partnerId;
-  final String? partnerName;
-  final String? partnerAvatarUrl;
-  final int unreadCount;
-
-  static ConversationSummary fromJson(Map<String, dynamic> json) {
-    final id =
-        json['id']?.toString() ??
-        json['_id']?.toString() ??
-        json['conversationId']?.toString() ??
-        '';
-    final participants = json['participants'] is List
-        ? (json['participants'] as List).map((e) => e.toString()).toList()
-        : <String>[];
-    final last = json['lastMessage'] is Map<String, dynamic>
-        ? ChatMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
-        : null;
+  factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     return ConversationSummary(
-      id: id,
-      participants: participants,
-      lastMessage: last,
-      lastMessageAt: _parseInt(json['lastMessageAt']),
-      createdAt: _parseInt(json['createdAt']),
-      partnerId: json['partnerId']?.toString(),
-      partnerName: json['partnerName']?.toString(),
+      id: json['id']?.toString() ?? '',
+      partnerId: json['partnerId']?.toString() ?? '',
+      partnerName: json['partnerName']?.toString() ?? '',
       partnerAvatarUrl: json['partnerAvatarUrl']?.toString(),
-      unreadCount: _parseInt(json['unreadCount']) ?? 0,
+      lastMessageText: json['lastMessageText']?.toString(),
+      lastMessageAt: json['lastMessageAt'] != null
+          ? DateTime.parse(json['lastMessageAt'])
+          : null,
+      unreadCount: json['unreadCount'] as int? ?? 0,
+      isOnline: json['isOnline'] as bool? ?? false,
+      lastSeen: json['lastSeen'] != null
+          ? DateTime.parse(json['lastSeen'])
+          : null,
     );
-  }
-
-  ConversationSummary copyWith({
-    String? id,
-    List<String>? participants,
-    ChatMessage? lastMessage,
-    int? lastMessageAt,
-    int? createdAt,
-    String? partnerId,
-    String? partnerName,
-    String? partnerAvatarUrl,
-    int? unreadCount,
-  }) => ConversationSummary(
-    id: id ?? this.id,
-    participants: participants ?? this.participants,
-    lastMessage: lastMessage ?? this.lastMessage,
-    lastMessageAt: lastMessageAt ?? this.lastMessageAt,
-    createdAt: createdAt ?? this.createdAt,
-    partnerId: partnerId ?? this.partnerId,
-    partnerName: partnerName ?? this.partnerName,
-    partnerAvatarUrl: partnerAvatarUrl ?? this.partnerAvatarUrl,
-    unreadCount: unreadCount ?? this.unreadCount,
-  );
-
-  static int? _parseInt(dynamic v) {
-    if (v == null) return null;
-    if (v is int) return v;
-    return int.tryParse(v.toString());
   }
 
   @override
   List<Object?> get props => [
-    id,
-    participants,
-    lastMessage,
-    lastMessageAt,
-    createdAt,
-    partnerId,
-    partnerName,
-    partnerAvatarUrl,
-    unreadCount,
-  ];
+        id,
+        partnerId,
+        partnerName,
+        partnerAvatarUrl,
+        lastMessageText,
+        lastMessageAt,
+        unreadCount,
+        isOnline,
+        lastSeen,
+      ];
+}
+
+/// Typing presence model
+class TypingPresence extends Equatable {
+  final String conversationId;
+  final List<String> typingUsers;
+  final bool isOnline;
+  final DateTime? lastSeen;
+
+  const TypingPresence({
+    required this.conversationId,
+    this.typingUsers = const [],
+    this.isOnline = false,
+    this.lastSeen,
+  });
+
+  factory TypingPresence.fromJson(Map<String, dynamic> json) {
+    return TypingPresence(
+      conversationId: json['conversationId']?.toString() ?? '',
+      typingUsers: List<String>.from(json['typingUsers'] ?? []),
+      isOnline: json['isOnline'] as bool? ?? false,
+      lastSeen: json['lastSeen'] != null
+          ? DateTime.parse(json['lastSeen'])
+          : null,
+    );
+  }
+
+  @override
+  List<Object?> get props => [conversationId, typingUsers, isOnline, lastSeen];
+
+  bool get isTyping => typingUsers.isNotEmpty;
 }

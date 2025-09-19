@@ -136,17 +136,18 @@ class AuthRepository {
   /// Fetch the current user's profile
   Future<Map<String, dynamic>?> getProfile() async {
     try {
-      // RN primary: /api/user/me
+      // Match React app: /api/user/me (primary)
       Response res;
       try {
         res = await _dio.get('/api/user/me');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
-          // Fallbacks: /user/profile (current), /profile (legacy)
+          // Fallback: /user/profile to match React app patterns
           try {
             res = await _dio.get('/user/profile');
           } on DioException catch (e2) {
             if (e2.response?.statusCode == 404) {
+              // Legacy fallback
               res = await _dio.get('/profile');
             } else {
               rethrow;

@@ -16,10 +16,10 @@ class ChatRepository {
     final qp = <String, dynamic>{};
     if (before != null) qp['before'] = before;
     if (limit != null) qp['limit'] = limit;
-    
-    // Use Next.js primary endpoint
+
+    // Match React app: use /api/messages endpoint
     final params = {'conversationId': conversationId, ...qp};
-    final res = await _dio.get('/messages', queryParameters: params);
+    final res = await _dio.get('/api/messages', queryParameters: params);
     return _parseMessagesResponse(res.data);
   }
 
@@ -55,8 +55,8 @@ class ChatRepository {
       'type': 'text',
     };
     
-    // Use Next.js primary endpoint
-    final res = await _dio.post('/messages/send', data: body);
+    // Match React app: use /api/messages/send endpoint
+    final res = await _dio.post('/api/messages/send', data: body);
     return _parseMessageResponse(res.data);
   }
 
@@ -75,14 +75,16 @@ class ChatRepository {
   }
 
   Future<void> markAsRead(String conversationId) async {
+    // Match React app: use /api/messages/mark-read endpoint
     await _dio.post(
-      '/messages/mark-read',
+      '/api/messages/mark-read',
       data: {'conversationId': conversationId},
     );
   }
 
   Future<List<ConversationSummary>> getConversations() async {
-    final res = await _dio.get('/conversations');
+    // Match React app: use /api/conversations endpoint
+    final res = await _dio.get('/api/conversations');
     final data = res.data;
     final list = data is List
         ? data
@@ -218,7 +220,8 @@ class ChatRepository {
     });
     Response res;
     try {
-      res = await _dio.post('/messages/upload-image', data: form);
+      // Match React app: use /api/messages/upload-image endpoint
+      res = await _dio.post('/api/messages/upload-image', data: form);
     } on DioException catch (_) {
       // Fallback to two-step
       return uploadImageMessageTwoStep(
@@ -245,8 +248,8 @@ class ChatRepository {
     String contentType = 'image/jpeg',
     String? toUserId,
   }) async {
-    // Step 1: get upload URL
-    final urlRes = await _dio.post('/messages/upload-image-url');
+    // Step 1: get upload URL - match React app pattern
+    final urlRes = await _dio.post('/api/messages/upload-image-url');
     final uploadUrl = (urlRes.data is Map)
         ? (urlRes.data['uploadUrl']?.toString())
         : null;
@@ -281,7 +284,8 @@ class ChatRepository {
       'filename': filename,
       'contentType': contentType,
     };
-    final saveRes = await _dio.post('/messages/image', data: meta);
+    // Match React app: use /api/messages/image endpoint
+    final saveRes = await _dio.post('/api/messages/image', data: meta);
     final data = saveRes.data is Map
         ? Map<String, dynamic>.from(saveRes.data as Map)
         : <String, dynamic>{};
@@ -304,7 +308,7 @@ class ChatRepository {
       throw Exception('User not authenticated');
     }
 
-    // Primary: POST /api/voice-messages/upload multipart form
+    // Match React app: POST /api/voice-messages/upload multipart form
     final form = FormData.fromMap({
       // Setting contentType on MultipartFile optional; rely on server sniffing if absent.
       'audio': MultipartFile.fromBytes(bytes, filename: filename),
@@ -312,7 +316,7 @@ class ChatRepository {
       'duration': durationSeconds.toString(),
       if (toUserId != null) 'toUserId': toUserId,
     });
-    final res = await _dio.post('/voice-messages/upload', data: form);
+    final res = await _dio.post('/api/voice-messages/upload', data: form);
     final data = res.data is Map
         ? Map<String, dynamic>.from(res.data as Map)
         : <String, dynamic>{};

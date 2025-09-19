@@ -21,6 +21,8 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
     return Scaffold(
       body: shell,
       bottomNavigationBar: Container(
+        // Add bottom margin to make space for the floating search button
+        margin: const EdgeInsets.only(bottom: 32),
         decoration: BoxDecoration(
           color: CupertinoColors.systemBackground.resolveFrom(context),
           border: Border(
@@ -45,7 +47,7 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
 
   Widget _buildTabItem(BuildContext context, int index, IconData? icon, String label) {
     final isSelected = currentIndex == index;
-    final color = isSelected 
+    final color = isSelected
         ? CupertinoColors.activeBlue.resolveFrom(context)
         : CupertinoColors.systemGrey.resolveFrom(context);
 
@@ -61,7 +63,10 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
               if (icon != null)
                 Icon(icon, color: color, size: 24)
               else
-                _SearchCircleIcon(selected: isSelected),
+                _SearchCircleIcon(
+                  selected: isSelected,
+                  onTap: () => onTap(index),
+                ),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -111,30 +116,37 @@ class HomeShell extends StatelessWidget {
       body: shell,
       bottomNavigationBar: Container(
         // Add padding to the bottom to ensure the search button has space to bleed
-        margin: EdgeInsets.only(bottom: 32),
+        margin: const EdgeInsets.only(bottom: 32),
         child: NavigationBar(
           selectedIndex: shell.currentIndex,
           onDestinationSelected: (index) {
             // Direct mapping: 0->Dashboard, 1->Search, 2->Profile
             _handleTap(context, index);
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              key: ValueKey('dashboard'),
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard),
+              key: const ValueKey('dashboard'),
+              icon: const Icon(Icons.dashboard_outlined),
+              selectedIcon: const Icon(Icons.dashboard),
               label: 'Dashboard',
             ),
             NavigationDestination(
-              key: ValueKey('search'),
-              icon: _SearchCircleIcon(key: ValueKey('search_icon_normal')),
-              selectedIcon: _SearchCircleIcon(key: ValueKey('search_icon_selected'), selected: true),
+              key: const ValueKey('search'),
+              icon: _SearchCircleIcon(
+                key: const ValueKey('search_icon_normal'),
+                onTap: () => _handleTap(context, 1),
+              ),
+              selectedIcon: _SearchCircleIcon(
+                key: const ValueKey('search_icon_selected'),
+                selected: true,
+                onTap: () => _handleTap(context, 1),
+              ),
               label: 'Search',
             ),
             NavigationDestination(
-              key: ValueKey('profile'),
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
+              key: const ValueKey('profile'),
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
               label: 'Profile',
             ),
           ],
@@ -145,9 +157,14 @@ class HomeShell extends StatelessWidget {
 }
 
 class _SearchCircleIcon extends StatelessWidget {
-  const _SearchCircleIcon({super.key, this.selected = false});
+  const _SearchCircleIcon({
+    super.key,
+    this.selected = false,
+    this.onTap,
+  });
 
   final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -167,44 +184,48 @@ class _SearchCircleIcon extends StatelessWidget {
         children: [
           Transform.translate(
             offset: Offset(0, -size * 0.85),
-            child: Container(
-              width: size * 3.0,
-              height: size * 3.0,
-              decoration: BoxDecoration(
-                color: bg,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: scheme.primary,
-                  width: selected ? 0 : 2.5,
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.translucent,
+              child: Container(
+                width: size * 3.0,
+                height: size * 3.0,
+                decoration: BoxDecoration(
+                  color: bg,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: scheme.primary,
+                    width: selected ? 0 : 2.5,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: scheme.primary.withOpacity(0.25),
+                            blurRadius: 20,
+                            spreadRadius: 3,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: scheme.primary.withOpacity(0.25),
-                          blurRadius: 20,
-                          spreadRadius: 3,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'A',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Boldonse',
-                  fontWeight: FontWeight.w700,
-                  fontSize: size * 1.4,
-                  color: fg,
-                  height: 1,
+                alignment: Alignment.center,
+                child: Text(
+                  'A',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Boldonse',
+                    fontWeight: FontWeight.w700,
+                    fontSize: size * 1.4,
+                    color: fg,
+                    height: 1,
+                  ),
                 ),
               ),
             ),

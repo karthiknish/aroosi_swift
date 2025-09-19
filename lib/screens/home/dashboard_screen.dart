@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/features/chat/unread_counts_controller.dart';
 import 'package:aroosi_flutter/features/engagement/quick_picks_repository.dart';
+import 'package:aroosi_flutter/features/icebreakers/icebreaker_controller.dart';
 import 'package:aroosi_flutter/features/profiles/models.dart';
 import 'package:aroosi_flutter/features/subscription/feature_access_provider.dart';
 import 'package:aroosi_flutter/features/subscription/subscription_controller.dart';
@@ -40,6 +41,25 @@ final _subscriptionUsageProvider = FutureProvider<Map<String, dynamic>?>((
   return repository.fetchUsage();
 });
 
+final _icebreakerProgressProvider = FutureProvider<Map<String, int>>((
+  ref,
+) async {
+  final auth = ref.watch(authControllerProvider);
+  if (!auth.isAuthenticated) {
+    return {'total': 0, 'answered': 0};
+  }
+
+  try {
+    final icebreakerState = ref.watch(icebreakerControllerProvider);
+    return {
+      'total': icebreakerState.icebreakers.length,
+      'answered': icebreakerState.icebreakers.where((q) => q.answered).length,
+    };
+  } catch (e) {
+    return {'total': 0, 'answered': 0};
+  }
+});
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -51,6 +71,7 @@ class DashboardScreen extends ConsumerWidget {
     final unreadState = ref.watch(unreadCountsProvider);
     final quickPicksAsync = ref.watch(_quickPicksProvider);
     final usageAsync = ref.watch(_subscriptionUsageProvider);
+    final icebreakerProgress = ref.watch(_icebreakerProgressProvider);
 
     final status = subscriptionState.status;
     final plan =
@@ -142,6 +163,11 @@ class DashboardScreen extends ConsumerWidget {
               daysUntilExpiry: daysUntilExpiry,
               onUpgrade: () => _openSubscription(context),
             ),
+            if (icebreakerProgress.asData?.value != null)
+              _IcebreakerProgressCard(
+                progress: icebreakerProgress.asData!.value,
+                onTap: () => _openIcebreakers(context),
+              ),
             if (usageAsync.isLoading)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -274,6 +300,10 @@ void _openSubscription(BuildContext context) {
   GoRouter.of(context).pushNamed('mainSubscription');
 }
 
+void _openIcebreakers(BuildContext context) {
+  GoRouter.of(context).pushNamed('mainIcebreakers');
+}
+
 void _openQuickPicks(BuildContext context) {
   GoRouter.of(context).pushNamed('mainQuickPicks');
 }
@@ -335,4 +365,81 @@ Map<String, dynamic>? _normalizeUsagePayload(Map<String, dynamic>? raw) {
     return (raw['data'] as Map).cast<String, dynamic>();
   }
   return raw;
+}
+
+class _IcebreakerProgressCard extends StatelessWidget {
+  const _IcebreakerProgressCard({
+    required this.progress,
+    required this.onTap,
+  });
+
+  final Map<String, int> progress;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = progress['total'] ?? 0;
+    final answered = progress['answered'] ?? 0;
+    final hasUnanswered = total > 0 && answered < total;
+
+    if (total == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: hasUnanswered
+            ? Colors.blue.withOpacity(0.05)
+            : Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasUnanswered
+              ? Colors.blue.withOpacity(0.2)
+              : Colors.green.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasUnanswered
+                        ? 'Break the ice today!'
+                        : 'All icebreakers answered!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: hasUnanswered ? Colors.blue : Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$answered / $total answered',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: hasUnanswered
+                          ? Colors.blue.withOpacity(0.8)
+                          : Colors.green.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              hasUnanswered ? Icons.arrow_forward : Icons.check_circle,
+              color: hasUnanswered ? Colors.blue : Colors.green,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

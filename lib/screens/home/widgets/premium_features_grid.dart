@@ -38,6 +38,18 @@ class PremiumFeaturesGrid extends StatelessWidget {
         'Discover who showed interest in you',
       ),
       PremiumFeatureItem(
+        'Voice Messages',
+        Icons.mic,
+        features.canChatWithMatches,
+        'Send and receive voice messages',
+      ),
+      PremiumFeatureItem(
+        'Spotlight Badge',
+        Icons.star,
+        features.hasSpotlightBadge,
+        'Stand out with a spotlight badge',
+      ),
+      PremiumFeatureItem(
         'Incognito Mode',
         Icons.visibility_off,
         features.canUseIncognitoMode,

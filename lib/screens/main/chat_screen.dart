@@ -4,9 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aroosi_flutter/features/subscription/feature_usage_controller.dart';
 import 'package:aroosi_flutter/features/subscription/subscription_features.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
+import 'package:aroosi_flutter/core/toast_helpers.dart';
 import 'package:aroosi_flutter/features/chat/chat_controller.dart';
 import 'package:aroosi_flutter/features/chat/chat_models.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
+import 'package:aroosi_flutter/widgets/empty_states.dart';
+import 'package:aroosi_flutter/widgets/error_states.dart';
+import 'package:aroosi_flutter/widgets/chat_message_widget.dart';
+import 'package:aroosi_flutter/widgets/chat_input_widget.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +19,7 @@ import 'package:aroosi_flutter/core/permissions.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:aroosi_flutter/features/chat/typing_presence_controller.dart';
 import 'package:aroosi_flutter/core/realtime/realtime_service.dart';
+import 'package:aroosi_flutter/widgets/offline_states.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, this.conversationId, this.toUserId});
@@ -34,7 +40,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   VoidCallback? _removeLoadMoreListener;
   bool _showJumpToLatest = false;
   bool _typing = false; // local echo of my typing for immediate UI
-  bool _showEmoji = false;
   void Function(String, Map<String, dynamic>)? _onMsgHandler;
 
   @override
@@ -124,7 +129,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _send() async {
     final text = _textController.text.trim();
     if (text.isEmpty) {
-      ToastService.instance.info('Type a message');
+      ref.showInfo('Type a message');
       return;
     }
     final isApiBacked =
@@ -134,7 +139,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(featureUsageControllerProvider.notifier)
           .requestUsage(UsageMetric.messageSent);
       if (!allowed) {
-        ToastService.instance.warning(
+        ref.showWarning(
           'You\'ve reached your monthly message limit. Upgrade to Premium for unlimited messages.',
         );
         return;
@@ -144,9 +149,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             .read(chatControllerProvider.notifier)
             .send(text, toUserId: widget.toUserId);
         _textController.clear();
-        setState(() {
-          _showEmoji = false;
-        });
+        // No need to manage emoji state here anymore
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
             _scrollController.animateTo(
@@ -156,9 +159,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             );
           }
         });
-        ToastService.instance.success('Message sent');
+        ref.showSuccess('Message sent');
       } catch (e) {
-        ToastService.instance.error('Failed to send message.');
+        ref.showError(e, 'Failed to send message');
       }
       return;
     }
@@ -167,7 +170,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .read(featureUsageControllerProvider.notifier)
         .requestUsage(UsageMetric.messageSent);
     if (!allowed) {
-      ToastService.instance.warning(
+      ref.showWarning(
         'You\'ve reached your monthly message limit. Upgrade to Premium for unlimited messages.',
       );
       setState(() => _sending = false);
@@ -191,13 +194,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           curve: Curves.easeOut,
         );
       });
-      ToastService.instance.success('Message sent');
+      ref.showSuccess('Message sent');
     } catch (e) {
       setState(() {
         _sending = false;
         _error = 'Failed to send message. Please try again.';
       });
-      ToastService.instance.error('Failed to send message.');
+      ref.showError(e, 'Failed to send message');
     }
   }
 
@@ -205,7 +208,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isApiBacked =
         widget.conversationId != null && widget.conversationId!.isNotEmpty;
     if (!isApiBacked) {
-      ToastService.instance.info('Start a conversation to send images.');
+      ref.showInfo('Start a conversation to send images.');
       return;
     }
     final ok = await AppPermissions.ensurePhotoAccess();
@@ -214,7 +217,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .read(featureUsageControllerProvider.notifier)
         .requestUsage(UsageMetric.messageSent);
     if (!allowed) {
-      ToastService.instance.warning('Upgrade to send image messages.');
+      ref.showWarning('Upgrade to send image messages.');
       return;
     }
     try {
@@ -235,9 +238,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 'image/${picked.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg'}',
             toUserId: widget.toUserId,
           );
-      ToastService.instance.success('Image sent');
+      ref.showSuccess('Image sent');
     } catch (e) {
-      ToastService.instance.error('Failed to send image');
+      ref.showError(e, 'Failed to send image');
     }
   }
 
@@ -250,6 +253,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ? ref.watch(typingPresenceControllerProvider)
         : null;
     final me = ref.watch(authControllerProvider).profile;
+
+    // Handle chat controller errors
+    ref.listen(chatControllerProvider, (prev, next) {
+      if (next.hasError && prev?.error != next.error) {
+        final error = next.error.toString();
+        final isOfflineError = error.toLowerCase().contains('network') ||
+                              error.toLowerCase().contains('connection') ||
+                              error.toLowerCase().contains('timeout');
+
+        if (isOfflineError) {
+          ref.showNetworkError(
+            operation: 'load chat messages',
+            onRetry: () => ref.read(chatControllerProvider.notifier).refresh(),
+          );
+        } else {
+          ref.showError(error, 'Failed to load chat messages');
+        }
+      }
+    });
+
     return AppScaffold(
       title: 'Chat',
       floatingActionButton: _showJumpToLatest
@@ -268,38 +291,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           : null,
       child: Column(
         children: [
-          if (isApiBacked)
+          if (isApiBacked && tpState != null)
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: (_typing || (tpState?.isTyping == true))
-                  ? Container(
+              child: (_typing || tpState.isTyping)
+                  ? TypingIndicator(
                       key: const ValueKey('typing'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Typing...',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    )
-                  : (tpState != null)
-                  ? Container(
-                      key: const ValueKey('presence'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        (tpState.isOnline == true)
-                            ? 'Online'
-                            : (tpState.lastSeen != null
-                                  ? 'Last seen ${DateTime.fromMillisecondsSinceEpoch(tpState.lastSeen!).toLocal()}'
-                                  : ''),
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
+                      userName: 'User',
+                      isOnline: tpState.isOnline,
                     )
                   : const SizedBox.shrink(),
             ),
@@ -311,14 +310,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     child: Builder(
                       builder: (_) {
                         if (chatState?.error != null) {
-                          return Center(
-                            child: Text(
-                              chatState!.error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                          );
+                          final error = chatState!.error.toString();
+                          final isOfflineError = error.toLowerCase().contains('network') ||
+                                                error.toLowerCase().contains('connection') ||
+                                                error.toLowerCase().contains('timeout');
+
+                          return isOfflineError
+                              ? OfflineState(
+                                  title: 'Connection Lost',
+                                  subtitle: 'Unable to load messages',
+                                  description: 'Check your internet connection and try again',
+                                  onRetry: () => ref.read(chatControllerProvider.notifier).refresh(),
+                                )
+                              : ErrorState(
+                                  title: 'Failed to Load Messages',
+                                  subtitle: 'Something went wrong',
+                                  errorMessage: error,
+                                  onRetryPressed: () => ref.read(chatControllerProvider.notifier).refresh(),
+                                );
                         }
                         if (chatState == null ||
                             (chatState.loading && chatState.messages.isEmpty)) {
@@ -327,9 +336,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           );
                         }
                         if (chatState.messages.isEmpty) {
-                          return const Center(
-                            child: Text('No messages yet. Say hello!'),
-                          );
+                          return const EmptyChatState();
                         }
                         return ListView.separated(
                           controller: _scrollController,
@@ -339,252 +346,96 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             final isMe =
                                 msg.isMine == true ||
                                 (me != null && (msg.fromUserId == me.id));
-                            return Align(
-                              alignment: isMe
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: GestureDetector(
-                                onLongPressStart: (details) async {
-                                  final selected = await showMenu<String>(
-                                    context: context,
-                                    position: RelativeRect.fromLTRB(
-                                      details.globalPosition.dx,
-                                      details.globalPosition.dy,
-                                      details.globalPosition.dx,
-                                      details.globalPosition.dy,
+
+                            return ChatMessageWidget(
+                              message: msg,
+                              onReactionTap: () async {
+                                // Open emoji picker for reactions
+                                final reaction = await showModalBottomSheet<String>(
+                                  context: context,
+                                  showDragHandle: true,
+                                  builder: (ctx) => SizedBox(
+                                    height: 360,
+                                    child: EmojiPicker(
+                                      onEmojiSelected: (category, emoji) {
+                                        Navigator.of(ctx).pop(emoji.emoji);
+                                      },
+                                      config: const Config(),
                                     ),
-                                    items: [
-                                      const PopupMenuItem(
-                                        value: 'react',
-                                        child: Text('React'),
+                                  ),
+                                );
+                                if (reaction != null && reaction.isNotEmpty) {
+                                  ref
+                                      .read(chatControllerProvider.notifier)
+                                      .reactToMessage(
+                                        messageId: msg.id,
+                                        emoji: reaction,
+                                      );
+                                }
+                              },
+                              onLongPress: () async {
+                                if (isMe) {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Delete message?'),
+                                      content: const Text(
+                                        'This can\'t be undone.',
                                       ),
-                                      if (isMe)
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Text('Delete'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(ctx).pop(false),
+                                          child: const Text('Cancel'),
                                         ),
-                                    ],
+                                        FilledButton(
+                                          onPressed: () => Navigator.of(ctx).pop(true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
                                   );
-                                  if (selected == 'react') {
-                                    // Open bottom sheet with full emoji categories
-                                    final reaction =
-                                        await showModalBottomSheet<String>(
-                                          context: context,
-                                          showDragHandle: true,
-                                          builder: (ctx) => SizedBox(
-                                            height: 360,
-                                            child: EmojiPicker(
-                                              onEmojiSelected:
-                                                  (category, emoji) {
-                                                    Navigator.pop(
-                                                      ctx,
-                                                      emoji.emoji,
-                                                    );
-                                                  },
-                                              config: const Config(),
-                                            ),
-                                          ),
-                                        );
-                                    if (reaction != null) {
-                                      ref
-                                          .read(chatControllerProvider.notifier)
-                                          .reactToMessage(
-                                            messageId: msg.id,
-                                            emoji: reaction,
-                                          );
-                                    }
-                                  } else if (selected == 'delete' && isMe) {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text('Delete message?'),
-                                        content: const Text(
-                                          'This can\'t be undone.',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(ctx, false),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () =>
-                                                Navigator.pop(ctx, true),
-                                            child: const Text('Delete'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirm == true) {
-                                      await ref
-                                          .read(chatControllerProvider.notifier)
-                                          .deleteMessage(msg.id);
-                                    }
+                                  if (confirm == true) {
+                                    await ref
+                                        .read(chatControllerProvider.notifier)
+                                        .deleteMessage(msg.id);
                                   }
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 220),
-                                  curve: Curves.easeInOut,
-                                  padding: const EdgeInsets.all(12),
-                                  margin: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isMe
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.primaryContainer
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child:
-                                      msg.type == 'image'
-                                      ? Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: Image.network(
-                                                msg.text,
-                                                fit: BoxFit.cover,
-                                                width: 220,
-                                                height: 220,
-                                                errorBuilder: (_, __, ___) =>
-                                                    const Icon(
-                                                      Icons
-                                                          .broken_image_outlined,
-                                                      size: 48,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            
-                                            Text(msg.text),
-                                            if (msg.reactions.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Wrap(
-                                                  spacing: 6,
-                                                  children: [
-                                                    for (final entry
-                                                        in msg
-                                                            .reactions
-                                                            .entries)
-                                                      InkWell(
-                                                        onTap: () {
-                                                          final myId = me?.id;
-                                                          if (myId == null) {
-                                                            return;
-                                                          }
-                                                          final hasReacted =
-                                                              entry.value
-                                                                  .contains(
-                                                                    myId,
-                                                                  );
-                                                          final notifier = ref.read(
-                                                            chatControllerProvider
-                                                                .notifier,
-                                                          );
-                                                          if (hasReacted) {
-                                                            notifier
-                                                                .removeReaction(
-                                                                  messageId:
-                                                                      msg.id,
-                                                                  emoji:
-                                                                      entry.key,
-                                                                );
-                                                          } else {
-                                                            notifier
-                                                                .reactToMessage(
-                                                                  messageId:
-                                                                      msg.id,
-                                                                  emoji:
-                                                                      entry.key,
-                                                                );
-                                                          }
-                                                        },
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              16,
-                                                            ),
-                                                        child: Chip(
-                                                          label: Text(
-                                                            '${entry.key} ${entry.value.length}',
-                                                          ),
-                                                          visualDensity:
-                                                              VisualDensity
-                                                                  .compact,
-                                                          materialTapTargetSize:
-                                                              MaterialTapTargetSize
-                                                                  .shrinkWrap,
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 6,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                  ],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                ),
-                              ),
+                                }
+                              },
+                              onImageTap: () {
+                                // Handle image tap - could show full screen image
+                                debugPrint('Image tapped: ${msg.imageUrl ?? msg.text}');
+                              },
                             );
                           },
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
                           itemCount: chatState.messages.length,
                         );
                       },
                     ),
                   )
                 : _error != null
-                ? Center(
-                    child: Text(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
+                ? ErrorState(
+                    title: 'Message Error',
+                    subtitle: 'Failed to send message',
+                    errorMessage: _error,
+                    onRetryPressed: _send,
                   )
                 : _messages.isEmpty
-                ? const Center(child: Text('No messages yet. Say hello!'))
+                ? const EmptyChatState()
                 : ListView.separated(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      return Align(
-                        alignment: msg.isMe
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeInOut,
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.symmetric(vertical: 2),
-                          decoration: BoxDecoration(
-                            color: msg.isMe
-                                ? Theme.of(context).colorScheme.primaryContainer
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(msg.text),
+                      return ChatMessageWidget(
+                        message: ChatMessage(
+                          id: 'local_$index',
+                          conversationId: widget.conversationId ?? '',
+                          fromUserId: 'local',
+                          text: msg.text,
+                          type: 'text',
+                          createdAt: msg.timestamp,
+                          isMine: msg.isMe,
                         ),
                       );
                     },
@@ -592,74 +443,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     itemCount: _messages.length,
                   ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => setState(() => _showEmoji = !_showEmoji),
-                    icon: const Icon(Icons.emoji_emotions_outlined),
-                    tooltip: 'Emoji',
-                  ),
-                  IconButton(
-                    onPressed: _pickAndSendImage,
-                    icon: const Icon(Icons.photo_outlined),
-                    tooltip: 'Send image',
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      enabled: isApiBacked
-                          ? !(chatState?.sending ?? false)
-                          : !_sending,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed:
-                        (isApiBacked
-                                ? (chatState?.sending ?? false)
-                                : _sending) ||
-                            _textController.text.trim().isEmpty
-                        ? null
-                        : _send,
-                    icon: const Icon(Icons.send),
-                    label: const Text('Send'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          Offstage(
-            offstage: !_showEmoji,
-            child: SizedBox(
-              height: 280,
-              child: EmojiPicker(
-                onEmojiSelected: (category, emoji) {
-                  _textController.text += emoji.emoji;
-                  _textController.selection = TextSelection.fromPosition(
-                    TextPosition(offset: _textController.text.length),
-                  );
-                },
-                // Use default config to maximize compatibility across versions
-                config: const Config(),
-              ),
-            ),
+          ChatInputWidget(
+            textController: _textController,
+            onSend: _send,
+            onImagePick: _pickAndSendImage,
+            isSending: isApiBacked ? (chatState?.sending ?? false) : _sending,
+            canSendImage: isApiBacked,
+            canSendVoice: isApiBacked,
           ),
         ],
       ),

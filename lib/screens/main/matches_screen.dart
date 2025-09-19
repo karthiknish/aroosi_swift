@@ -13,7 +13,10 @@ import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/shimmer.dart';
 import 'package:aroosi_flutter/widgets/paged_list_footer.dart';
 import 'package:aroosi_flutter/widgets/inline_upgrade_banner.dart';
+import 'package:aroosi_flutter/widgets/empty_states.dart';
+import 'package:aroosi_flutter/widgets/error_states.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
+import 'package:aroosi_flutter/core/toast_helpers.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/profiles/selection.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
@@ -62,24 +65,50 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     final access = ref.watch(featureAccessProvider);
     final isFreePlan = access.plan == SubscriptionPlan.free;
 
+    // Handle matches controller errors
+    ref.listen(matchesControllerProvider, (prev, next) {
+      if (next.hasError && prev?.error != next.error) {
+        final error = next.error.toString();
+        final isOfflineError = error.toLowerCase().contains('network') ||
+                              error.toLowerCase().contains('connection') ||
+                              error.toLowerCase().contains('timeout');
+
+        if (isOfflineError) {
+          ref.showNetworkError(
+            operation: 'load matches',
+            onRetry: () => ref.read(matchesControllerProvider.notifier).refresh(),
+          );
+        } else {
+          ref.showError(error, 'Failed to load matches');
+        }
+      }
+    });
+
     if (!state.loading && state.error != null && state.items.isEmpty) {
+      final error = state.error.toString();
+      final isOfflineError = error.toLowerCase().contains('network') ||
+                            error.toLowerCase().contains('connection') ||
+                            error.toLowerCase().contains('timeout');
+
       return AppScaffold(
         title: 'Matches',
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(state.error!),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref
+        child: isOfflineError
+            ? OfflineState(
+                title: 'No Connection',
+                subtitle: 'Unable to load matches',
+                description: 'Please check your internet connection and try again',
+                onRetry: () => ref
                     .read(matchesControllerProvider.notifier)
                     .refresh(),
-                child: const Text('Retry'),
+              )
+            : ErrorState(
+                title: 'Failed to Load Matches',
+                subtitle: 'Something went wrong',
+                errorMessage: error,
+                onRetryPressed: () => ref
+                    .read(matchesControllerProvider.notifier)
+                    .refresh(),
               ),
-            ],
-          ),
-        ),
       );
     }
 
@@ -155,24 +184,22 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         .read(matchesControllerProvider.notifier)
                         .sendInterest(targetUserId);
                     if (result['success'] == true) {
-                      ToastService.instance.success(
-                        'Interest sent to ${match.otherUserName ?? 'match'}',
-                      );
+                      ref.showSuccess('Interest sent to ${match.otherUserName ?? 'match'}');
                     } else {
                       final error = result['error'] as String? ?? 'Failed to send interest';
                       final isPlanLimit = result['isPlanLimit'] == true;
                       if (isPlanLimit) {
-                        ToastService.instance.warning('Upgrade to send more interests');
+                        ref.showWarning('Upgrade to send more interests');
                       } else {
-                        ToastService.instance.error(error);
+                        ref.showError(error, 'Failed to send interest');
                       }
                     }
                   } else if (action == 1) {
                     // Favorite functionality would need to be added to MatchesController
-                    ToastService.instance.info('Favorite feature coming soon');
+                    ref.showInfo('Favorite feature coming soon');
                   } else if (action == 2) {
                     // Shortlist functionality would need to be added to MatchesController
-                    ToastService.instance.info('Shortlist feature coming soon');
+                    ref.showInfo('Shortlist feature coming soon');
                   }
                 },
                 child: _MatchCard(match: match),
@@ -191,7 +218,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
         await ref
             .read(matchesControllerProvider.notifier)
             .refresh();
-        ToastService.instance.success('Refreshed');
+        ref.showSuccess('Matches refreshed');
       },
       controller: _scrollController,
       slivers: [
@@ -210,9 +237,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           ),
         if (state.items.isEmpty && !state.loading)
           const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text('No matches yet')),
+            child: EmptyMatchesState(
+              onExplore: () => context.push('/home/search'),
+              onImproveProfile: () => context.push('/main/edit-profile'),
             ),
           )
         else
@@ -255,7 +282,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               await ref
                   .read(matchesControllerProvider.notifier)
                   .refresh();
-              ToastService.instance.success('Sort applied');
+              ref.showSuccess('Sort applied');
             }
           },
           icon: const Icon(Icons.sort),
@@ -307,7 +334,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
         ? '$used / $limit used'
         : 'limit reached';
 
-    ToastService.instance.warning(
+    ref.showWarning(
       'You\'ve reached your $limitDescription. Upgrade to $planLabel to keep going.',
     );
   }
@@ -315,7 +342,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   void _showUpgradeToast(SubscriptionFeatureFlag feature) {
     final access = ref.read(featureAccessProvider);
     final planLabel = access.requiredPlanLabel(feature);
-    ToastService.instance.warning('Upgrade to $planLabel to use this feature.');
+    ref.showWarning('Upgrade to $planLabel to use this feature.');
   }
 }
 
