@@ -190,14 +190,18 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   }
 
   Widget _buildManagementSection(SubscriptionState state, bool isBusy) {
+    final hasActiveSubscription = state.status?.isActive ?? false;
+    final controller = ref.read(subscriptionControllerProvider.notifier);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Restore Purchases
         OutlinedButton(
           onPressed: isBusy
               ? null
               : () async {
-                  final restored = await ref.read(subscriptionControllerProvider.notifier).restorePurchases();
+                  final restored = await controller.restorePurchases();
                   if (!mounted) return;
                   if (restored) {
                     _showSnack('Purchases restored.', type: ToastType.success);
@@ -208,9 +212,60 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           child: Text(state.isProcessingPurchase ? 'Restoring…' : 'Restore Purchases'),
         ),
         const SizedBox(height: 8),
+        
+        // Refresh Status
+        OutlinedButton(
+          onPressed: isBusy
+              ? null
+              : () async {
+                  await controller.forceStatusRefresh();
+                  if (!mounted) return;
+                  _showSnack('Subscription status refreshed.', type: ToastType.success);
+                },
+          child: const Text('Refresh Status'),
+        ),
+        const SizedBox(height: 8),
+        
+        // Manage Subscription (only if active)
+        if (hasActiveSubscription) ...[
+          OutlinedButton(
+            onPressed: isBusy
+                ? null
+                : () async {
+                    final success = await controller.manageSubscription();
+                    if (!mounted) return;
+                    if (success) {
+                      _showSnack('Opening subscription management...', type: ToastType.info);
+                    } else {
+                      _showSnack('Unable to open subscription management.', type: ToastType.error);
+                    }
+                  },
+            child: const Text('Manage Subscription'),
+          ),
+          const SizedBox(height: 8),
+          
+          // Validate Current Subscription
+          OutlinedButton(
+            onPressed: isBusy
+                ? null
+                : () async {
+                    final isValid = await controller.validateCurrentSubscription();
+                    if (!mounted) return;
+                    if (isValid) {
+                      _showSnack('Subscription is valid and active.', type: ToastType.success);
+                    } else {
+                      _showSnack('Subscription validation failed or expired.', type: ToastType.error);
+                    }
+                  },
+            child: const Text('Validate Subscription'),
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // Open Store Subscriptions
         OutlinedButton(
           onPressed: () => _openStoreSubscriptions(),
-          child: const Text('Manage / Cancel Subscription'),
+          child: const Text('Store Account Settings'),
         ),
       ],
     );
@@ -268,22 +323,91 @@ class _CurrentStatusCard extends StatelessWidget {
     final info = kDefaultPlanCatalog[plan]!;
     final isActive = status?.isActive ?? false;
     final expiresLabel = status?.expiresAt != null ? _formatDate(status!.expiresAt!) : null;
+    final daysRemaining = status?.daysRemaining;
+    final isTrial = status?.isTrial ?? false;
+    final trialDaysRemaining = status?.trialDaysRemaining;
+    final boostsRemaining = status?.boostsRemaining ?? 0;
+    final hasSpotlightBadge = status?.hasSpotlightBadge ?? false;
+    final cancelAtPeriodEnd = status?.cancelAtPeriodEnd ?? false;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Current Plan', style: Theme.of(context).textTheme.titleMedium),
+            Row(
+              children: [
+                Text('Current Plan', style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                if (hasSpotlightBadge) ...[
+                  Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+                  const SizedBox(width: 4),
+                  Text('Spotlight', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
+                  )),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
             Text(
               info.name,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            if (isActive && expiresLabel != null) ...[
+            if (isActive) ...[
               const SizedBox(height: 8),
-              Text('Renews on $expiresLabel'),
-            ] else if (!isActive) ...[
+              if (isTrial && trialDaysRemaining != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Trial: $trialDaysRemaining days remaining',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ] else if (expiresLabel != null) ...[
+                if (cancelAtPeriodEnd) ...[
+                  Text(
+                    'Expires on $expiresLabel (will not renew)',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ] else ...[
+                  Text('Renews on $expiresLabel'),
+                  if (daysRemaining != null && daysRemaining > 0) ...[
+                    Text(
+                      '$daysRemaining days remaining',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+              if (boostsRemaining > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.bolt, color: Theme.of(context).colorScheme.secondary, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$boostsRemaining profile boost${boostsRemaining == 1 ? '' : 's'} remaining',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ] else ...[
               const SizedBox(height: 8),
               const Text('Upgrade to unlock more features.'),
             ],

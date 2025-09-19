@@ -35,8 +35,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _showJumpToLatest = false;
   bool _typing = false; // local echo of my typing for immediate UI
   bool _showEmoji = false;
-  String? _replyToMessageId;
-  String? _replyPreviewText;
   void Function(String, Map<String, dynamic>)? _onMsgHandler;
 
   @override
@@ -148,8 +146,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _textController.clear();
         setState(() {
           _showEmoji = false;
-          _replyToMessageId = null;
-          _replyPreviewText = null;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
@@ -359,10 +355,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     ),
                                     items: [
                                       const PopupMenuItem(
-                                        value: 'reply',
-                                        child: Text('Reply'),
-                                      ),
-                                      const PopupMenuItem(
                                         value: 'react',
                                         child: Text('React'),
                                       ),
@@ -373,15 +365,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         ),
                                     ],
                                   );
-                                  if (selected == 'reply') {
-                                    setState(() {
-                                      _replyToMessageId = msg.id;
-                                      _replyPreviewText = msg.text;
-                                    });
-                                    ref
-                                        .read(chatControllerProvider.notifier)
-                                        .setReplyTo(msg.id);
-                                  } else if (selected == 'react') {
+                                  if (selected == 'react') {
                                     // Open bottom sheet with full emoji categories
                                     final reaction =
                                         await showModalBottomSheet<String>(
@@ -456,8 +440,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child:
-                                      (msg.type == 'image' &&
-                                          (msg.imageUrl?.isNotEmpty ?? false))
+                                      msg.type == 'image'
                                       ? Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -467,7 +450,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                               child: Image.network(
-                                                msg.imageUrl!,
+                                                msg.text,
                                                 fit: BoxFit.cover,
                                                 width: 220,
                                                 height: 220,
@@ -479,36 +462,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                                     ),
                                               ),
                                             ),
-                                            if ((msg.caption ?? msg.text)
-                                                .isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 8,
-                                                ),
-                                                child: Text(
-                                                  msg.caption?.isNotEmpty ==
-                                                          true
-                                                      ? msg.caption!
-                                                      : msg.text,
-                                                ),
-                                              ),
                                           ],
                                         )
                                       : Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            if (msg.replyTo != null &&
-                                                msg.replyTo!.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  bottom: 6,
-                                                ),
-                                                child: _ReplyPreview(
-                                                  replyToId: msg.replyTo!,
-                                                  messages: chatState.messages,
-                                                ),
-                                              ),
+                                            
                                             Text(msg.text),
                                             if (msg.reactions.isNotEmpty)
                                               Padding(
@@ -684,35 +644,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           ),
-          if (_replyToMessageId != null)
-            Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Replying to: ${_replyPreviewText ?? ''}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        _replyToMessageId = null;
-                        _replyPreviewText = null;
-                      });
-                      ref
-                          .read(chatControllerProvider.notifier)
-                          .setReplyTo(null);
-                    },
-                  ),
-                ],
-              ),
-            ),
+          
           Offstage(
             offstage: !_showEmoji,
             child: SizedBox(
@@ -746,54 +678,4 @@ class _ChatMessage {
   });
 }
 
-class _ReplyPreview extends StatelessWidget {
-  const _ReplyPreview({required this.replyToId, required this.messages});
-  final String replyToId;
-  final List<ChatMessage> messages;
 
-  @override
-  Widget build(BuildContext context) {
-    final replied = messages.cast<ChatMessage?>().firstWhere(
-      (m) => m?.id == replyToId,
-      orElse: () => null,
-    );
-    if (replied == null) {
-      return Text('Replying…', style: Theme.of(context).textTheme.labelSmall);
-    }
-    final isImage =
-        replied.type == 'image' && (replied.imageUrl?.isNotEmpty ?? false);
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isImage)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Icon(
-                Icons.image,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          Flexible(
-            child: Text(
-              isImage
-                  ? (replied.caption?.isNotEmpty == true
-                        ? replied.caption!
-                        : '[Image]')
-                  : replied.text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

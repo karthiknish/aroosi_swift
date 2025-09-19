@@ -9,14 +9,13 @@ class ChatMessage extends Equatable {
     this.fromUserId,
     this.toUserId,
     this.type = 'text',
-    this.isMine,
-    this.imageUrl,
-    this.caption,
-    this.replyTo,
-    this.reactions = const {},
     this.audioStorageId,
     this.duration,
     this.fileSize,
+    this.mimeType,
+    this.readAt,
+    this.isMine,
+    this.reactions = const {},
   });
 
   final String id;
@@ -27,17 +26,17 @@ class ChatMessage extends Equatable {
   final String? toUserId;
   final String type; // 'text' | 'voice' | 'image'
 
-  /// Convenience flag to mark author's side in UI; when null, compute from fromUserId externally
-  final bool? isMine;
-  final String? imageUrl; // for type 'image'
-  final String? caption; // optional caption for image
-  final String? replyTo; // messageId being replied to
-  // Map emoji -> list of userIds who reacted
-  final Map<String, List<String>> reactions;
-
   final String? audioStorageId; // for type 'voice'
   final int? duration; // voice duration seconds
   final int? fileSize; // bytes for voice/image
+  final String? mimeType; // MIME type for files
+  final int? readAt; // when message was read
+
+  /// Convenience flag to mark author's side in UI; when null, compute from fromUserId externally
+  final bool? isMine;
+
+  /// Reactions on this message: {emoji: [userIds]}
+  final Map<String, List<String>> reactions;
 
   ChatMessage copyWith({
     String? id,
@@ -48,13 +47,12 @@ class ChatMessage extends Equatable {
     String? toUserId,
     String? type,
     bool? isMine,
-    String? imageUrl,
-    String? caption,
-    String? replyTo,
-    Map<String, List<String>>? reactions,
     String? audioStorageId,
     int? duration,
     int? fileSize,
+    String? mimeType,
+    int? readAt,
+    Map<String, List<String>>? reactions,
   }) => ChatMessage(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -64,13 +62,12 @@ class ChatMessage extends Equatable {
     toUserId: toUserId ?? this.toUserId,
     type: type ?? this.type,
     isMine: isMine ?? this.isMine,
-    imageUrl: imageUrl ?? this.imageUrl,
-    caption: caption ?? this.caption,
-    replyTo: replyTo ?? this.replyTo,
-    reactions: reactions ?? this.reactions,
     audioStorageId: audioStorageId ?? this.audioStorageId,
     duration: duration ?? this.duration,
     fileSize: fileSize ?? this.fileSize,
+    mimeType: mimeType ?? this.mimeType,
+    readAt: readAt ?? this.readAt,
+    reactions: reactions ?? this.reactions,
   );
 
   static ChatMessage fromJson(Map<String, dynamic> json) {
@@ -83,6 +80,18 @@ class ChatMessage extends Equatable {
         json['id']?.toString() ??
         json['_id']?.toString() ??
         '${convId}_${created ?? DateTime.now().millisecondsSinceEpoch}';
+    
+    // Parse reactions if present
+    Map<String, List<String>> reactions = {};
+    if (json['reactions'] is Map) {
+      final reactionsMap = json['reactions'] as Map;
+      reactionsMap.forEach((key, value) {
+        if (value is List) {
+          reactions[key.toString()] = value.map((e) => e.toString()).toList();
+        }
+      });
+    }
+    
     return ChatMessage(
       id: id,
       conversationId: convId.toString(),
@@ -95,15 +104,13 @@ class ChatMessage extends Equatable {
       toUserId: json['toUserId']?.toString() ?? json['to']?.toString(),
       type: json['type']?.toString() ?? 'text',
       isMine: json['isMine'] is bool ? json['isMine'] as bool : null,
-      imageUrl: json['imageUrl']?.toString() ?? json['url']?.toString(),
-      caption: json['caption']?.toString(),
-      replyTo:
-          json['replyTo']?.toString() ?? json['replyMessageId']?.toString(),
-      reactions: _parseReactions(json['reactions']),
       audioStorageId:
           json['audioStorageId']?.toString() ?? json['storageId']?.toString(),
       duration: _parseInt(json['duration']),
       fileSize: _parseInt(json['fileSize']),
+      mimeType: json['mimeType']?.toString() ?? json['contentType']?.toString(),
+      readAt: _parseInt(json['readAt']),
+      reactions: reactions,
     );
   }
 
@@ -111,32 +118,6 @@ class ChatMessage extends Equatable {
     if (v == null) return null;
     if (v is int) return v;
     return int.tryParse(v.toString());
-  }
-
-  static Map<String, List<String>> _parseReactions(dynamic raw) {
-    if (raw is Map) {
-      final map = Map<String, dynamic>.from(raw);
-      return map.map((k, v) {
-        final list =
-            (v as List?)?.map((e) => e.toString()).toList() ?? <String>[];
-        return MapEntry(k.toString(), list);
-      });
-    }
-    if (raw is List) {
-      // Accept shape: [{ emoji: '👍', userId: 'u1' }, ...]
-      final result = <String, List<String>>{};
-      for (final item in raw) {
-        if (item is Map) {
-          final emoji = item['emoji']?.toString();
-          final uid = item['userId']?.toString() ?? item['user']?.toString();
-          if (emoji != null && uid != null) {
-            result.putIfAbsent(emoji, () => <String>[]).add(uid);
-          }
-        }
-      }
-      return result;
-    }
-    return const {};
   }
 
   @override
@@ -149,32 +130,37 @@ class ChatMessage extends Equatable {
     toUserId,
     type,
     isMine,
-    imageUrl,
-    caption,
-    replyTo,
-    reactions,
     audioStorageId,
     duration,
     fileSize,
+    mimeType,
+    readAt,
+    reactions,
   ];
 }
 
 class ConversationSummary extends Equatable {
   const ConversationSummary({
     required this.id,
+    this.participants = const [],
+    this.lastMessage,
+    this.lastMessageAt,
+    this.createdAt,
     this.partnerId,
     this.partnerName,
     this.partnerAvatarUrl,
     this.unreadCount = 0,
-    this.lastMessage,
   });
 
   final String id;
+  final List<String> participants;
+  final ChatMessage? lastMessage;
+  final int? lastMessageAt;
+  final int? createdAt;
   final String? partnerId;
   final String? partnerName;
   final String? partnerAvatarUrl;
   final int unreadCount;
-  final ChatMessage? lastMessage;
 
   static ConversationSummary fromJson(Map<String, dynamic> json) {
     final id =
@@ -182,33 +168,63 @@ class ConversationSummary extends Equatable {
         json['_id']?.toString() ??
         json['conversationId']?.toString() ??
         '';
-    final unread = json['unread'] ?? json['unreadCount'] ?? 0;
+    final participants = json['participants'] is List
+        ? (json['participants'] as List).map((e) => e.toString()).toList()
+        : <String>[];
     final last = json['lastMessage'] is Map<String, dynamic>
         ? ChatMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
         : null;
-    final avatar =
-        json['partnerAvatar']?.toString() ??
-        json['partnerAvatarUrl']?.toString() ??
-        json['avatar']?.toString() ??
-        json['avatarUrl']?.toString();
     return ConversationSummary(
       id: id,
-      partnerId: json['partnerId']?.toString() ?? json['toUserId']?.toString(),
-      partnerName:
-          json['partnerName']?.toString() ?? json['toName']?.toString(),
-      partnerAvatarUrl: avatar,
-      unreadCount: unread is int ? unread : int.tryParse('$unread') ?? 0,
+      participants: participants,
       lastMessage: last,
+      lastMessageAt: _parseInt(json['lastMessageAt']),
+      createdAt: _parseInt(json['createdAt']),
+      partnerId: json['partnerId']?.toString(),
+      partnerName: json['partnerName']?.toString(),
+      partnerAvatarUrl: json['partnerAvatarUrl']?.toString(),
+      unreadCount: _parseInt(json['unreadCount']) ?? 0,
     );
+  }
+
+  ConversationSummary copyWith({
+    String? id,
+    List<String>? participants,
+    ChatMessage? lastMessage,
+    int? lastMessageAt,
+    int? createdAt,
+    String? partnerId,
+    String? partnerName,
+    String? partnerAvatarUrl,
+    int? unreadCount,
+  }) => ConversationSummary(
+    id: id ?? this.id,
+    participants: participants ?? this.participants,
+    lastMessage: lastMessage ?? this.lastMessage,
+    lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+    createdAt: createdAt ?? this.createdAt,
+    partnerId: partnerId ?? this.partnerId,
+    partnerName: partnerName ?? this.partnerName,
+    partnerAvatarUrl: partnerAvatarUrl ?? this.partnerAvatarUrl,
+    unreadCount: unreadCount ?? this.unreadCount,
+  );
+
+  static int? _parseInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    return int.tryParse(v.toString());
   }
 
   @override
   List<Object?> get props => [
     id,
+    participants,
+    lastMessage,
+    lastMessageAt,
+    createdAt,
     partnerId,
     partnerName,
     partnerAvatarUrl,
     unreadCount,
-    lastMessage,
   ];
 }

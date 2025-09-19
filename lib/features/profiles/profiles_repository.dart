@@ -19,34 +19,31 @@ class ProfilesRepository {
 
   // region: Profile listing/search
 
-  Future<PagedResponse<ProfileSummary>> getMatches({
+  Future<PagedResponse<MatchEntry>> getMatches({
     int page = 1,
     int pageSize = 20,
-    String? sort,
   }) async {
     try {
-      // RN primary: /matches
+      // Next.js primary: /matches
       final res = await _dio.get(
         '/matches',
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
-          if (sort != null) 'sort': sort,
         },
       );
-      return _parsePaged(res);
+      return _parseMatchesPaged(res);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        // Fallback to legacy
+        // Fallback to legacy endpoint
         final res = await _dio.get(
           '/profiles/matches',
           queryParameters: {
             'page': page,
             'pageSize': pageSize,
-            if (sort != null) 'sort': sort,
           },
         );
-        return _parsePaged(res);
+        return _parseMatchesPaged(res);
       }
       rethrow;
     }
@@ -166,6 +163,29 @@ class ProfilesRepository {
     }
   }
 
+  Future<PagedResponse<ShortlistEntry>> getShortlistEntries({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      // Next.js primary: /engagement/shortlist
+      final res = await _dio.get(
+        '/engagement/shortlist',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
+      return _parseShortlistPaged(res);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        final res = await _dio.get(
+          '/profiles/shortlist',
+          queryParameters: {'page': page, 'pageSize': pageSize},
+        );
+        return _parseShortlistPaged(res);
+      }
+      rethrow;
+    }
+  }
+
   Future<bool> toggleFavorite(String profileId) async {
     final res = await _dio.post('/profiles/$profileId/favorite');
     return res.statusCode == 200;
@@ -185,6 +205,80 @@ class ProfilesRepository {
     return status >= 200 && status < 300;
   }
 
+  Future<Map<String, dynamic>> toggleShortlistEntry(String userId) async {
+    try {
+      final res = await _dio.post(
+        '/engagement/shortlist',
+        data: {'toUserId': userId},
+      );
+      
+      final status = res.statusCode ?? 200;
+      final data = res.data as Map<String, dynamic>? ?? {};
+      
+      if (status >= 200 && status < 300) {
+        return {
+          'success': true,
+          'data': data,
+          'error': null,
+        };
+      } else {
+        return {
+          'success': false,
+          'data': data,
+          'error': data['message'] ?? 'Failed to toggle shortlist',
+        };
+      }
+    } on DioException catch (e) {
+      final errorData = e.response?.data as Map<String, dynamic>? ?? {};
+      return {
+        'success': false,
+        'data': errorData,
+        'error': errorData['message'] ?? e.message ?? 'Network error',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'data': null,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchNote(String userId) async {
+    try {
+      final res = await _dio.get(
+        '/engagement/note',
+        queryParameters: {'toUserId': userId},
+      );
+      
+      final status = res.statusCode ?? 200;
+      if (status >= 200 && status < 300) {
+        final data = res.data as Map<String, dynamic>? ?? {};
+        return (data['data'] as Map<String, dynamic>?) ?? data;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> setNote(String userId, String note) async {
+    try {
+      final res = await _dio.post(
+        '/engagement/note',
+        data: {'toUserId': userId, 'note': note},
+      );
+      
+      final status = res.statusCode ?? 200;
+      final data = res.data as Map<String, dynamic>? ?? {};
+      
+      return (status >= 200 && status < 300) && 
+             ((data['success'] == true) || (data['data']['success'] == true));
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> boostProfile() async {
     try {
       final res = await _dio.post('/profile/boost');
@@ -201,43 +295,114 @@ class ProfilesRepository {
     return false;
   }
 
-  // Send an "interest" (like) to a profile. Web-first endpoint with graceful fallbacks.
-  Future<bool> sendInterest(String profileId) async {
+  // Send/respond to/remove interests using Next.js API
+  Future<Map<String, dynamic>> manageInterest({
+    required String action, // 'send', 'respond', 'remove'
+    String? toUserId,
+    String? interestId,
+    String? status, // 'accepted', 'rejected' for respond action
+  }) async {
     try {
-      Response res;
-      try {
-        res = await _dio.post(
-          '/interests',
-          data: {'action': 'send', 'toUserId': profileId},
-        );
-        final status = res.statusCode ?? 200;
-        if (status >= 200 && status < 300) {
-          return true;
-        }
-      } catch (_) {}
+      final data = <String, dynamic>{'action': action};
+      if (toUserId != null) data['toUserId'] = toUserId;
+      if (interestId != null) data['interestId'] = interestId;
+      if (status != null) data['status'] = status;
 
-      res = await _dio.post('/profiles/$profileId/interest');
-      var status = res.statusCode ?? 200;
-      if (status >= 200 && status < 300) {
-        return true;
+      final res = await _dio.post('/interests', data: data);
+      final responseData = res.data as Map<String, dynamic>? ?? {};
+      
+      if (responseData['success'] == true) {
+        return {
+          'success': true,
+          'data': responseData['data'],
+          'error': null,
+        };
+      } else {
+        return {
+          'success': false,
+          'data': responseData,
+          'error': responseData['error'] ?? 'Failed to manage interest',
+        };
       }
-
-      res = await _dio.post('/likes', data: {'profileId': profileId});
-      status = res.statusCode ?? 200;
-      if (status >= 200 && status < 300) {
-        return true;
-      }
-
-      res = await _dio.post('/profiles/$profileId/like');
-      status = res.statusCode ?? 200;
-      return status >= 200 && status < 300;
     } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 201 || code == 204) {
-        return true;
+      final errorData = e.response?.data as Map<String, dynamic>? ?? {};
+      return {
+        'success': false,
+        'data': errorData,
+        'error': errorData['error'] ?? errorData['message'] ?? e.message ?? 'Network error',
+        'isPlanLimit': _isPlanLimitError(errorData['error'] ?? errorData['message'] ?? ''),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'data': null,
+        'error': e.toString(),
+        'isPlanLimit': false,
+      };
+    }
+  }
+
+  // Get interests with different modes
+  Future<PagedResponse<InterestEntry>> getInterests({
+    required String mode, // 'sent', 'received', 'mutual'
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final res = await _dio.get(
+        '/interests',
+        queryParameters: {
+          'mode': mode,
+          'page': page,
+          'pageSize': pageSize,
+        },
+      );
+      return _parseInterestsPaged(res);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Fallback to legacy endpoint
+        final res = await _dio.get(
+          '/profiles/interests',
+          queryParameters: {
+            'mode': mode,
+            'page': page,
+            'pageSize': pageSize,
+          },
+        );
+        return _parseInterestsPaged(res);
       }
       rethrow;
     }
+  }
+
+  // Check interest status between users
+  Future<Map<String, dynamic>?> checkInterestStatus({
+    required String fromUserId,
+    required String toUserId,
+  }) async {
+    try {
+      final res = await _dio.get(
+        '/interests/status',
+        queryParameters: {
+          'fromUserId': fromUserId,
+          'toUserId': toUserId,
+        },
+      );
+      
+      final responseData = res.data as Map<String, dynamic>? ?? {};
+      if (responseData['success'] == true) {
+        return responseData['data'] as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Legacy send interest method for backward compatibility
+  Future<bool> sendInterest(String profileId) async {
+    final result = await manageInterest(action: 'send', toUserId: profileId);
+    return result['success'] == true;
   }
 
   // Interests taxonomy/options for user to pick from
@@ -394,6 +559,102 @@ class ProfilesRepository {
     );
   }
 
+  PagedResponse<MatchEntry> _parseMatchesPaged(Response res) {
+    final meta = <String, dynamic>{};
+    final rawItems = _extractMatchesList(res.data, meta);
+
+    final items = rawItems
+        .whereType<Map>()
+        .map((e) => MatchEntry.fromJson(e.cast<String, dynamic>()))
+        .where((m) => m.id.isNotEmpty)
+        .toList();
+
+    final query = res.requestOptions.queryParameters;
+    final total =
+        _asInt(meta['total']) ?? _asInt(res.data?['total']) ?? items.length;
+    final requestedPage = _asInt(query['page']);
+    final page = _asInt(meta['page']) ?? requestedPage ?? 1;
+    final pageSize =
+        _asInt(meta['pageSize']) ?? _asInt(query['pageSize']) ?? items.length;
+    final nextPage = _asInt(meta['nextPage']);
+    final nextCursor = _asString(meta['nextCursor']);
+    final hasMoreFlag = _asBool(meta['hasMore']);
+
+    return PagedResponse(
+      items: items,
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      nextPage: nextPage,
+      nextCursor: nextCursor,
+      hasMore: hasMoreFlag,
+    );
+  }
+
+PagedResponse<InterestEntry> _parseInterestsPaged(Response res) {
+    final meta = <String, dynamic>{};
+    final rawItems = _extractInterestsList(res.data, meta);
+
+    final items = rawItems
+        .whereType<Map>()
+        .map((e) => InterestEntry.fromJson(e.cast<String, dynamic>()))
+        .where((i) => i.id.isNotEmpty)
+        .toList();
+
+    final query = res.requestOptions.queryParameters;
+    final total =
+        _asInt(meta['total']) ?? _asInt(res.data?['total']) ?? items.length;
+    final requestedPage = _asInt(query['page']);
+    final page = _asInt(meta['page']) ?? requestedPage ?? 1;
+    final pageSize =
+        _asInt(meta['pageSize']) ?? _asInt(query['pageSize']) ?? items.length;
+    final nextPage = _asInt(meta['nextPage']);
+    final nextCursor = _asString(meta['nextCursor']);
+    final hasMoreFlag = _asBool(meta['hasMore']);
+
+    return PagedResponse(
+      items: items,
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      nextPage: nextPage,
+      nextCursor: nextCursor,
+      hasMore: hasMoreFlag,
+    );
+  }
+
+PagedResponse<ShortlistEntry> _parseShortlistPaged(Response res) {
+    final meta = <String, dynamic>{};
+    final rawItems = _extractShortlistList(res.data, meta);
+
+    final items = rawItems
+        .whereType<Map>()
+        .map((e) => ShortlistEntry.fromJson(e.cast<String, dynamic>()))
+        .where((p) => p.userId.isNotEmpty)
+        .toList();
+
+    final query = res.requestOptions.queryParameters;
+    final total =
+        _asInt(meta['total']) ?? _asInt(res.data?['total']) ?? items.length;
+    final requestedPage = _asInt(query['page']);
+    final page = _asInt(meta['page']) ?? requestedPage ?? 1;
+    final pageSize =
+        _asInt(meta['pageSize']) ?? _asInt(query['pageSize']) ?? items.length;
+    final nextPage = _asInt(meta['nextPage']);
+    final nextCursor = _asString(meta['nextCursor']);
+    final hasMoreFlag = _asBool(meta['hasMore']);
+
+    return PagedResponse(
+      items: items,
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      nextPage: nextPage,
+      nextCursor: nextCursor,
+      hasMore: hasMoreFlag,
+    );
+  }
+
   List<dynamic> _extractProfileList(dynamic data, Map<String, dynamic> meta) {
     if (data is List) return data;
     if (data is Map<String, dynamic>) {
@@ -407,6 +668,64 @@ class ProfilesRepository {
       ]) {
         if (!data.containsKey(key)) continue;
         final result = _extractProfileList(data[key], meta);
+        if (result.isNotEmpty) return result;
+      }
+    }
+    return const [];
+  }
+
+  List<dynamic> _extractMatchesList(dynamic data, Map<String, dynamic> meta) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      _collectMeta(data, meta);
+      for (final key in const [
+        'matches',
+        'items',
+        'results',
+        'data',
+        'list',
+      ]) {
+        if (!data.containsKey(key)) continue;
+        final result = _extractMatchesList(data[key], meta);
+        if (result.isNotEmpty) return result;
+      }
+    }
+    return const [];
+  }
+
+List<dynamic> _extractInterestsList(dynamic data, Map<String, dynamic> meta) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      _collectMeta(data, meta);
+      for (final key in const [
+        'interests',
+        'items',
+        'results',
+        'data',
+        'list',
+      ]) {
+        if (!data.containsKey(key)) continue;
+        final result = _extractInterestsList(data[key], meta);
+        if (result.isNotEmpty) return result;
+      }
+    }
+    return const [];
+  }
+
+List<dynamic> _extractShortlistList(dynamic data, Map<String, dynamic> meta) {
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      _collectMeta(data, meta);
+      for (final key in const [
+        'entries',
+        'items',
+        'results',
+        'data',
+        'list',
+        'shortlist',
+      ]) {
+        if (!data.containsKey(key)) continue;
+        final result = _extractShortlistList(data[key], meta);
         if (result.isNotEmpty) return result;
       }
     }
@@ -455,6 +774,126 @@ class ProfilesRepository {
     if (lower == 'true' || lower == '1') return true;
     if (lower == 'false' || lower == '0') return false;
     return null;
+  }
+
+bool _isPlanLimitError(String error) {
+  final lower = error.toLowerCase();
+  return lower.contains('plan') || 
+         lower.contains('limit') ||
+         lower.contains('subscription') ||
+         lower.contains('upgrade') ||
+         lower.contains('premium');
+}
+
+  // endregion
+
+  // region: Unread messages and conversation management
+
+  Future<Map<String, int>> getUnreadMessageCounts() async {
+    try {
+      final res = await _dio.get('/matches/unread');
+      final data = res.data as Map<String, dynamic>? ?? {};
+      
+      if (data['success'] == true) {
+        final countsData = data['data'] as Map<String, dynamic>? ?? {};
+        return countsData.map((key, value) => MapEntry(key, (value as num).toInt()));
+      }
+      
+      // Fallback: try legacy endpoint
+      try {
+        final legacyRes = await _dio.get('/conversations/unread');
+        final legacyData = legacyRes.data as Map<String, dynamic>? ?? {};
+        if (legacyData['success'] == true) {
+          final countsData = legacyData['data'] as Map<String, dynamic>? ?? {};
+          return countsData.map((key, value) => MapEntry(key, (value as num).toInt()));
+        }
+      } catch (_) {
+        // Ignore fallback error
+      }
+      
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> markConversationAsRead(String conversationId) async {
+    try {
+      await _dio.post('/conversations/$conversationId/read');
+    } catch (_) {
+      // Silently fail
+    }
+  }
+
+  // endregion
+
+  // region: Block management
+
+  Future<bool> isUserBlocked(String userId) async {
+    try {
+      final res = await _dio.get('/blocks/check/$userId');
+      final data = res.data as Map<String, dynamic>? ?? {};
+      return data['blocked'] == true || data['isBlocked'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> blockUser(String userId) async {
+    try {
+      final res = await _dio.post('/blocks', data: {'userId': userId});
+      final responseData = res.data as Map<String, dynamic>? ?? {};
+      
+      if (responseData['success'] == true) {
+        return {
+          'success': true,
+          'error': null,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Failed to block user',
+        };
+      }
+    } on DioException catch (e) {
+      final errorData = e.response?.data as Map<String, dynamic>? ?? {};
+      return {
+        'success': false,
+        'error': errorData['error'] ?? errorData['message'] ?? e.message ?? 'Network error',
+        'isPlanLimit': _isPlanLimitError(errorData['error'] ?? errorData['message'] ?? ''),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+        'isPlanLimit': false,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> unblockUser(String userId) async {
+    try {
+      final res = await _dio.delete('/blocks/$userId');
+      final responseData = res.data as Map<String, dynamic>? ?? {};
+      
+      if (responseData['success'] == true) {
+        return {
+          'success': true,
+          'error': null,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Failed to unblock user',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+        'isPlanLimit': false,
+      };
+    }
   }
 
   // endregion

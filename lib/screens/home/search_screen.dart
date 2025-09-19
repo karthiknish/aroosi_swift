@@ -378,7 +378,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 final ok = await ref
                     .read(matchesControllerProvider.notifier)
                     .sendInterest(profile.id);
-                if (ok) {
+                if (ok['success'] == true) {
                   _toast.success(
                     'Liked ${profile.displayName}',
                   );

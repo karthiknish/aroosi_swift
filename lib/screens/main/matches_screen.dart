@@ -35,7 +35,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(matchesControllerProvider.notifier).refresh(sort: _currentSort);
+      ref.read(matchesControllerProvider.notifier).refresh();
     });
     addLoadMoreListener(
       _scrollController,
@@ -46,7 +46,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       },
       onLoadMore: () => ref
           .read(matchesControllerProvider.notifier)
-          .loadMore(sort: _currentSort),
+          .loadMore(),
     );
   }
 
@@ -74,7 +74,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               FilledButton(
                 onPressed: () => ref
                     .read(matchesControllerProvider.notifier)
-                    .refresh(sort: _currentSort),
+                    .refresh(),
                 child: const Text('Retry'),
               ),
             ],
@@ -115,17 +115,30 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 onPressed: () {
                   if (!_canViewProfile()) return;
                   if (!_requestUsage(UsageMetric.profileView)) return;
-                  ref
-                      .read(lastSelectedProfileIdProvider.notifier)
-                      .set(match.id);
-                  context.push('/details/${match.id}');
+                  
+                  // For mutual matches, navigate to conversation
+                  if (match.isMutual && match.conversationId.isNotEmpty) {
+                    // Mark conversation as read when opening
+                    ref.read(matchesControllerProvider.notifier)
+                        .markConversationAsRead(match.conversationId);
+                    context.push('/chat/${match.conversationId}');
+                  } else {
+                    // For non-mutual matches, navigate to profile
+                    final targetUserId = match.otherUserId ?? 
+                        (match.user1Id == match.user2Id ? match.user1Id : 
+                         (match.user1Id.isNotEmpty ? match.user1Id : match.user2Id));
+                    ref
+                        .read(lastSelectedProfileIdProvider.notifier)
+                        .set(targetUserId);
+                    context.push('/details/$targetUserId');
+                  }
                 },
                 onLongPress: () async {
                   if (!_requestUsage(UsageMetric.interestSent)) return;
                   final ctx = context;
                   final action = await showAdaptiveActionSheet(
                     ctx,
-                    title: match.displayName,
+                    title: match.otherUserName ?? 'Match',
                     actions: const [
                       'Send interest',
                       'Favorite / Unfavorite',
@@ -133,36 +146,33 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                     ],
                   );
                   if (action == null) return;
+                  final targetUserId = match.otherUserId ?? 
+                      (match.user1Id == match.user2Id ? match.user1Id : 
+                       (match.user1Id.isNotEmpty ? match.user1Id : match.user2Id));
                   if (action == 0) {
                     if (!_requestUsage(UsageMetric.interestSent)) return;
-                    final ok = await ref
+                    final result = await ref
                         .read(matchesControllerProvider.notifier)
-                        .sendInterest(match.id);
-                    if (ok) {
+                        .sendInterest(targetUserId);
+                    if (result['success'] == true) {
                       ToastService.instance.success(
-                        'Interest sent to ${match.displayName}',
+                        'Interest sent to ${match.otherUserName ?? 'match'}',
                       );
                     } else {
-                      ToastService.instance.error('Failed to send interest');
+                      final error = result['error'] as String? ?? 'Failed to send interest';
+                      final isPlanLimit = result['isPlanLimit'] == true;
+                      if (isPlanLimit) {
+                        ToastService.instance.warning('Upgrade to send more interests');
+                      } else {
+                        ToastService.instance.error(error);
+                      }
                     }
                   } else if (action == 1) {
-                    await ref
-                        .read(matchesControllerProvider.notifier)
-                        .toggleFavorite(match.id);
-                    ToastService.instance.success(
-                      match.isFavorite
-                          ? 'Removed from favorites'
-                          : 'Added to favorites',
-                    );
+                    // Favorite functionality would need to be added to MatchesController
+                    ToastService.instance.info('Favorite feature coming soon');
                   } else if (action == 2) {
-                    await ref
-                        .read(matchesControllerProvider.notifier)
-                        .toggleShortlist(match.id);
-                    ToastService.instance.success(
-                      match.isShortlisted
-                          ? 'Removed from shortlist'
-                          : 'Added to shortlist',
-                    );
+                    // Shortlist functionality would need to be added to MatchesController
+                    ToastService.instance.info('Shortlist feature coming soon');
                   }
                 },
                 child: _MatchCard(match: match),
@@ -180,7 +190,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       onRefresh: () async {
         await ref
             .read(matchesControllerProvider.notifier)
-            .refresh(sort: _currentSort);
+            .refresh();
         ToastService.instance.success('Refreshed');
       },
       controller: _scrollController,
@@ -244,7 +254,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             if (selection != null) {
               await ref
                   .read(matchesControllerProvider.notifier)
-                  .refresh(sort: _currentSort);
+                  .refresh();
               ToastService.instance.success('Sort applied');
             }
           },
@@ -312,32 +322,119 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 class _MatchCard extends StatelessWidget {
   const _MatchCard({required this.match});
 
-  final ProfileSummary match;
+  final MatchEntry match;
 
   @override
   Widget build(BuildContext context) {
+    final displayName = match.otherUserName ?? 'Match';
+    final avatarUrl = match.otherUserImage;
+    
     return Card(
       elevation: 2,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundImage: match.avatarUrl != null
-                ? NetworkImage(match.avatarUrl!)
-                : null,
-            child: match.avatarUrl == null
-                ? Text(
-                    match.displayName.isNotEmpty
-                        ? match.displayName.characters.first
-                        : '?',
-                  )
-                : null,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 36,
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl == null
+                    ? Text(
+                        displayName.isNotEmpty
+                            ? displayName.characters.first
+                            : '?',
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              Text(displayName, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              if (match.lastMessageText != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    match.lastMessageText!,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              if (match.status != 'matched')
+                Text(
+                  match.status,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: match.status == 'pending' ? Colors.orange : Colors.green,
+                  ),
+                ),
+              if (match.isMutual)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.pink.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Mutual Match',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.pink,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(match.displayName, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          Text(match.city ?? '', style: const TextStyle(fontSize: 12)),
+          // Unread message indicator
+          if (match.unreadCount > 0)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
+                child: Text(
+                  match.unreadCount > 99 ? '99+' : match.unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          // Blocked indicator
+          if (match.isBlocked)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Blocked',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

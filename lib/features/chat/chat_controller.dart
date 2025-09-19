@@ -11,7 +11,6 @@ class ChatState {
     this.error,
     this.hasMore = true,
     this.sending = false,
-    this.replyToMessageId,
   });
 
   final List<ChatMessage> messages;
@@ -19,7 +18,6 @@ class ChatState {
   final String? error;
   final bool hasMore;
   final bool sending;
-  final String? replyToMessageId;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
@@ -28,17 +26,12 @@ class ChatState {
     bool setError = false,
     bool? hasMore,
     bool? sending,
-    String? replyToMessageId,
-    bool clearReply = false,
   }) => ChatState(
     messages: messages ?? this.messages,
     loading: loading ?? this.loading,
     error: setError ? error : this.error,
     hasMore: hasMore ?? this.hasMore,
     sending: sending ?? this.sending,
-    replyToMessageId: clearReply
-        ? null
-        : (replyToMessageId ?? this.replyToMessageId),
   );
 }
 
@@ -126,12 +119,10 @@ class ChatController extends Notifier<ChatState> {
         conversationId: conv,
         text: text.trim(),
         toUserId: toUserId,
-        replyToMessageId: state.replyToMessageId,
       );
       state = state.copyWith(
         messages: [...state.messages, sent],
         sending: false,
-        clearReply: true,
       );
     } catch (e) {
       state = state.copyWith(sending: false);
@@ -144,7 +135,6 @@ class ChatController extends Notifier<ChatState> {
     String filename = 'image.jpg',
     String contentType = 'image/jpeg',
     String? toUserId,
-    String? caption,
   }) async {
     final conv = _convId;
     if (conv == null || state.sending) return;
@@ -156,7 +146,6 @@ class ChatController extends Notifier<ChatState> {
         filename: filename,
         contentType: contentType,
         toUserId: toUserId,
-        caption: caption,
       );
       state = state.copyWith(
         messages: [...state.messages, sent],
@@ -168,9 +157,7 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
-  void setReplyTo(String? messageId) {
-    state = state.copyWith(replyToMessageId: messageId);
-  }
+  
 
   Future<void> reactToMessage({
     required String messageId,

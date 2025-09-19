@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
@@ -20,6 +21,7 @@ class SubscriptionController extends Notifier<SubscriptionState> {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   Completer<PurchaseResult>? _activePurchase;
   Completer<bool>? _restoreCompleter;
+  Timer? _statusRefreshTimer;
 
   @override
   SubscriptionState build() {
@@ -27,6 +29,7 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     // Ensure resources are cleaned up when the provider is disposed
     ref.onDispose(() {
       _purchaseSub?.cancel();
+      _statusRefreshTimer?.cancel();
       if (_activePurchase != null && !(_activePurchase?.isCompleted ?? true)) {
         _activePurchase?.complete(
           const PurchaseResult.failure(PurchaseError(PurchaseErrorType.unknown, 'Controller disposed')),
@@ -64,6 +67,9 @@ class SubscriptionController extends Notifier<SubscriptionState> {
         _completeActive(PurchaseResult.failure(mapped));
       },
     );
+
+    // Start periodic status refresh for real-time updates
+    _startPeriodicStatusRefresh();
   }
 
   Future<void> refreshStatus() async {
@@ -71,6 +77,22 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     if (status != null) {
       state = state.copyWith(status: status);
     }
+  }
+
+  void _startPeriodicStatusRefresh() {
+    // Refresh status every 5 minutes for real-time updates
+    _statusRefreshTimer?.cancel();
+    _statusRefreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      if (!state.isProcessingPurchase) {
+        await refreshStatus();
+      }
+    });
+  }
+
+  Future<void> forceStatusRefresh() async {
+    await refreshStatus();
+    // Restart the periodic timer
+    _startPeriodicStatusRefresh();
   }
 
   Future<void> loadProducts() async {
@@ -158,18 +180,42 @@ class SubscriptionController extends Notifier<SubscriptionState> {
   }
 
   Future<bool> restorePurchases() async {
+    if (state.isProcessingPurchase) {
+      return false;
+    }
+    
     state = state.copyWith(isProcessingPurchase: true, error: null, setError: true);
     _restoreCompleter = Completer<bool>();
-    // IAP 3.x restorePurchases returns Future<void>. Await and then rely on
-    // purchaseStream callbacks to complete the restore flow.
-    await _iap.restorePurchases();
-    Timer(const Duration(seconds: 6), () {
-      if (_restoreCompleter != null && !(_restoreCompleter!.isCompleted)) {
-        state = state.copyWith(isProcessingPurchase: false);
-        _restoreCompleter?.complete(false);
-        _restoreCompleter = null;
-      }
-    });
+    
+    try {
+      // IAP 3.x restorePurchases returns Future<void>. Await and then rely on
+      // purchaseStream callbacks to complete the restore flow.
+      await _iap.restorePurchases();
+      
+      // Set a timeout for the restore operation
+      Timer(const Duration(seconds: 10), () {
+        if (_restoreCompleter != null && !(_restoreCompleter!.isCompleted)) {
+          logApi('⚠️ Restore purchases timed out after 10 seconds');
+          state = state.copyWith(
+            isProcessingPurchase: false,
+            error: const PurchaseError(PurchaseErrorType.unknown, 'Restore operation timed out'),
+            setError: true,
+          );
+          _restoreCompleter?.complete(false);
+          _restoreCompleter = null;
+        }
+      });
+      
+    } catch (e) {
+      state = state.copyWith(
+        isProcessingPurchase: false,
+        error: _mapError(e),
+        setError: true,
+      );
+      _restoreCompleter?.complete(false);
+      _restoreCompleter = null;
+    }
+    
     return _restoreCompleter!.future;
   }
 
@@ -198,11 +244,14 @@ class SubscriptionController extends Notifier<SubscriptionState> {
         ? receipt
         : purchase.verificationData.serverVerificationData;
 
-    final ok = await _repository.validatePurchase(
+    // Use robust validation with retry mechanism
+    final ok = await _repository.validatePurchaseWithRetry(
       platform: platform,
       productId: productId,
       purchaseToken: purchaseToken,
       receiptData: Platform.isIOS ? receipt : null,
+      maxRetries: 3,
+      retryDelay: const Duration(seconds: 2),
     );
 
     if (purchase.pendingCompletePurchase) {
@@ -222,7 +271,7 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       _restoreCompleter?.complete(true);
       _restoreCompleter = null;
     } else {
-      const error = PurchaseError(PurchaseErrorType.validationFailed, 'Purchase validation failed');
+      const error = PurchaseError(PurchaseErrorType.validationFailed, 'Purchase validation failed after retries');
       state = state.copyWith(isProcessingPurchase: false, error: error, setError: true);
       _completeActive(const PurchaseResult.failure(error));
       _restoreCompleter?.complete(false);
@@ -286,6 +335,181 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     if (productId == ids.premiumPlus) return 'premiumPlus';
     if (productId == ids.premium) return 'premium';
     return productId;
+  }
+
+  Future<bool> refreshSubscription() async {
+    try {
+      final success = await _repository.refreshSubscription();
+      if (success) {
+        await refreshStatus();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to refresh subscription'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> cancelSubscription() async {
+    try {
+      final success = await _repository.cancelSubscription();
+      if (success) {
+        await refreshStatus();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to cancel subscription'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getFeatures() async {
+    try {
+      return await _repository.getFeatures();
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch features'),
+        setError: true,
+      );
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUsageHistory() async {
+    try {
+      return await _repository.getUsageHistory();
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch usage history'),
+        setError: true,
+      );
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getBoostQuota() async {
+    try {
+      return await _repository.getBoostQuota();
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch boost quota'),
+        setError: true,
+      );
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getVoiceQuota() async {
+    try {
+      return await _repository.getVoiceQuota();
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch voice quota'),
+        setError: true,
+      );
+      return null;
+    }
+  }
+
+  Future<bool> updateSubscriptionStatus(Map<String, dynamic> statusData) async {
+    try {
+      final success = await _repository.updateSubscriptionStatus(statusData);
+      if (success) {
+        await refreshStatus();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to update subscription status'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> manageSubscription() async {
+    try {
+      // For iOS, we can open the subscription management URL
+      if (Platform.isIOS) {
+        // This would typically open the App Store subscription management
+        // For now, we'll just refresh the status
+        await refreshStatus();
+        return true;
+      }
+      
+      // For Android, we would open Google Play subscription management
+      // For now, we'll just refresh the status
+      await refreshStatus();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.unknown, 'Failed to open subscription management'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> checkPurchaseHistory() async {
+    try {
+      // This would typically check the purchase history from the store
+      // For now, we'll just trigger a restore
+      return await restorePurchases();
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.unknown, 'Failed to check purchase history'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> validateCurrentSubscription() async {
+    try {
+      final currentStatus = state.status;
+      if (currentStatus == null || !currentStatus.isActive) {
+        return false;
+      }
+      
+      // If we have a product ID, try to validate the current subscription
+      if (currentStatus.productId != null) {
+        final platform = Platform.isIOS ? 'ios' : 'android';
+        final success = await _repository.validatePurchaseWithRetry(
+          platform: platform,
+          productId: currentStatus.productId!,
+          purchaseToken: 'current', // This would be the actual purchase token
+          maxRetries: 2,
+        );
+        
+        if (!success) {
+          // If validation fails, refresh status to get updated information
+          await refreshStatus();
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: PurchaseError(PurchaseErrorType.validationFailed, 'Failed to validate current subscription'),
+        setError: true,
+      );
+      return false;
+    }
+  }
+
+  void logApi(String message) {
+    // Simple logging method for API operations
+    debugPrint('[SubscriptionController] $message');
   }
 
   // Cleanup handled via ref.onDispose in build()

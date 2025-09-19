@@ -29,50 +29,154 @@ class SubscriptionStatusHeader extends StatelessWidget {
     }
   }
 
+  Color _getPlanColor(SubscriptionPlan plan) {
+    switch (plan) {
+      case SubscriptionPlan.free:
+        return Colors.grey.shade600;
+      case SubscriptionPlan.premium:
+        return Colors.blue.shade600;
+      case SubscriptionPlan.premiumPlus:
+        return Colors.purple.shade600;
+    }
+  }
+
+  IconData _getPlanIcon(SubscriptionPlan plan) {
+    switch (plan) {
+      case SubscriptionPlan.free:
+        return Icons.star_outline;
+      case SubscriptionPlan.premium:
+        return Icons.star;
+      case SubscriptionPlan.premiumPlus:
+        return Icons.workspace_premium;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final planColor = _getPlanColor(plan);
+    final planIcon = _getPlanIcon(plan);
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [
+            planColor.withOpacity(0.1),
+            planColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: planColor.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Text(
-                  'Current Plan',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                Text(
-                  getTierDisplayName(plan),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: planColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    planIcon,
+                    color: planColor,
+                    size: 24,
                   ),
                 ),
-                if (isActive && expiresAt != null)
-                  Text(
-                    (isApproachingExpiry ? 'Expires ' : 'Renews ') +
-                        '${_formatDate(expiresAt!)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current Plan',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        getTierDisplayName(plan),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: planColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isActive)
+                  ElevatedButton(
+                    onPressed: onUpgrade,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: planColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Upgrade'),
                   ),
               ],
             ),
-          ),
-          if (!isActive)
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: ElevatedButton(
-                onPressed: onUpgrade,
-                child: const Text('Upgrade'),
+            if (isActive && expiresAt != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isApproachingExpiry
+                      ? Colors.orange.withOpacity(0.1)
+                      : Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isApproachingExpiry ? Icons.warning_amber : Icons.refresh,
+                      color: isApproachingExpiry ? Colors.orange : Colors.green,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      (isApproachingExpiry ? 'Expires ' : 'Renews ') +
+                          '${_formatDate(expiresAt!)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isApproachingExpiry ? Colors.orange : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }

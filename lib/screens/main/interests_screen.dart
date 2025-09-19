@@ -17,13 +17,13 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(interestsControllerProvider.notifier).load();
+      ref.read(userInterestsControllerProvider.notifier).load();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = ref.watch(interestsControllerProvider);
+    final s = ref.watch(userInterestsControllerProvider);
 
     return AppScaffold(
       title: 'Select Interests',
@@ -33,7 +33,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
               ? null
               : () async {
                   final ok = await ref
-                      .read(interestsControllerProvider.notifier)
+                      .read(userInterestsControllerProvider.notifier)
                       .save();
                   if (ok) {
                     ToastService.instance.success(
@@ -69,7 +69,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                   label: Text(interest),
                   selected: isActive,
                   onSelected: (value) => ref
-                      .read(interestsControllerProvider.notifier)
+                      .read(userInterestsControllerProvider.notifier)
                       .toggle(interest, value),
                 );
               }).toList(),

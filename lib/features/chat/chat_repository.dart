@@ -17,55 +17,13 @@ class ChatRepository {
     if (before != null) qp['before'] = before;
     if (limit != null) qp['limit'] = limit;
     
-    // Use Next.js primary endpoint first
-    try {
-      final params = {'conversationId': conversationId, ...qp};
-      final res = await _dio.get('/api/messages', queryParameters: params);
-      return _parseMessagesResponse(res.data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        // Fallback to legacy endpoints for backward compatibility
-        return await _getMessagesLegacy(conversationId, qp);
-      }
-      rethrow;
-    }
-  }
-
-  Future<List<ChatMessage>> _getMessagesLegacy(
-    String conversationId,
-    Map<String, dynamic> queryParams,
-  ) async {
-    Response res;
-    try {
-      final params = {'conversationId': conversationId, ...queryParams};
-      res = await _dio.get('/messages/messages', queryParameters: params);
-    } on DioException catch (e1) {
-      // Fallback 1: legacy mobile unified endpoint
-      if (e1.response?.statusCode == 404) {
-        try {
-          final params = {'conversationId': conversationId, ...queryParams};
-          res = await _dio.get('/match-messages', queryParameters: params);
-        } on DioException catch (e2) {
-          // Fallback 2: conversation-scoped endpoint
-          if (e2.response?.statusCode == 404) {
-            try {
-              res = await _dio.get(
-                '/conversations/$conversationId/messages',
-                queryParameters: queryParams,
-              );
-            } on DioException {
-              rethrow;
-            }
-          } else {
-            rethrow;
-          }
-        }
-      } else {
-        rethrow;
-      }
-    }
+    // Use Next.js primary endpoint
+    final params = {'conversationId': conversationId, ...qp};
+    final res = await _dio.get('/messages', queryParameters: params);
     return _parseMessagesResponse(res.data);
   }
+
+  
 
   List<ChatMessage> _parseMessagesResponse(dynamic data) {
     final list = data is List
@@ -82,7 +40,6 @@ class ChatRepository {
     required String conversationId,
     required String text,
     String? toUserId,
-    String? replyToMessageId,
   }) async {
     // Get current user ID for fromUserId field (required by Next.js API)
     final currentUser = _getCurrentUserId();
@@ -96,177 +53,36 @@ class ChatRepository {
       if (toUserId != null) 'toUserId': toUserId,
       'text': text,
       'type': 'text',
-      if (replyToMessageId != null) 'replyTo': replyToMessageId,
     };
     
-    // Use Next.js primary endpoint first
-    try {
-      final res = await _dio.post('/api/messages/send', data: body);
-      return _parseMessageResponse(res.data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        // Fallback to legacy endpoints for backward compatibility
-        return await _sendMessageLegacy(body, conversationId);
-      }
-      rethrow;
-    }
+    // Use Next.js primary endpoint
+    final res = await _dio.post('/messages/send', data: body);
+    return _parseMessageResponse(res.data);
   }
 
-  Future<ChatMessage> _sendMessageLegacy(
-    Map<String, dynamic> body,
-    String conversationId,
-  ) async {
-    Response res;
-    try {
-      res = await _dio.post('/messages/send', data: body);
-    } on DioException catch (e1) {
-      if (e1.response?.statusCode == 404) {
-        try {
-          res = await _dio.post('/messages', data: body);
-        } on DioException catch (e2) {
-          if (e2.response?.statusCode == 404) {
-            try {
-              res = await _dio.post('/match-messages', data: body);
-            } on DioException catch (e3) {
-              if (e3.response?.statusCode == 404) {
-                res = await _dio.post(
-                  '/conversations/$conversationId/messages',
-                  data: body,
-                );
-              } else {
-                rethrow;
-              }
-            }
-          } else {
-            rethrow;
-          }
-        }
-      } else {
-        rethrow;
-      }
-    }
-    final data = res.data is Map
-        ? Map<String, dynamic>.from(res.data as Map)
-        : <String, dynamic>{};
-    final payload = data['message'] is Map<String, dynamic>
-        ? data['message'] as Map<String, dynamic>
-        : data;
-    return ChatMessage.fromJson(payload);
-  }
+  
 
-  // React to a message with an emoji
-  Future<void> addReaction({
-    required String conversationId,
-    required String messageId,
-    required String emoji,
-  }) async {
-    // Prefer unified reactions endpoint
-    try {
-      await _dio.post(
-        '/reactions',
-        data: {
-          'conversationId': conversationId,
-          'messageId': messageId,
-          'emoji': emoji,
-        },
-      );
-      return;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        // Fallback: message-scoped path
-        await _dio.post(
-          '/messages/$messageId/reactions',
-          data: {'emoji': emoji},
-        );
-        return;
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> removeReaction({
-    required String conversationId,
-    required String messageId,
-    required String emoji,
-  }) async {
-    try {
-      await _dio.delete(
-        '/reactions',
-        data: {
-          'conversationId': conversationId,
-          'messageId': messageId,
-          'emoji': emoji,
-        },
-      );
-      return;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        await _dio.delete(
-          '/messages/$messageId/reactions',
-          data: {'emoji': emoji},
-        );
-        return;
-      }
-      rethrow;
-    }
-  }
+  
 
   // Delete a message
   Future<void> deleteMessage({
     required String conversationId,
     required String messageId,
   }) async {
-    try {
-      await _dio.delete(
-        '/messages/$messageId',
-        data: {'conversationId': conversationId},
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        await _dio.post(
-          '/messages/delete',
-          data: {'conversationId': conversationId, 'messageId': messageId},
-        );
-        return;
-      }
-      rethrow;
-    }
+    await _dio.delete(
+      '/messages/$messageId',
+    );
   }
 
   Future<void> markAsRead(String conversationId) async {
-    // RN primary + web unified
-    try {
-      await _dio.post(
-        '/messages/mark-read',
-        data: {'conversationId': conversationId},
-      );
-      return;
-    } on DioException catch (e1) {
-      if (e1.response?.statusCode == 404) {
-        // Fallback: legacy read endpoint
-        try {
-          await _dio.post(
-            '/messages/read',
-            data: {'conversationId': conversationId},
-          );
-          return;
-        } on DioException catch (e2) {
-          if (e2.response?.statusCode == 404) {
-            // Final fallback: conversation-scoped read
-            await _dio.post('/conversations/$conversationId/read');
-          } else {
-            rethrow;
-          }
-        }
-      } else {
-        rethrow;
-      }
-    }
+    await _dio.post(
+      '/messages/mark-read',
+      data: {'conversationId': conversationId},
+    );
   }
 
   Future<List<ConversationSummary>> getConversations() async {
-    Response res;
-    res = await _dio.get('/conversations');
+    final res = await _dio.get('/conversations');
     final data = res.data;
     final list = data is List
         ? data
@@ -307,8 +123,7 @@ class ChatRepository {
   Future<String> createConversation({
     required List<String> participantIds,
   }) async {
-    Response res;
-    res = await _dio.post(
+    final res = await _dio.post(
       '/conversations',
       data: {'participantIds': participantIds},
     );
@@ -388,12 +203,16 @@ class ChatRepository {
     String filename = 'image.jpg',
     String contentType = 'image/jpeg',
     String? toUserId,
-    String? caption,
   }) async {
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
     final form = FormData.fromMap({
       'conversationId': conversationId,
+      'fromUserId': currentUser,
       if (toUserId != null) 'toUserId': toUserId,
-      if (caption != null) 'caption': caption,
       // Dio v5 MultipartFile uses MediaType via http_parser in some setups; to avoid extra deps, omit contentType here and set header on request if needed.
       'image': MultipartFile.fromBytes(bytes, filename: filename),
     });
@@ -408,7 +227,6 @@ class ChatRepository {
         filename: filename,
         contentType: contentType,
         toUserId: toUserId,
-        caption: caption,
       );
     }
     final data = res.data is Map
@@ -426,7 +244,6 @@ class ChatRepository {
     String filename = 'image.jpg',
     String contentType = 'image/jpeg',
     String? toUserId,
-    String? caption,
   }) async {
     // Step 1: get upload URL
     final urlRes = await _dio.post('/messages/upload-image-url');
@@ -451,10 +268,15 @@ class ChatRepository {
     ).firstMatch(uploadUrl);
     final storageId = storageIdMatch?.group(1);
     // Step 3: POST metadata to create message
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+    
     final meta = {
       'conversationId': conversationId,
+      'fromUserId': currentUser,
       if (toUserId != null) 'toUserId': toUserId,
-      if (caption != null) 'caption': caption,
       if (storageId != null) 'storageId': storageId,
       'filename': filename,
       'contentType': contentType,
@@ -477,7 +299,12 @@ class ChatRepository {
     String contentType = 'audio/m4a',
     String? toUserId,
   }) async {
-    // Primary (RN + unified): POST /voice-messages/upload multipart form
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    // Primary: POST /api/voice-messages/upload multipart form
     final form = FormData.fromMap({
       // Setting contentType on MultipartFile optional; rely on server sniffing if absent.
       'audio': MultipartFile.fromBytes(bytes, filename: filename),
@@ -485,21 +312,7 @@ class ChatRepository {
       'duration': durationSeconds.toString(),
       if (toUserId != null) 'toUserId': toUserId,
     });
-    Response res;
-    try {
-      res = await _dio.post('/voice-messages/upload', data: form);
-    } on DioException catch (e1) {
-      // Fallback: older path '/messages/voice-upload'
-      if (e1.response?.statusCode == 404) {
-        try {
-          res = await _dio.post('/messages/voice-upload', data: form);
-        } catch (_) {
-          rethrow;
-        }
-      } else {
-        rethrow;
-      }
-    }
+    final res = await _dio.post('/voice-messages/upload', data: form);
     final data = res.data is Map
         ? Map<String, dynamic>.from(res.data as Map)
         : <String, dynamic>{};
@@ -548,6 +361,45 @@ class ChatRepository {
     return {'isOnline': false};
   }
 
+  // Reaction methods (supported by Next.js backend)
+  Future<void> addReaction({
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+  }) async {
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    await _dio.post(
+      '/reactions',
+      data: {
+        'messageId': messageId,
+        'emoji': emoji,
+      },
+    );
+  }
+
+  Future<void> removeReaction({
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+  }) async {
+    final currentUser = _getCurrentUserId();
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    await _dio.post(
+      '/reactions',
+      data: {
+        'messageId': messageId,
+        'emoji': emoji,
+      },
+    );
+  }
+
   // Helper methods
   String? _getCurrentUserId() {
     // This should be implemented to get the current authenticated user ID
@@ -558,7 +410,7 @@ class ChatRepository {
 
   ChatMessage _parseMessageResponse(dynamic data) {
     final parsedData = data is Map
-        ? Map<String, dynamic>.from(data as Map)
+        ? Map<String, dynamic>.from(data)
         : <String, dynamic>{};
     final payload = parsedData['message'] is Map<String, dynamic>
         ? parsedData['message'] as Map<String, dynamic>

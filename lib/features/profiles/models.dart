@@ -1,5 +1,58 @@
 import 'package:equatable/equatable.dart';
 
+class ShortlistEntry extends Equatable {
+  const ShortlistEntry({
+    required this.userId,
+    required this.createdAt,
+    this.fullName,
+    this.profileImageUrls,
+    this.note,
+  });
+
+  final String userId;
+  final int createdAt; // epoch millis
+  final String? fullName;
+  final List<String>? profileImageUrls;
+  final String? note;
+
+  ShortlistEntry copyWith({
+    String? userId,
+    int? createdAt,
+    String? fullName,
+    List<String>? profileImageUrls,
+    String? note,
+  }) => ShortlistEntry(
+    userId: userId ?? this.userId,
+    createdAt: createdAt ?? this.createdAt,
+    fullName: fullName ?? this.fullName,
+    profileImageUrls: profileImageUrls ?? this.profileImageUrls,
+    note: note ?? this.note,
+  );
+
+  static ShortlistEntry fromJson(Map<String, dynamic> json) {
+    return ShortlistEntry(
+      userId: json['userId']?.toString() ?? '',
+      createdAt: json['createdAt'] is int 
+          ? json['createdAt'] 
+          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      fullName: json['fullName']?.toString(),
+      profileImageUrls: json['profileImageUrls'] is List
+          ? (json['profileImageUrls'] as List).map((e) => e.toString()).toList()
+          : null,
+      note: json['note']?.toString(),
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    userId,
+    createdAt,
+    fullName,
+    profileImageUrls,
+    note,
+  ];
+}
+
 class ProfileSummary extends Equatable {
   const ProfileSummary({
     required this.id,
@@ -172,6 +225,171 @@ String? _resolveAvatarUrl(
     profile?['avatarUrl']?.toString(),
   ];
   return _firstNonEmpty(urls);
+}
+
+class MatchEntry extends Equatable {
+  const MatchEntry({
+    required this.id,
+    required this.user1Id,
+    required this.user2Id,
+    required this.status,
+    required this.createdAt,
+    required this.conversationId,
+    this.lastMessageText,
+    this.lastMessageAt,
+    this.otherUserId,
+    this.otherUserName,
+    this.otherUserImage,
+    this.unreadCount = 0,
+    this.isMutual = false,
+    this.isBlocked = false,
+  });
+
+  final String id;
+  final String user1Id;
+  final String user2Id;
+  final String status;
+  final int createdAt; // epoch millis
+  final String conversationId;
+  final String? lastMessageText;
+  final int? lastMessageAt;
+  final String? otherUserId;
+  final String? otherUserName;
+  final String? otherUserImage;
+  final int unreadCount;
+  final bool isMutual;
+  final bool isBlocked;
+
+  MatchEntry copyWith({
+    String? id,
+    String? user1Id,
+    String? user2Id,
+    String? status,
+    int? createdAt,
+    String? conversationId,
+    String? lastMessageText,
+    int? lastMessageAt,
+    String? otherUserId,
+    String? otherUserName,
+    String? otherUserImage,
+    int? unreadCount,
+    bool? isMutual,
+    bool? isBlocked,
+  }) => MatchEntry(
+    id: id ?? this.id,
+    user1Id: user1Id ?? this.user1Id,
+    user2Id: user2Id ?? this.user2Id,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    conversationId: conversationId ?? this.conversationId,
+    lastMessageText: lastMessageText ?? this.lastMessageText,
+    lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+    otherUserId: otherUserId ?? this.otherUserId,
+    otherUserName: otherUserName ?? this.otherUserName,
+    otherUserImage: otherUserImage ?? this.otherUserImage,
+    unreadCount: unreadCount ?? this.unreadCount,
+    isMutual: isMutual ?? this.isMutual,
+    isBlocked: isBlocked ?? this.isBlocked,
+  );
+
+  static MatchEntry fromJson(Map<String, dynamic> json) {
+    return MatchEntry(
+      id: json['id']?.toString() ?? '',
+      user1Id: json['user1Id']?.toString() ?? '',
+      user2Id: json['user2Id']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'matched',
+      createdAt: json['createdAt'] is int 
+          ? json['createdAt'] 
+          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      conversationId: json['conversationId']?.toString() ?? '',
+      lastMessageText: json['lastMessageText']?.toString(),
+      lastMessageAt: json['lastMessageAt'] is int 
+          ? json['lastMessageAt'] 
+          : int.tryParse(json['lastMessageAt']?.toString() ?? ''),
+      otherUserId: json['userId']?.toString() ?? json['otherUserId']?.toString(),
+      otherUserName: json['fullName']?.toString() ?? json['otherUserName']?.toString(),
+      otherUserImage: json['profileImageUrls'] is List
+          ? (json['profileImageUrls'] as List).isNotEmpty 
+              ? json['profileImageUrls'][0]?.toString()
+              : null
+          : json['otherUserImage']?.toString(),
+      unreadCount: json['unreadCount'] is int ? json['unreadCount'] : 0,
+      isMutual: json['isMutual'] == true || json['mutual'] == true,
+      isBlocked: json['isBlocked'] == true || json['blocked'] == true,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    id, user1Id, user2Id, status, createdAt, conversationId,
+    lastMessageText, lastMessageAt, otherUserId, otherUserName, otherUserImage,
+    unreadCount, isMutual, isBlocked,
+  ];
+}
+
+class InterestEntry extends Equatable {
+  const InterestEntry({
+    required this.id,
+    required this.fromUserId,
+    required this.toUserId,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    this.fromSnapshot,
+    this.toSnapshot,
+  });
+
+  final String id;
+  final String fromUserId;
+  final String toUserId;
+  final String status; // 'pending', 'accepted', 'rejected', 'reciprocated', 'withdrawn'
+  final int createdAt; // epoch millis
+  final int updatedAt; // epoch millis
+  final Map<String, dynamic>? fromSnapshot;
+  final Map<String, dynamic>? toSnapshot;
+
+  InterestEntry copyWith({
+    String? id,
+    String? fromUserId,
+    String? toUserId,
+    String? status,
+    int? createdAt,
+    int? updatedAt,
+    Map<String, dynamic>? fromSnapshot,
+    Map<String, dynamic>? toSnapshot,
+  }) => InterestEntry(
+    id: id ?? this.id,
+    fromUserId: fromUserId ?? this.fromUserId,
+    toUserId: toUserId ?? this.toUserId,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    fromSnapshot: fromSnapshot ?? this.fromSnapshot,
+    toSnapshot: toSnapshot ?? this.toSnapshot,
+  );
+
+  static InterestEntry fromJson(Map<String, dynamic> json) {
+    return InterestEntry(
+      id: json['id']?.toString() ?? '',
+      fromUserId: json['fromUserId']?.toString() ?? '',
+      toUserId: json['toUserId']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      createdAt: json['createdAt'] is int 
+          ? json['createdAt'] 
+          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      updatedAt: json['updatedAt'] is int 
+          ? json['updatedAt'] 
+          : int.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      fromSnapshot: json['fromSnapshot'] as Map<String, dynamic>?,
+      toSnapshot: json['toSnapshot'] as Map<String, dynamic>?,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    id, fromUserId, toUserId, status, createdAt, updatedAt,
+    fromSnapshot, toSnapshot,
+  ];
 }
 
 class PagedResponse<T> {

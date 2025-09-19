@@ -16,7 +16,7 @@ import 'widgets/explore_grid.dart';
 import 'widgets/header_row.dart';
 import 'widgets/premium_features_grid.dart';
 import 'widgets/quick_picks_strip.dart';
-import 'widgets/section_title.dart';
+
 import 'widgets/subscription_status_header.dart';
 import 'widgets/unlock_all_features_cta.dart';
 import 'widgets/usage_period_info.dart';
@@ -81,67 +81,190 @@ class DashboardScreen extends ConsumerWidget {
     final quickPicksLoading = auth.loading || quickPicksAsync.isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
-          SubscriptionStatusHeader(
-            plan: plan,
-            isActive: isActive,
-            expiresAt: expiresAt,
-            isApproachingExpiry: isApproachingExpiry,
-            daysUntilExpiry: daysUntilExpiry,
-            onUpgrade: () => _openSubscription(context),
-          ),
-          if (usageAsync.isLoading)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: LinearProgressIndicator(minHeight: 3),
-            )
-          else if (periodStart != null && periodEnd != null)
-            UsagePeriodInfo(periodStart: periodStart, periodEnd: periodEnd)
-          else if (usageAsync.hasError)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Subscription usage information is unavailable right now.',
-                style: TextStyle(fontSize: 12, color: Colors.redAccent),
-              ),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          if (unreadTotal > 0)
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    // Navigate to notifications
+                  },
+                ),
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      unreadTotal > 99 ? '99+' : unreadTotal.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          PremiumFeaturesGrid(
-            features: features,
-            onUpgrade: () => _openSubscription(context),
-          ),
-          if (!isActive)
-            UnlockAllFeaturesCTA(onUpgrade: () => _openSubscription(context)),
-          const SizedBox(height: 24),
-          HeaderRow(unreadCount: unreadTotal),
-          const SizedBox(height: 16),
-          const ActionsRow(),
-          const SizedBox(height: 16),
-          const SectionTitle('Quick Picks'),
-          const SizedBox(height: 8),
-          if (quickPicksAsync.hasError)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                'Unable to load quick picks. Pull to refresh later.',
-                style: TextStyle(fontSize: 12, color: Colors.redAccent),
-              ),
-            ),
-          QuickPicksStrip(
-            loading: quickPicksLoading,
-            items: quickPicks,
-            onTapProfile: (id) => _openProfileDetails(context, id),
-            onSeeAll: () => _openQuickPicks(context),
-          ),
-          const SizedBox(height: 20),
-          const SectionTitle('Continue exploring'),
-          const SizedBox(height: 8),
-          ExploreGrid(
-            onNavigate: (route) => _handleExploreNavigation(context, route),
-          ),
         ],
+      ),
+      backgroundColor: Colors.grey.shade50,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Refresh data
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            SubscriptionStatusHeader(
+              plan: plan,
+              isActive: isActive,
+              expiresAt: expiresAt,
+              isApproachingExpiry: isApproachingExpiry,
+              daysUntilExpiry: daysUntilExpiry,
+              onUpgrade: () => _openSubscription(context),
+            ),
+            if (usageAsync.isLoading)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Loading subscription information...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (periodStart != null && periodEnd != null)
+              UsagePeriodInfo(periodStart: periodStart, periodEnd: periodEnd)
+            else if (usageAsync.hasError)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.red.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Subscription usage information is unavailable right now.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            PremiumFeaturesGrid(
+              features: features,
+              onUpgrade: () => _openSubscription(context),
+            ),
+            if (!isActive)
+              UnlockAllFeaturesCTA(onUpgrade: () => _openSubscription(context)),
+            const SizedBox(height: 24),
+            HeaderRow(unreadCount: unreadTotal),
+            const SizedBox(height: 16),
+            const ActionsRow(),
+            const SizedBox(height: 16),
+            if (quickPicksAsync.hasError)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber,
+                      color: Colors.orange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Unable to load quick picks. Pull to refresh later.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            QuickPicksStrip(
+              loading: quickPicksLoading,
+              items: quickPicks,
+              onTapProfile: (id) => _openProfileDetails(context, id),
+              onSeeAll: () => _openQuickPicks(context),
+            ),
+            ExploreGrid(
+              onNavigate: (route) => _handleExploreNavigation(context, route),
+            ),
+          ],
+        ),
       ),
     );
   }
