@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 
 import 'package:aroosi_flutter/core/api_client.dart';
-import 'package:aroosi_flutter/utils/debug_logger.dart';
 import 'chat_models.dart';
 
 class ChatRepository {
@@ -14,51 +13,36 @@ class ChatRepository {
     int? before, // epoch millis for pagination
     int? limit,
   }) async {
-    logApi('💬 Fetching messages for conversation: $conversationId | Before: $before | Limit: $limit');
-    
     final qp = <String, dynamic>{};
     if (before != null) qp['before'] = before;
     if (limit != null) qp['limit'] = limit;
     Response res;
-    String endpoint = '/messages/messages';
-    
     // RN primary + web unified: /messages/messages?conversationId=...
     try {
       final params = {'conversationId': conversationId, ...qp};
-      logApi('📡 Trying primary endpoint: $endpoint');
-      res = await _dio.get(endpoint, queryParameters: params);
-      logApi('✅ Messages fetched successfully from: $endpoint | Count: ${res.data is List ? (res.data as List).length : "unknown"}');
+      res = await _dio.get('/messages/messages', queryParameters: params);
     } on DioException catch (e1) {
       // Fallback 1: legacy mobile unified endpoint
       if (e1.response?.statusCode == 404) {
-        endpoint = '/match-messages';
         try {
           final params = {'conversationId': conversationId, ...qp};
-          logApi('📡 Trying fallback endpoint: $endpoint');
-          res = await _dio.get(endpoint, queryParameters: params);
-          logApi('✅ Messages fetched successfully from: $endpoint');
+          res = await _dio.get('/match-messages', queryParameters: params);
         } on DioException catch (e2) {
           // Fallback 2: conversation-scoped endpoint
           if (e2.response?.statusCode == 404) {
-            endpoint = '/conversations/$conversationId/messages';
             try {
-              logApi('📡 Trying final fallback endpoint: $endpoint');
               res = await _dio.get(
-                endpoint,
+                '/conversations/$conversationId/messages',
                 queryParameters: qp,
               );
-              logApi('✅ Messages fetched successfully from: $endpoint');
             } on DioException {
-              logApi('❌ All message endpoints failed for conversation: $conversationId');
               rethrow;
             }
           } else {
-            logApi('❌ Fallback endpoint failed: $endpoint | Error: ${e2.message}');
             rethrow;
           }
         }
       } else {
-        logApi('❌ Primary endpoint failed: $endpoint | Error: ${e1.message}');
         rethrow;
       }
     }
@@ -68,7 +52,6 @@ class ChatRepository {
         : (data is Map && data['messages'] is List)
         ? data['messages'] as List
         : <dynamic>[];
-    logApi('📄 Parsed ${list.length} messages from response');
     return list
         .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
@@ -80,8 +63,6 @@ class ChatRepository {
     String? toUserId,
     String? replyToMessageId,
   }) async {
-    logApi('💬 Sending message to conversation: $conversationId | Text length: ${text.length} | ReplyTo: $replyToMessageId');
-    
     Response res;
     final body = {
       'conversationId': conversationId,
@@ -90,56 +71,35 @@ class ChatRepository {
       'type': 'text',
       if (replyToMessageId != null) 'replyTo': replyToMessageId,
     };
-    String endpoint = '/messages/send';
-    
     // RN primary + web unified
     try {
-      logApi('📡 Trying primary endpoint: $endpoint');
-      res = await _dio.post(endpoint, data: body);
-      logApi('✅ Message sent successfully via: $endpoint');
+      res = await _dio.post('/messages/send', data: body);
     } on DioException catch (e1) {
       if (e1.response?.statusCode == 404) {
         // Fallback 1: legacy posting endpoint
-        endpoint = '/messages';
         try {
-          logApi('📡 Trying fallback endpoint: $endpoint');
-          res = await _dio.post(endpoint, data: body);
-          logApi('✅ Message sent successfully via: $endpoint');
+          res = await _dio.post('/messages', data: body);
         } on DioException catch (e2) {
           if (e2.response?.statusCode == 404) {
             // Fallback 2: legacy mobile endpoint name
-            endpoint = '/match-messages';
             try {
-              logApi('📡 Trying fallback endpoint: $endpoint');
-              res = await _dio.post(endpoint, data: body);
-              logApi('✅ Message sent successfully via: $endpoint');
+              res = await _dio.post('/match-messages', data: body);
             } on DioException catch (e3) {
               if (e3.response?.statusCode == 404) {
                 // Fallback 3: conversation-scoped create
-                endpoint = '/conversations/$conversationId/messages';
-                try {
-                  logApi('📡 Trying final fallback endpoint: $endpoint');
-                  res = await _dio.post(
-                    endpoint,
-                    data: body,
-                  );
-                  logApi('✅ Message sent successfully via: $endpoint');
-                } on DioException {
-                  logApi('❌ All message send endpoints failed for conversation: $conversationId');
-                  rethrow;
-                }
+                res = await _dio.post(
+                  '/conversations/$conversationId/messages',
+                  data: body,
+                );
               } else {
-                logApi('❌ Fallback endpoint failed: $endpoint | Error: ${e3.message}');
                 rethrow;
               }
             }
           } else {
-            logApi('❌ Fallback endpoint failed: $endpoint | Error: ${e2.message}');
             rethrow;
           }
         }
       } else {
-        logApi('❌ Primary endpoint failed: $endpoint | Error: ${e1.message}');
         rethrow;
       }
     }
@@ -149,7 +109,6 @@ class ChatRepository {
     final payload = data['message'] is Map<String, dynamic>
         ? data['message'] as Map<String, dynamic>
         : data;
-    logApi('📄 Message created with ID: ${payload['id'] ?? 'unknown'}');
     return ChatMessage.fromJson(payload);
   }
 
@@ -233,73 +192,45 @@ class ChatRepository {
   }
 
   Future<void> markAsRead(String conversationId) async {
-    logApi('📖 Marking conversation as read: $conversationId');
-    
     // RN primary + web unified
-    String endpoint = '/messages/mark-read';
     try {
-      logApi('📡 Trying primary endpoint: $endpoint');
       await _dio.post(
-        endpoint,
+        '/messages/mark-read',
         data: {'conversationId': conversationId},
       );
-      logApi('✅ Conversation marked as read via: $endpoint');
       return;
     } on DioException catch (e1) {
       if (e1.response?.statusCode == 404) {
         // Fallback: legacy read endpoint
-        endpoint = '/messages/read';
         try {
-          logApi('📡 Trying fallback endpoint: $endpoint');
           await _dio.post(
-            endpoint,
+            '/messages/read',
             data: {'conversationId': conversationId},
           );
-          logApi('✅ Conversation marked as read via: $endpoint');
           return;
         } on DioException catch (e2) {
           if (e2.response?.statusCode == 404) {
             // Final fallback: conversation-scoped read
-            endpoint = '/conversations/$conversationId/read';
-            try {
-              logApi('📡 Trying final fallback endpoint: $endpoint');
-              await _dio.post(endpoint);
-              logApi('✅ Conversation marked as read via: $endpoint');
-            } catch (e) {
-              logApi('❌ All mark-as-read endpoints failed for conversation: $conversationId | Error: $e');
-              rethrow;
-            }
+            await _dio.post('/conversations/$conversationId/read');
           } else {
-            logApi('❌ Fallback endpoint failed: $endpoint | Error: ${e2.message}');
             rethrow;
           }
         }
       } else {
-        logApi('❌ Primary endpoint failed: $endpoint | Error: ${e1.message}');
         rethrow;
       }
     }
   }
 
   Future<List<ConversationSummary>> getConversations() async {
-    logApi('💬 Fetching conversations list');
-    
     Response res;
-    try {
-      res = await _dio.get('/conversations');
-      logApi('✅ Conversations fetched successfully | Status: ${res.statusCode}');
-    } catch (e) {
-      logApi('❌ Failed to fetch conversations | Error: $e');
-      rethrow;
-    }
-    
+    res = await _dio.get('/conversations');
     final data = res.data;
     final list = data is List
         ? data
         : (data is Map && data['conversations'] is List)
         ? data['conversations'] as List
         : <dynamic>[];
-    logApi('📄 Parsed ${list.length} conversations');
     return list
         .map(
           (e) =>
@@ -476,7 +407,7 @@ class ChatRepository {
     final storageIdMatch = RegExp(
       r'messages/images/([\w-]+)',
     ).firstMatch(uploadUrl);
-    final storageId = storageIdMatch != null ? storageIdMatch.group(1) : null;
+    final storageId = storageIdMatch?.group(1);
     // Step 3: POST metadata to create message
     final meta = {
       'conversationId': conversationId,
