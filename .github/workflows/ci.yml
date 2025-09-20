@@ -28,6 +28,17 @@ jobs:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
+      - name: Create CI .env
+        run: |
+          cat <<'EOF' > .env
+          ENVIRONMENT=staging
+          API_BASE_URL=https://staging.aroosi.app/api
+          FIREBASE_STORAGE_BUCKET=
+          GOOGLE_WEB_CLIENT_ID=
+          GOOGLE_IOS_CLIENT_ID=
+          GOOGLE_ANDROID_CLIENT_ID=
+          EOF
+
       - name: Cache pub cache
         uses: actions/cache@v4
         with:
@@ -68,6 +79,17 @@ jobs:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
+      - name: Create CI .env
+        run: |
+          cat <<'EOF' > .env
+          ENVIRONMENT=staging
+          API_BASE_URL=https://staging.aroosi.app/api
+          FIREBASE_STORAGE_BUCKET=
+          GOOGLE_WEB_CLIENT_ID=
+          GOOGLE_IOS_CLIENT_ID=
+          GOOGLE_ANDROID_CLIENT_ID=
+          EOF
+
       - name: Cache pub cache
         uses: actions/cache@v4
         with:
@@ -101,6 +123,17 @@ jobs:
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Create CI .env
+        run: |
+          cat <<'EOF' > .env
+          ENVIRONMENT=staging
+          API_BASE_URL=https://staging.aroosi.app/api
+          FIREBASE_STORAGE_BUCKET=
+          GOOGLE_WEB_CLIENT_ID=
+          GOOGLE_IOS_CLIENT_ID=
+          GOOGLE_ANDROID_CLIENT_ID=
+          EOF
 
       - name: Cache pub cache
         uses: actions/cache@v4
