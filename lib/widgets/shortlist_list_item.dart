@@ -22,10 +22,12 @@ class ShortlistListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Get the first image URL from the list, or null if empty
-    final imageUrl = entry.profileImageUrls?.isNotEmpty == true ? entry.profileImageUrls!.first : null;
-    
+    final imageUrl = entry.profileImageUrls?.isNotEmpty == true
+        ? entry.profileImageUrls!.first
+        : null;
+
     // Extract age from fullName if possible (format: "Name, Age")
     String? age;
     String displayName = entry.fullName ?? 'Unknown';
@@ -54,8 +56,15 @@ class ShortlistListItem extends StatelessWidget {
     return Column(
       children: [
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: SizedBox(width: 48, height: 48, child: ClipOval(child: avatar)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
+          leading: SizedBox(
+            width: 48,
+            height: 48,
+            child: ClipOval(child: avatar),
+          ),
           title: Text(displayName, style: theme.textTheme.bodyLarge),
           subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
           trailing: trailing,

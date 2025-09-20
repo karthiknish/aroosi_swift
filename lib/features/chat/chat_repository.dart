@@ -23,8 +23,6 @@ class ChatRepository {
     return _parseMessagesResponse(res.data);
   }
 
-  
-
   List<ChatMessage> _parseMessagesResponse(dynamic data) {
     final list = data is List
         ? data
@@ -54,24 +52,18 @@ class ChatRepository {
       'text': text,
       'type': 'text',
     };
-    
+
     // Match React app: use /messages/send endpoint (base URL already includes /api)
     final res = await _dio.post('/messages/send', data: body);
     return _parseMessageResponse(res.data);
   }
-
-  
-
-  
 
   // Delete a message
   Future<void> deleteMessage({
     required String conversationId,
     required String messageId,
   }) async {
-    await _dio.delete(
-      '/messages/$messageId',
-    );
+    await _dio.delete('/messages/$messageId');
   }
 
   Future<void> markAsRead(String conversationId) async {
@@ -275,7 +267,7 @@ class ChatRepository {
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
-    
+
     final meta = {
       'conversationId': conversationId,
       'fromUserId': currentUser,
@@ -378,10 +370,7 @@ class ChatRepository {
 
     await _dio.post(
       '/reactions',
-      data: {
-        'messageId': messageId,
-        'emoji': emoji,
-      },
+      data: {'messageId': messageId, 'emoji': emoji},
     );
   }
 
@@ -397,10 +386,7 @@ class ChatRepository {
 
     await _dio.post(
       '/reactions',
-      data: {
-        'messageId': messageId,
-        'emoji': emoji,
-      },
+      data: {'messageId': messageId, 'emoji': emoji},
     );
   }
 

@@ -18,7 +18,8 @@ class FeatureAccess {
 
   bool hasUnlimited(UsageMetric metric) => hasUnlimitedUsage(plan, metric);
 
-  SubscriptionPlan requiredPlan(SubscriptionFeatureFlag feature) => minimumPlanForFeature(feature);
+  SubscriptionPlan requiredPlan(SubscriptionFeatureFlag feature) =>
+      minimumPlanForFeature(feature);
 
   String requiredPlanLabel(SubscriptionFeatureFlag feature) {
     return planDisplayName(requiredPlan(feature));
@@ -29,7 +30,8 @@ final featureAccessProvider = Provider<FeatureAccess>((ref) {
   final subscriptionState = ref.watch(subscriptionControllerProvider);
   final authState = ref.watch(authControllerProvider);
 
-  final plan = subscriptionState.status?.plan ??
+  final plan =
+      subscriptionState.status?.plan ??
       SubscriptionPlanX.fromId(authState.profile?.plan) ??
       SubscriptionPlan.free;
 

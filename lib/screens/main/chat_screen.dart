@@ -258,9 +258,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.listen(chatControllerProvider, (prev, next) {
       if (next.error != null && prev?.error != next.error) {
         final error = next.error.toString();
-        final isOfflineError = error.toLowerCase().contains('network') ||
-                              error.toLowerCase().contains('connection') ||
-                              error.toLowerCase().contains('timeout');
+        final isOfflineError =
+            error.toLowerCase().contains('network') ||
+            error.toLowerCase().contains('connection') ||
+            error.toLowerCase().contains('timeout');
 
         if (isOfflineError) {
           ref.showNetworkError(
@@ -311,22 +312,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       builder: (_) {
                         if (chatState?.error != null) {
                           final error = chatState!.error.toString();
-                          final isOfflineError = error.toLowerCase().contains('network') ||
-                                                error.toLowerCase().contains('connection') ||
-                                                error.toLowerCase().contains('timeout');
+                          final isOfflineError =
+                              error.toLowerCase().contains('network') ||
+                              error.toLowerCase().contains('connection') ||
+                              error.toLowerCase().contains('timeout');
 
                           return isOfflineError
                               ? OfflineState(
                                   title: 'Connection Lost',
                                   subtitle: 'Unable to load messages',
-                                  description: 'Check your internet connection and try again',
-                                  onRetry: () => ref.read(chatControllerProvider.notifier).refresh(),
+                                  description:
+                                      'Check your internet connection and try again',
+                                  onRetry: () => ref
+                                      .read(chatControllerProvider.notifier)
+                                      .refresh(),
                                 )
                               : ErrorState(
                                   title: 'Failed to Load Messages',
                                   subtitle: 'Something went wrong',
                                   errorMessage: error,
-                                  onRetryPressed: () => ref.read(chatControllerProvider.notifier).refresh(),
+                                  onRetryPressed: () => ref
+                                      .read(chatControllerProvider.notifier)
+                                      .refresh(),
                                 );
                         }
                         if (chatState == null ||
@@ -351,19 +358,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               message: msg,
                               onReactionTap: () async {
                                 // Open emoji picker for reactions
-                                final reaction = await showModalBottomSheet<String>(
-                                  context: context,
-                                  showDragHandle: true,
-                                  builder: (ctx) => SizedBox(
-                                    height: 360,
-                                    child: EmojiPicker(
-                                      onEmojiSelected: (category, emoji) {
-                                        Navigator.of(ctx).pop(emoji.emoji);
-                                      },
-                                      config: const Config(),
-                                    ),
-                                  ),
-                                );
+                                final reaction =
+                                    await showModalBottomSheet<String>(
+                                      context: context,
+                                      showDragHandle: true,
+                                      builder: (ctx) => SizedBox(
+                                        height: 360,
+                                        child: EmojiPicker(
+                                          onEmojiSelected: (category, emoji) {
+                                            Navigator.of(ctx).pop(emoji.emoji);
+                                          },
+                                          config: const Config(),
+                                        ),
+                                      ),
+                                    );
                                 if (reaction != null && reaction.isNotEmpty) {
                                   ref
                                       .read(chatControllerProvider.notifier)
@@ -384,11 +392,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                       ),
                                       actions: [
                                         TextButton(
-                                          onPressed: () => Navigator.of(ctx).pop(false),
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(false),
                                           child: const Text('Cancel'),
                                         ),
                                         FilledButton(
-                                          onPressed: () => Navigator.of(ctx).pop(true),
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(true),
                                           child: const Text('Delete'),
                                         ),
                                       ],
@@ -403,11 +413,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               },
                               onImageTap: () {
                                 // Handle image tap - could show full screen image
-                                debugPrint('Image tapped: ${msg.imageUrl ?? msg.text}');
+                                debugPrint(
+                                  'Image tapped: ${msg.imageUrl ?? msg.text}',
+                                );
                               },
                             );
                           },
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemCount: chatState.messages.length,
                         );
                       },
@@ -467,5 +480,3 @@ class _ChatMessage {
     required this.timestamp,
   });
 }
-
-

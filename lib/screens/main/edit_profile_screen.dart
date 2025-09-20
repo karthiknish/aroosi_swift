@@ -85,17 +85,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
-   void _bootstrapFromProfile() {
-     final authState = ref.read(authControllerProvider);
-     final p = authState.profile;
+  void _bootstrapFromProfile() {
+    final authState = ref.read(authControllerProvider);
+    final p = authState.profile;
 
-     if (p == null) {
-       // Profile not loaded yet, try to refresh it
-       ref.read(authControllerProvider.notifier).refreshProfileOnly();
-       return;
-     }
+    if (p == null) {
+      // Profile not loaded yet, try to refresh it
+      ref.read(authControllerProvider.notifier).refreshProfileOnly();
+      return;
+    }
 
-     _hasBootstrapped = true;
+    _hasBootstrapped = true;
 
     _nameCtrl.text = p.fullName ?? '';
     _aboutCtrl.text = p.aboutMe ?? '';
@@ -522,7 +522,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  ref.read(authControllerProvider.notifier).refreshProfileOnly();
+                  ref
+                      .read(authControllerProvider.notifier)
+                      .refreshProfileOnly();
                 },
                 child: const Text('Retry'),
               ),
@@ -545,9 +547,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
       body: SafeArea(
         child: Form(
           key: _formKey,

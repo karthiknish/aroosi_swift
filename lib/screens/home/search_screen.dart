@@ -213,12 +213,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    if (_filters.preferredGender != null && _filters.preferredGender!.trim().isNotEmpty) {
+    if (_filters.preferredGender != null &&
+        _filters.preferredGender!.trim().isNotEmpty) {
       chips.add(
         InputChip(
           label: Text('Gender: ${_filters.preferredGender}'),
-          onDeleted: () =>
-              _handleFilterRemoval((current) => current.copyWith(preferredGender: null)),
+          onDeleted: () => _handleFilterRemoval(
+            (current) => current.copyWith(preferredGender: null),
+          ),
         ),
       );
     }
@@ -271,13 +273,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildErrorBanner(BuildContext context, String message) {
-    final isOfflineError = message.toLowerCase().contains('network') ||
-                          message.toLowerCase().contains('connection') ||
-                          message.toLowerCase().contains('timeout');
+    final isOfflineError =
+        message.toLowerCase().contains('network') ||
+        message.toLowerCase().contains('connection') ||
+        message.toLowerCase().contains('timeout');
 
     return InlineError(
       error: message,
-      onRetry: _hasSearchCriteria ? () => _scheduleSearch(immediate: true) : null,
+      onRetry: _hasSearchCriteria
+          ? () => _scheduleSearch(immediate: true)
+          : null,
       showIcon: true,
     );
   }
@@ -311,22 +316,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     // Filter out profiles that already have interest sent
     final filteredItems = items.where((profile) {
       final interestStatus = ref.read(interestsControllerProvider);
-      final hasSentInterest = interestStatus.items.any((interest) => 
-        interest.toUserId == profile.id && 
-        (interest.status == 'pending' || interest.status == 'accepted')
+      final hasSentInterest = interestStatus.items.any(
+        (interest) =>
+            interest.toUserId == profile.id &&
+            (interest.status == 'pending' || interest.status == 'accepted'),
       );
       return !hasSentInterest;
     }).toList();
 
     final deckItems = List<ProfileSummary>.from(filteredItems);
     int remaining = deckItems.length;
-    
+
     // Log for debugging GlobalKey issues
-    logDebug('Building card deck', data: {
-      'itemCount': deckItems.length,
-      'widgetType': 'SwipeDeck',
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    logDebug(
+      'Building card deck',
+      data: {
+        'itemCount': deckItems.length,
+        'widgetType': 'SwipeDeck',
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
     return Column(
       children: [
         Expanded(
@@ -345,9 +354,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     .read(matchesControllerProvider.notifier)
                     .sendInterest(profile.id);
                 if (ok['success'] == true) {
-                  _toast.success(
-                    'Liked ${profile.displayName}',
-                  );
+                  _toast.success('Liked ${profile.displayName}');
                 } else {
                   _toast.error('Failed to like');
                 }
@@ -357,7 +364,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               }
               // Update current index after swipe
               setState(() {
-                _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
+                _currentCardIndex =
+                    _swipeDeckKey.currentState?.currentIndex ?? 0;
               });
             },
             onEnd: () {
@@ -394,9 +402,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   onPressed: () {
                     // Show more info - get current profile and navigate to details
                     final state = ref.read(searchControllerProvider);
-                    if (state.items.isNotEmpty && _currentCardIndex < state.items.length) {
+                    if (state.items.isNotEmpty &&
+                        _currentCardIndex < state.items.length) {
                       final profile = state.items[_currentCardIndex];
-                      ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
+                      ref
+                          .read(lastSelectedProfileIdProvider.notifier)
+                          .set(profile.id);
                       context.push('/details/${profile.id}');
                     }
                   },
@@ -423,10 +434,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         const SizedBox(height: 8),
         // Remaining counter
-        Text(
-          '$remaining left',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
+        Text('$remaining left', style: Theme.of(context).textTheme.labelMedium),
       ],
     );
   }
@@ -471,12 +479,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   void _clearQuery() {
     if (_controller.text.isEmpty) return;
-    
-    logDebug('SearchScreen: Clearing search query', data: {
-      'previousQuery': _controller.text,
-      'remainingFilters': _filters.toQuery(),
-    });
-    
+
+    logDebug(
+      'SearchScreen: Clearing search query',
+      data: {
+        'previousQuery': _controller.text,
+        'remainingFilters': _filters.toQuery(),
+      },
+    );
+
     _debounce?.cancel();
     setState(() {
       _controller.clear();
@@ -485,7 +496,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         pageSize: _filters.pageSize ?? _defaultPageSize,
       );
     });
-    
+
     if (_filters.hasCriteria) {
       logDebug('SearchScreen: Still has criteria, performing search');
       unawaited(_performSearch());
@@ -519,16 +530,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       logDebug('SearchScreen: Refresh skipped - no search criteria');
       return;
     }
-    
+
     if (!_requestUsage(UsageMetric.searchPerformed)) {
       logDebug('SearchScreen: Refresh skipped - usage limit reached');
       return;
     }
-    
-    logDebug('SearchScreen: Refreshing search', data: {
-      'filters': _effectiveFilters.toQuery(),
-    });
-    
+
+    logDebug(
+      'SearchScreen: Refreshing search',
+      data: {'filters': _effectiveFilters.toQuery()},
+    );
+
     await ref.read(searchControllerProvider.notifier).search(_effectiveFilters);
     if (!mounted) return;
     _toast.info('Search refreshed');
@@ -546,13 +558,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ref.read(searchControllerProvider.notifier).clear();
       return;
     }
-    
-    logDebug('SearchScreen: Scheduling search', data: {
-      'immediate': immediate,
-      'filters': _filters.toQuery(),
-      'hasCriteria': _hasSearchCriteria,
-    });
-    
+
+    logDebug(
+      'SearchScreen: Scheduling search',
+      data: {
+        'immediate': immediate,
+        'filters': _filters.toQuery(),
+        'hasCriteria': _hasSearchCriteria,
+      },
+    );
+
     if (immediate) {
       unawaited(_performSearch());
     } else {
@@ -568,20 +583,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ref.read(searchControllerProvider.notifier).clear();
       return;
     }
-    
+
     if (!_requestUsage(UsageMetric.searchPerformed)) {
       logDebug('SearchScreen: Usage limit reached for search');
       return;
     }
 
     final filters = _effectiveFilters;
-    logDebug('SearchScreen: Performing search', data: {
-      'filters': filters.toQuery(),
-      'announce': announce,
-      'hasQuery': filters.hasQuery,
-      'query': filters.query,
-    });
-    
+    logDebug(
+      'SearchScreen: Performing search',
+      data: {
+        'filters': filters.toQuery(),
+        'announce': announce,
+        'hasQuery': filters.hasQuery,
+        'query': filters.query,
+      },
+    );
+
     await ref.read(searchControllerProvider.notifier).search(filters);
     if (!mounted) return;
 
@@ -599,22 +617,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       cursor: null,
       pageSize: update.pageSize ?? _defaultPageSize,
     );
-    
-    logDebug('SearchScreen: Setting filters and searching', data: {
-      'previousFilters': _filters.toQuery(),
-      'newFilters': normalized.toQuery(),
-      'announce': announce,
-      'hasCriteria': normalized.hasCriteria,
-    });
-    
+
+    logDebug(
+      'SearchScreen: Setting filters and searching',
+      data: {
+        'previousFilters': _filters.toQuery(),
+        'newFilters': normalized.toQuery(),
+        'announce': announce,
+        'hasCriteria': normalized.hasCriteria,
+      },
+    );
+
     setState(() {
       _filters = normalized;
     });
-    
+
     if (_filters.hasCriteria) {
       await _performSearch(announce: announce);
     } else {
-      logDebug('SearchScreen: No criteria after filter update, clearing results');
+      logDebug(
+        'SearchScreen: No criteria after filter update, clearing results',
+      );
       ref.read(searchControllerProvider.notifier).clear();
     }
   }
@@ -699,13 +722,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       logDebug('SearchScreen: Usage limit reached for loading profiles');
       return;
     }
-    
+
     logDebug('SearchScreen: Loading all profiles');
-    
+
     // Get current user's profile to access preferred gender
     final auth = ref.read(authControllerProvider);
     final userProfile = auth.profile;
-    
+
     // Create filters with preferred gender if available
     final filters = SearchFilters(
       pageSize: _defaultPageSize,
@@ -715,11 +738,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       maxAge: null,
       sort: null,
       cursor: null,
-      preferredGender: userProfile?.preferredGender?.isNotEmpty == true 
-          ? userProfile!.preferredGender 
+      preferredGender: userProfile?.preferredGender?.isNotEmpty == true
+          ? userProfile!.preferredGender
           : null,
     );
-    
+
     await ref.read(searchControllerProvider.notifier).search(filters);
   }
 
@@ -769,7 +792,10 @@ class _ProfileCardState extends State<_ProfileCard> {
                   ? RetryableNetworkImage(
                       url: p.avatarUrl!,
                       fit: BoxFit.cover,
-                      errorWidget: Image.asset(_placeholderAsset, fit: BoxFit.cover),
+                      errorWidget: Image.asset(
+                        _placeholderAsset,
+                        fit: BoxFit.cover,
+                      ),
                     )
                   : Image.asset(_placeholderAsset, fit: BoxFit.cover),
             ),
@@ -897,7 +923,13 @@ class _ShimmerPainter extends CustomPainter {
 }
 
 class _FilterSelection {
-  const _FilterSelection({this.city, this.minAge, this.maxAge, this.sort, this.preferredGender});
+  const _FilterSelection({
+    this.city,
+    this.minAge,
+    this.maxAge,
+    this.sort,
+    this.preferredGender,
+  });
 
   final String? city;
   final int? minAge;
@@ -1065,7 +1097,9 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
                       ),
                     )
                     .toList(),
-                onChanged: (value) => setState(() => _gender = value?.isEmpty == true ? null : value),
+                onChanged: (value) => setState(
+                  () => _gender = value?.isEmpty == true ? null : value,
+                ),
               ),
               const SizedBox(height: 24),
               Row(

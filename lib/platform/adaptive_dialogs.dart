@@ -37,8 +37,14 @@ Future<bool> showAdaptiveConfirm(
           title: Text(title),
           content: Text(message),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(cancelText)),
-            TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(confirmText)),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(cancelText),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(confirmText),
+            ),
           ],
         ),
       ) ??

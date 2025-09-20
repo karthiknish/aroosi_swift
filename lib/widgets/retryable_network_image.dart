@@ -100,11 +100,11 @@ class _RetryableNetworkImageState extends State<RetryableNetworkImage> {
 
     final errorString = exception.toString().toLowerCase();
     return errorString.contains('404') ||
-           errorString.contains('403') ||
-           errorString.contains('400') ||
-           errorString.contains('expired') ||
-           errorString.contains('invalid') ||
-           errorString.contains('unauthorized');
+        errorString.contains('403') ||
+        errorString.contains('400') ||
+        errorString.contains('expired') ||
+        errorString.contains('invalid') ||
+        errorString.contains('unauthorized');
   }
 
   @override
@@ -127,11 +127,7 @@ class _RetryableNetworkImageState extends State<RetryableNetworkImage> {
       return widget.errorWidget ??
           Container(
             color: Colors.grey[200],
-            child: const Icon(
-              Icons.broken_image,
-              color: Colors.grey,
-              size: 40,
-            ),
+            child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
           );
     }
 

@@ -7,9 +7,27 @@ class ExploreGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = <ExploreTileData>[
-      ExploreTileData('Search Profiles', Icons.search, 'search', Colors.blue, 'Find your perfect match'),
-      ExploreTileData('Favorites', Icons.favorite_outline, 'favorites', Colors.red, 'View your liked profiles'),
-      ExploreTileData('Shortlists', Icons.bookmark_outline, 'mainShortlists', Colors.green, 'Manage your saved lists'),
+      ExploreTileData(
+        'Search Profiles',
+        Icons.search,
+        'search',
+        Colors.blue,
+        'Find your perfect match',
+      ),
+      ExploreTileData(
+        'Favorites',
+        Icons.favorite_outline,
+        'favorites',
+        Colors.red,
+        'View your liked profiles',
+      ),
+      ExploreTileData(
+        'Shortlists',
+        Icons.bookmark_outline,
+        'mainShortlists',
+        Colors.green,
+        'Manage your saved lists',
+      ),
       ExploreTileData(
         'Icebreakers',
         Icons.lightbulb_outline,
@@ -17,7 +35,13 @@ class ExploreGrid extends StatelessWidget {
         Colors.orange,
         'Get conversation starters',
       ),
-      ExploreTileData('Edit Profile', Icons.edit, 'mainEditProfile', Colors.purple, 'Update your information'),
+      ExploreTileData(
+        'Edit Profile',
+        Icons.edit,
+        'mainEditProfile',
+        Colors.purple,
+        'Update your information',
+      ),
       ExploreTileData(
         'Subscription',
         Icons.workspace_premium,
@@ -58,16 +82,16 @@ class ExploreGrid extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-           GridView.builder(
-             shrinkWrap: true,
-             physics: const NeverScrollableScrollPhysics(),
-             itemCount: tiles.length,
-             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-               crossAxisCount: 2,
-               crossAxisSpacing: 12,
-               mainAxisSpacing: 12,
-               childAspectRatio: 1.4,
-             ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: tiles.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.4,
+            ),
             itemBuilder: (context, index) {
               final t = tiles[index];
               return ExploreTile(
@@ -86,7 +110,13 @@ class ExploreGrid extends StatelessWidget {
 }
 
 class ExploreTileData {
-  const ExploreTileData(this.label, this.icon, this.routeName, this.color, this.description);
+  const ExploreTileData(
+    this.label,
+    this.icon,
+    this.routeName,
+    this.color,
+    this.description,
+  );
   final String label;
   final IconData icon;
   final String routeName;
@@ -103,23 +133,20 @@ class ExploreTile extends StatelessWidget {
     required this.description,
     required this.onTap,
   });
-  
+
   final String label;
   final IconData icon;
   final Color color;
   final String description;
   final VoidCallback onTap;
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -134,76 +161,68 @@ class ExploreTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
-           child: Padding(
-             padding: const EdgeInsets.all(14),
-             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Container(
-                   padding: const EdgeInsets.all(8),
-                   decoration: BoxDecoration(
-                     color: color.withOpacity(0.1),
-                     borderRadius: BorderRadius.circular(10),
-                   ),
-                   child: Icon(
-                     icon,
-                     color: color,
-                     size: 22,
-                   ),
-                 ),
-                 const SizedBox(height: 10),
-                 Flexible(
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       Text(
-                         label,
-                         style: TextStyle(
-                           fontSize: 13,
-                           fontWeight: FontWeight.bold,
-                           color: color,
-                           height: 1.2,
-                         ),
-                         maxLines: 1,
-                         overflow: TextOverflow.ellipsis,
-                       ),
-                       const SizedBox(height: 3),
-                       Flexible(
-                         child: Text(
-                           description,
-                           style: TextStyle(
-                             fontSize: 10,
-                             color: Colors.grey.shade600,
-                             height: 1.2,
-                           ),
-                           maxLines: 2,
-                           overflow: TextOverflow.ellipsis,
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(height: 10),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                          height: 1.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Flexible(
+                        child: Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
-                 Row(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Text(
-                       'Explore',
-                       style: TextStyle(
-                         fontSize: 10,
-                         fontWeight: FontWeight.bold,
-                         color: color,
-                       ),
-                     ),
-                     const SizedBox(width: 3),
-                     Icon(
-                       Icons.arrow_forward,
-                       color: color,
-                       size: 12,
-                     ),
-                   ],
-                 ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Explore',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Icon(Icons.arrow_forward, color: color, size: 12),
+                  ],
+                ),
               ],
             ),
           ),

@@ -9,7 +9,7 @@ class PremiumFeaturesGrid extends StatelessWidget {
   });
   final SubscriptionFeatures features;
   final VoidCallback onUpgrade;
-  
+
   @override
   Widget build(BuildContext context) {
     final items = [
@@ -62,7 +62,7 @@ class PremiumFeaturesGrid extends StatelessWidget {
         'Get priority customer support',
       ),
     ];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -122,7 +122,12 @@ class PremiumFeaturesGrid extends StatelessWidget {
 }
 
 class PremiumFeatureItem {
-  const PremiumFeatureItem(this.title, this.icon, this.available, this.description);
+  const PremiumFeatureItem(
+    this.title,
+    this.icon,
+    this.available,
+    this.description,
+  );
   final String title;
   final IconData icon;
   final bool available;
@@ -143,7 +148,7 @@ class PremiumFeatureCard extends StatelessWidget {
   final bool available;
   final String description;
   final VoidCallback onUpgrade;
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -176,8 +181,8 @@ class PremiumFeatureCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: available 
-                        ? Colors.green.withOpacity(0.1) 
+                    color: available
+                        ? Colors.green.withOpacity(0.1)
                         : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -197,7 +202,9 @@ class PremiumFeatureCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: available ? Colors.green.shade800 : Colors.grey.shade700,
+                          color: available
+                              ? Colors.green.shade800
+                              : Colors.grey.shade700,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -206,7 +213,9 @@ class PremiumFeatureCard extends StatelessWidget {
                           description,
                           style: TextStyle(
                             fontSize: 11,
-                            color: available ? Colors.green.shade600 : Colors.grey.shade600,
+                            color: available
+                                ? Colors.green.shade600
+                                : Colors.grey.shade600,
                             height: 1.3,
                           ),
                           maxLines: 3,

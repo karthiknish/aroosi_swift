@@ -14,9 +14,7 @@ import 'utils/globalkey_error_handler.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Lock orientation to portrait only
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await dotenv.load(fileName: '.env');
   // Initialize Firebase using the same options as aroosi-mobile.
   final platform = defaultTargetPlatform;
@@ -35,9 +33,9 @@ Future<void> main() async {
       return true;
     }());
   }
-  
+
   // Initialize GlobalKey error handler
   GlobalKeyErrorHandler().init();
-  
+
   runApp(const ProviderScope(child: App()));
 }

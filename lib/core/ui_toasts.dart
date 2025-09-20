@@ -6,7 +6,10 @@ import 'package:aroosi_flutter/core/toast_service.dart';
 /// These provide easy-to-use methods for common toast scenarios
 
 /// Error toast with fallback message (matches React app showErrorToast)
-void showErrorToast(dynamic error, [String fallback = "Something went wrong. Please try again."]) {
+void showErrorToast(
+  dynamic error, [
+  String fallback = "Something went wrong. Please try again.",
+]) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
   toastService.errorToast(error, fallback: fallback);
@@ -20,10 +23,20 @@ void showSuccessToast(String message) {
 }
 
 /// Success toast with undo functionality (matches React app showUndoToast)
-void showUndoToast(String message, VoidCallback onUndo, {String actionLabel = "Undo", Duration duration = const Duration(milliseconds: 6000)}) {
+void showUndoToast(
+  String message,
+  VoidCallback onUndo, {
+  String actionLabel = "Undo",
+  Duration duration = const Duration(milliseconds: 6000),
+}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.successWithUndo(message, onUndo, actionLabel: actionLabel, duration: duration);
+  toastService.successWithUndo(
+    message,
+    onUndo,
+    actionLabel: actionLabel,
+    duration: duration,
+  );
 }
 
 /// Info toast (matches React app showInfoToast)
@@ -51,7 +64,11 @@ void showPrimaryToast(String message) {
 
 /// Push notification related toasts
 void showNotificationSentToast(bool isTest) {
-  showSuccessToast(isTest ? "Test notification sent successfully" : "Push notification sent successfully");
+  showSuccessToast(
+    isTest
+        ? "Test notification sent successfully"
+        : "Push notification sent successfully",
+  );
 }
 
 void showNotificationPreviewToast() {
@@ -72,7 +89,9 @@ void showTemplateDeletedToast() {
 
 /// Email/marketing related toasts
 void showEmailSentToast(bool isTest) {
-  showSuccessToast(isTest ? "Test email sent successfully" : "Email queued for delivery");
+  showSuccessToast(
+    isTest ? "Test email sent successfully" : "Email queued for delivery",
+  );
 }
 
 void showEmailPreviewToast() {
@@ -136,55 +155,37 @@ void showDeletedToast(String operation) {
 void showLoadFailedToast(String operation, {VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.serverError(
-    operation: "load $operation",
-    onRetry: onRetry,
-  );
+  toastService.serverError(operation: "load $operation", onRetry: onRetry);
 }
 
 void showSaveFailedToast(String operation, {VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.serverError(
-    operation: "save $operation",
-    onRetry: onRetry,
-  );
+  toastService.serverError(operation: "save $operation", onRetry: onRetry);
 }
 
 void showDeleteFailedToast(String operation, {VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.serverError(
-    operation: "delete $operation",
-    onRetry: onRetry,
-  );
+  toastService.serverError(operation: "delete $operation", onRetry: onRetry);
 }
 
 void showNetworkErrorToast({String? operation, VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.networkError(
-    operation: operation,
-    onRetry: onRetry,
-  );
+  toastService.networkError(operation: operation, onRetry: onRetry);
 }
 
 void showAuthErrorToast({String? operation, VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.authError(
-    operation: operation,
-    onRetry: onRetry,
-  );
+  toastService.authError(operation: operation, onRetry: onRetry);
 }
 
 void showPermissionErrorToast({String? operation, VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.permissionError(
-    operation: operation,
-    onRetry: onRetry,
-  );
+  toastService.permissionError(operation: operation, onRetry: onRetry);
 }
 
 /// Validation error toasts
@@ -254,10 +255,7 @@ void showAdminOperationSuccess(String operation) {
 void showAdminOperationError(String operation, {VoidCallback? onRetry}) {
   final container = ProviderContainer();
   final toastService = container.read(toastServiceProvider);
-  toastService.serverError(
-    operation: "admin $operation",
-    onRetry: onRetry,
-  );
+  toastService.serverError(operation: "admin $operation", onRetry: onRetry);
 }
 
 /// Special toast patterns

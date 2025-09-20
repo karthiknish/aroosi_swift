@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
 
 class AppTypography {
-   // Headings: use Boldonse for display/title styles
+  // Headings: use Boldonse for display/title styles
   static TextStyle get h1 => const TextStyle(
     fontFamily: 'Boldonse',
     fontSize: 28,

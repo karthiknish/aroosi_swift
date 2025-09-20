@@ -63,7 +63,8 @@ class HeaderRow extends StatelessWidget {
                   icon: Icons.mark_chat_unread_outlined,
                   label: unreadCount > 0 ? '$unreadCount Unread' : 'Messages',
                   color: unreadCount > 0 ? Colors.blue : Colors.grey,
-                  onTap: () => GoRouter.of(context).pushNamed('mainConversations'),
+                  onTap: () =>
+                      GoRouter.of(context).pushNamed('mainConversations'),
                 ),
               ),
             ],
@@ -91,15 +92,12 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardColor = color ?? Colors.grey;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: cardColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cardColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: cardColor.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -124,11 +122,7 @@ class StatCard extends StatelessWidget {
                     color: cardColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    color: cardColor,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: cardColor, size: 24),
                 ),
                 const SizedBox(height: 8),
                 Text(

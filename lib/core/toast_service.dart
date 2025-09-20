@@ -13,14 +13,7 @@ final toastMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>(
 enum ToastType { info, success, warning, error, primary }
 
 // Enhanced error categorization for better error handling
-enum ErrorCategory {
-  network,
-  server,
-  auth,
-  validation,
-  permission,
-  generic,
-}
+enum ErrorCategory { network, server, auth, validation, permission, generic }
 
 // Keep track of recent toast messages to prevent duplicates
 final _recentToasts = <String, DateTime>{};
@@ -45,7 +38,9 @@ class ToastService {
       if (_testMessengerKey != null) {
         _instance = ToastService._(_testMessengerKey!);
       } else {
-        throw StateError('ToastService not initialized. Call initialize() first.');
+        throw StateError(
+          'ToastService not initialized. Call initialize() first.',
+        );
       }
     }
     return _instance!;
@@ -73,14 +68,17 @@ class ToastService {
     final now = DateTime.now();
     final lastTime = _recentToasts[key];
 
-    if (lastTime != null && now.difference(lastTime) < const Duration(seconds: 3)) {
+    if (lastTime != null &&
+        now.difference(lastTime) < const Duration(seconds: 3)) {
       return true;
     }
 
     _recentToasts[key] = now;
 
     // Clean up old entries (older than 10 seconds) to prevent memory leaks
-    _recentToasts.removeWhere((_, time) => now.difference(time) > const Duration(seconds: 10));
+    _recentToasts.removeWhere(
+      (_, time) => now.difference(time) > const Duration(seconds: 10),
+    );
 
     return false;
   }
@@ -138,7 +136,10 @@ class ToastService {
     VoidCallback? onRetry,
     ErrorCategory category = ErrorCategory.generic,
   }) {
-    final message = _humanizeError(error, fallback ?? 'Something went wrong. Please try again.');
+    final message = _humanizeError(
+      error,
+      fallback ?? 'Something went wrong. Please try again.',
+    );
     final userMessage = _sanitizeMessage(message);
 
     if (userMessage.trim().isEmpty) return;
@@ -164,7 +165,9 @@ class ToastService {
         backgroundColor: errorColor,
         content: Text(
           userMessage,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onError),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onError,
+          ),
         ),
         action: SnackBarAction(
           label: 'Retry',
@@ -179,7 +182,9 @@ class ToastService {
         backgroundColor: errorColor,
         content: Text(
           userMessage,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onError),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onError,
+          ),
         ),
       );
     }
@@ -230,16 +235,17 @@ class ToastService {
     // Handle common error patterns
     final errorMappings = <RegExp, String>{
       // Network errors
-      RegExp(r'network|connection|timeout|offline|no internet', caseSensitive: false):
-          'Network error. Check your connection.',
+      RegExp(
+        r'network|connection|timeout|offline|no internet',
+        caseSensitive: false,
+      ): 'Network error. Check your connection.',
       RegExp(r'failed to fetch|http error|server error', caseSensitive: false):
           'Server error. Please try again.',
 
       // Auth errors
       RegExp(r'email.*already.*exists|account.*exists', caseSensitive: false):
           'An account with this email already exists.',
-      RegExp(r'invalid.*email', caseSensitive: false):
-          'Invalid email address.',
+      RegExp(r'invalid.*email', caseSensitive: false): 'Invalid email address.',
       RegExp(r'password.*weak|invalid.*password', caseSensitive: false):
           'Password is too weak.',
       RegExp(r'wrong.*password|incorrect.*credentials', caseSensitive: false):
@@ -254,8 +260,10 @@ class ToastService {
           'Invalid email or password.',
 
       // Permission errors
-      RegExp(r'permission.*denied|insufficient.*permissions|forbidden', caseSensitive: false):
-          'You don\'t have permission to do that.',
+      RegExp(
+        r'permission.*denied|insufficient.*permissions|forbidden',
+        caseSensitive: false,
+      ): 'You don\'t have permission to do that.',
       RegExp(r'unauthorized|access.*denied', caseSensitive: false):
           'Access denied.',
 
@@ -438,13 +446,17 @@ class ToastService {
 
   // Generic error message with common patterns
   void operationFailed(String operation, {String? details}) {
-    final message = details != null ? 'Failed to $operation: $details' : 'Failed to $operation';
+    final message = details != null
+        ? 'Failed to $operation: $details'
+        : 'Failed to $operation';
     error(message);
   }
 
   // Network error handling
   void networkError({String? operation, VoidCallback? onRetry}) {
-    final message = operation != null ? 'Failed to $operation - check your connection' : 'Network error - check your connection';
+    final message = operation != null
+        ? 'Failed to $operation - check your connection'
+        : 'Network error - check your connection';
     errorToast(
       message,
       fallback: 'Network error. Check your connection.',
@@ -456,7 +468,9 @@ class ToastService {
 
   // Server error handling
   void serverError({String? operation, VoidCallback? onRetry}) {
-    final message = operation != null ? 'Server error during $operation' : 'Server error occurred';
+    final message = operation != null
+        ? 'Server error during $operation'
+        : 'Server error occurred';
     errorToast(
       message,
       fallback: 'Server error. Please try again.',
@@ -468,7 +482,9 @@ class ToastService {
 
   // Authentication error handling
   void authError({String? operation, VoidCallback? onRetry}) {
-    final message = operation != null ? 'Authentication failed for $operation' : 'Authentication failed';
+    final message = operation != null
+        ? 'Authentication failed for $operation'
+        : 'Authentication failed';
     errorToast(
       message,
       fallback: 'Please sign in again.',
@@ -480,7 +496,9 @@ class ToastService {
 
   // Permission error handling
   void permissionError({String? operation, VoidCallback? onRetry}) {
-    final message = operation != null ? 'Permission denied for $operation' : 'Permission denied';
+    final message = operation != null
+        ? 'Permission denied for $operation'
+        : 'Permission denied';
     errorToast(
       message,
       fallback: 'You don\'t have permission to do that.',

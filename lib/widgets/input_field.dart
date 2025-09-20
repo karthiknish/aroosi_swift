@@ -9,7 +9,13 @@ class InputField extends StatelessWidget {
   final bool obscure;
   final TextInputType? keyboardType;
 
-  const InputField({super.key, required this.controller, required this.label, this.obscure = false, this.keyboardType});
+  const InputField({
+    super.key,
+    required this.controller,
+    required this.label,
+    this.obscure = false,
+    this.keyboardType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +28,8 @@ class InputField extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
           ),
           CupertinoTextField(

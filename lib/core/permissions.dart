@@ -60,5 +60,3 @@ class AppPermissions {
     openAppSettings();
   }
 }
-
-

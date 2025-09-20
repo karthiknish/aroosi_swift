@@ -40,12 +40,16 @@ class ChatMessage extends Equatable {
       toUserId: json['toUserId']?.toString(),
       text: json['text']?.toString() ?? '',
       type: json['type']?.toString() ?? 'text',
-      createdAt: DateTime.parse(json['createdAt']?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+      ),
       isMine: json['isMine'] == true,
       isRead: json['isRead'] == true,
-      reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
-        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
-      ) ?? {},
+      reactions:
+          (json['reactions'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+          ) ??
+          {},
       duration: json['duration'] as int?,
       imageUrl: json['imageUrl']?.toString(),
       audioUrl: json['audioUrl']?.toString(),
@@ -72,20 +76,20 @@ class ChatMessage extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        conversationId,
-        fromUserId,
-        toUserId,
-        text,
-        type,
-        createdAt,
-        isMine,
-        isRead,
-        reactions,
-        duration,
-        imageUrl,
-        audioUrl,
-      ];
+    id,
+    conversationId,
+    fromUserId,
+    toUserId,
+    text,
+    type,
+    createdAt,
+    isMine,
+    isRead,
+    reactions,
+    duration,
+    imageUrl,
+    audioUrl,
+  ];
 
   ChatMessage copyWith({
     String? id,
@@ -121,7 +125,8 @@ class ChatMessage extends Equatable {
 
   // Helper methods for UI
   bool get hasReactions => reactions.isNotEmpty;
-  int get totalReactions => reactions.values.fold(0, (sum, list) => sum + list.length);
+  int get totalReactions =>
+      reactions.values.fold(0, (sum, list) => sum + list.length);
   String get timeAgo {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
@@ -182,16 +187,16 @@ class ConversationSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        partnerId,
-        partnerName,
-        partnerAvatarUrl,
-        lastMessageText,
-        lastMessageAt,
-        unreadCount,
-        isOnline,
-        lastSeen,
-      ];
+    id,
+    partnerId,
+    partnerName,
+    partnerAvatarUrl,
+    lastMessageText,
+    lastMessageAt,
+    unreadCount,
+    isOnline,
+    lastSeen,
+  ];
 }
 
 /// Typing presence model

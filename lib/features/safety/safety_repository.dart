@@ -41,7 +41,10 @@ class SafetyRepository {
 
   Future<bool> blockUser(String userId) async {
     try {
-      final res = await _dio.post('/safety/block', data: {'blockedUserId': userId});
+      final res = await _dio.post(
+        '/safety/block',
+        data: {'blockedUserId': userId},
+      );
       return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
     } on DioException catch (_) {
       try {
@@ -55,7 +58,10 @@ class SafetyRepository {
 
   Future<bool> unblockUser(String userId) async {
     try {
-      final res = await _dio.post('/safety/unblock', data: {'blockedUserId': userId});
+      final res = await _dio.post(
+        '/safety/unblock',
+        data: {'blockedUserId': userId},
+      );
       return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
     } on DioException catch (_) {
       try {

@@ -31,20 +31,24 @@ class RealTimeService {
     // Convert API base URL to WebSocket URL
     final base = Env.apiBaseUrl;
     if (base.startsWith('https://')) {
-      return base.replaceFirst('https://', 'wss://').replaceFirst('/api', '/api/websocket');
+      return base
+          .replaceFirst('https://', 'wss://')
+          .replaceFirst('/api', '/api/websocket');
     } else if (base.startsWith('http://')) {
-      return base.replaceFirst('http://', 'ws://').replaceFirst('/api', '/api/websocket');
+      return base
+          .replaceFirst('http://', 'ws://')
+          .replaceFirst('/api', '/api/websocket');
     }
     return base;
   }
 
   void connect() {
     if (_channel != null) return;
-    
+
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       _connectedCtrl.add(true);
-      
+
       _channel?.stream.listen(
         (message) {
           _handleMessage(message);
@@ -79,14 +83,14 @@ class RealTimeService {
         case 'joined':
           // Handle successful join response
           break;
-          
+
         case 'message':
           final conversationId = data['conversationId'] as String?;
           if (conversationId != null) {
             _notifyMessageHandlers(conversationId, data);
           }
           break;
-          
+
         case 'typing':
           final conversationId = data['conversationId'] as String?;
           final isTyping = data['isTyping'] as bool?;
@@ -94,7 +98,7 @@ class RealTimeService {
             _notifyTypingHandlers(conversationId, isTyping);
           }
           break;
-          
+
         case 'delivery_receipt':
           final messageId = data['messageId'] as String?;
           final conversationId = data['conversationId'] as String?;
@@ -103,7 +107,7 @@ class RealTimeService {
             _notifyDeliveryReceiptHandlers(conversationId, messageId, userId);
           }
           break;
-          
+
         case 'read_receipt':
           final messageId = data['messageId'] as String?;
           final conversationId = data['conversationId'] as String?;
@@ -112,11 +116,11 @@ class RealTimeService {
             _notifyReadReceiptHandlers(conversationId, messageId, userId);
           }
           break;
-          
+
         case 'pong':
           // Handle ping/pong for connection health
           break;
-          
+
         case 'error':
           print('WebSocket error: ${data['message']}');
           break;
@@ -128,7 +132,7 @@ class RealTimeService {
 
   void _sendMessage(Map<String, dynamic> message) {
     if (_channel == null) return;
-    
+
     try {
       final jsonMessage = jsonEncode(message);
       _channel?.sink.add(jsonMessage);
@@ -232,7 +236,10 @@ class RealTimeService {
     }
   }
 
-  void _notifyMessageHandlers(String conversationId, Map<String, dynamic> message) {
+  void _notifyMessageHandlers(
+    String conversationId,
+    Map<String, dynamic> message,
+  ) {
     for (final handler in _messageHandlers.keys) {
       try {
         handler(conversationId, message);
@@ -242,7 +249,11 @@ class RealTimeService {
     }
   }
 
-  void _notifyDeliveryReceiptHandlers(String conversationId, String messageId, String userId) {
+  void _notifyDeliveryReceiptHandlers(
+    String conversationId,
+    String messageId,
+    String userId,
+  ) {
     for (final handler in _deliveryReceiptHandlers.keys) {
       try {
         handler(conversationId, messageId, userId);
@@ -252,7 +263,11 @@ class RealTimeService {
     }
   }
 
-  void _notifyReadReceiptHandlers(String conversationId, String messageId, String userId) {
+  void _notifyReadReceiptHandlers(
+    String conversationId,
+    String messageId,
+    String userId,
+  ) {
     for (final handler in _readReceiptHandlers.keys) {
       try {
         handler(conversationId, messageId, userId);
@@ -262,7 +277,11 @@ class RealTimeService {
     }
   }
 
-  void _notifyPresenceHandlers(String conversationId, bool isPresent, int? lastSeen) {
+  void _notifyPresenceHandlers(
+    String conversationId,
+    bool isPresent,
+    int? lastSeen,
+  ) {
     for (final handler in _presenceHandlers.keys) {
       try {
         handler(conversationId, isPresent, lastSeen);
@@ -304,35 +323,44 @@ class RealTimeService {
   }
 
   void onDeliveryReceipt(
-    void Function(String conversationId, String messageId, String userId) handler,
+    void Function(String conversationId, String messageId, String userId)
+    handler,
   ) {
-    _deliveryReceiptHandlers[handler] = (String conversationId) => conversationId;
+    _deliveryReceiptHandlers[handler] = (String conversationId) =>
+        conversationId;
   }
 
   void offDeliveryReceipt(
-    void Function(String conversationId, String messageId, String userId) handler,
+    void Function(String conversationId, String messageId, String userId)
+    handler,
   ) {
     _deliveryReceiptHandlers.remove(handler);
   }
 
   void onReadReceipt(
-    void Function(String conversationId, String messageId, String userId) handler,
+    void Function(String conversationId, String messageId, String userId)
+    handler,
   ) {
     _readReceiptHandlers[handler] = (String conversationId) => conversationId;
   }
 
   void offReadReceipt(
-    void Function(String conversationId, String messageId, String userId) handler,
+    void Function(String conversationId, String messageId, String userId)
+    handler,
   ) {
     _readReceiptHandlers.remove(handler);
   }
 
   // Presence methods for typing indicators
-  void onPresence(void Function(String conversationId, bool isPresent, int? lastSeen) handler) {
+  void onPresence(
+    void Function(String conversationId, bool isPresent, int? lastSeen) handler,
+  ) {
     _presenceHandlers[handler] = (String conversationId) => conversationId;
   }
 
-  void offPresence(void Function(String conversationId, bool isPresent, int? lastSeen) handler) {
+  void offPresence(
+    void Function(String conversationId, bool isPresent, int? lastSeen) handler,
+  ) {
     _presenceHandlers.remove(handler);
   }
 

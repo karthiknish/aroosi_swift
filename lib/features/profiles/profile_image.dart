@@ -28,16 +28,17 @@ class ProfileImage extends Equatable {
     String? thumbnailUrl,
     bool? isPrimary,
   }) => ProfileImage(
-        id: id ?? this.id,
-        storageId: storageId ?? this.storageId,
-        url: url ?? this.url,
-        thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
-        isPrimary: isPrimary ?? this.isPrimary,
-      );
+    id: id ?? this.id,
+    storageId: storageId ?? this.storageId,
+    url: url ?? this.url,
+    thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+    isPrimary: isPrimary ?? this.isPrimary,
+  );
 
   factory ProfileImage.fromJson(Map<String, dynamic> json) {
     String readId() {
-      final id = json['id'] ?? json['_id'] ?? json['imageId'] ?? json['storageId'];
+      final id =
+          json['id'] ?? json['_id'] ?? json['imageId'] ?? json['storageId'];
       return id?.toString() ?? '';
     }
 
@@ -50,19 +51,19 @@ class ProfileImage extends Equatable {
       id: readId(),
       storageId: readStorageId(),
       url: json['url']?.toString() ?? json['imageUrl']?.toString(),
-      thumbnailUrl: json['thumbnailUrl']?.toString() ??
-          json['thumbUrl']?.toString(),
+      thumbnailUrl:
+          json['thumbnailUrl']?.toString() ?? json['thumbUrl']?.toString(),
       isPrimary: json['isPrimary'] == true || json['primary'] == true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'storageId': storageId,
-        if (url != null) 'url': url,
-        if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
-        'isPrimary': isPrimary,
-      };
+    'id': id,
+    'storageId': storageId,
+    if (url != null) 'url': url,
+    if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+    'isPrimary': isPrimary,
+  };
 
   @override
   List<Object?> get props => [id, storageId, url, thumbnailUrl, isPrimary];

@@ -24,7 +24,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   Future<void> _refresh() async {
     await ref.read(favoritesControllerProvider.notifier).refresh();
-    if (!mounted) return; 
+    if (!mounted) return;
     ToastService.instance.success('Favorites refreshed');
   }
 
@@ -41,7 +41,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         final s = ref.read(favoritesControllerProvider);
         return s.hasMore && !s.loading;
       },
-      onLoadMore: () => ref.read(favoritesControllerProvider.notifier).loadMore(),
+      onLoadMore: () =>
+          ref.read(favoritesControllerProvider.notifier).loadMore(),
     );
   }
 
@@ -66,7 +67,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               Text(state.error!),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => ref.read(favoritesControllerProvider.notifier).refresh(),
+                onPressed: () =>
+                    ref.read(favoritesControllerProvider.notifier).refresh(),
                 child: const Text('Retry'),
               ),
             ],
@@ -91,7 +93,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         return const ProfileListSkeleton();
       }
       if (index >= state.items.length) {
-        return PagedListFooter(hasMore: state.hasMore, isLoading: state.loading);
+        return PagedListFooter(
+          hasMore: state.hasMore,
+          isLoading: state.loading,
+        );
       }
       final p = state.items[index];
       return ProfileListItem(
@@ -102,11 +107,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         },
         onLongPress: () async {
           final ctx = context;
-          final i = await showAdaptiveActionSheet(ctx, title: p.displayName, actions: const [
-            'Remove from favorites',
-          ]);
+          final i = await showAdaptiveActionSheet(
+            ctx,
+            title: p.displayName,
+            actions: const ['Remove from favorites'],
+          );
           if (i == 0) {
-            await ref.read(favoritesControllerProvider.notifier).toggleFavorite(p.id);
+            await ref
+                .read(favoritesControllerProvider.notifier)
+                .toggleFavorite(p.id);
             ToastService.instance.success('Removed');
           }
         },

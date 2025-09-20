@@ -36,7 +36,9 @@ class ChatMessageWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           // Timestamp (if enabled and first message of group)
           if (showTimestamp)
@@ -115,9 +117,7 @@ class ChatMessageWidget extends StatelessWidget {
       case 'image':
         return _buildImageMessage(context);
       case 'voice':
-        return VoiceMessageBubble(
-          message: message,
-        );
+        return VoiceMessageBubble(message: message);
       default:
         return _buildTextMessage(context);
     }
@@ -200,7 +200,9 @@ class ChatMessageWidget extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.3),
@@ -360,9 +362,10 @@ class _DotAnimationState extends State<_DotAnimation>
       vsync: this,
     )..repeat();
 
-    _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     if (widget.delay > 0) {
       Future.delayed(Duration(milliseconds: widget.delay), () {

@@ -15,10 +15,10 @@ class ProfileDetailState {
     String? error,
     bool setError = false,
   }) => ProfileDetailState(
-        data: data ?? this.data,
-        loading: loading ?? this.loading,
-        error: setError ? error : this.error,
-      );
+    data: data ?? this.data,
+    loading: loading ?? this.loading,
+    error: setError ? error : this.error,
+  );
 }
 
 class ProfileDetailController extends Notifier<ProfileDetailState> {
@@ -33,12 +33,20 @@ class ProfileDetailController extends Notifier<ProfileDetailState> {
     try {
       final data = await _repo.getProfileById(id);
       if (data == null) {
-        state = state.copyWith(loading: false, setError: true, error: 'Profile not found');
+        state = state.copyWith(
+          loading: false,
+          setError: true,
+          error: 'Profile not found',
+        );
         return;
       }
       state = state.copyWith(data: data, loading: false);
     } catch (_) {
-      state = state.copyWith(loading: false, setError: true, error: 'Failed to load profile');
+      state = state.copyWith(
+        loading: false,
+        setError: true,
+        error: 'Failed to load profile',
+      );
     }
   }
 
@@ -62,4 +70,6 @@ class ProfileDetailController extends Notifier<ProfileDetailState> {
 }
 
 final profileDetailControllerProvider =
-    NotifierProvider<ProfileDetailController, ProfileDetailState>(ProfileDetailController.new);
+    NotifierProvider<ProfileDetailController, ProfileDetailState>(
+      ProfileDetailController.new,
+    );

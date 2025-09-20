@@ -22,10 +22,12 @@ class InterestsManagementScreen extends ConsumerStatefulWidget {
   const InterestsManagementScreen({super.key});
 
   @override
-  ConsumerState<InterestsManagementScreen> createState() => _InterestsManagementScreenState();
+  ConsumerState<InterestsManagementScreen> createState() =>
+      _InterestsManagementScreenState();
 }
 
-class _InterestsManagementScreenState extends ConsumerState<InterestsManagementScreen> {
+class _InterestsManagementScreenState
+    extends ConsumerState<InterestsManagementScreen> {
   final _scrollController = ScrollController();
   String _currentMode = 'sent';
 
@@ -42,9 +44,8 @@ class _InterestsManagementScreenState extends ConsumerState<InterestsManagementS
         final s = ref.read(interestsControllerProvider);
         return s.hasMore && !s.loading;
       },
-      onLoadMore: () => ref
-          .read(interestsControllerProvider.notifier)
-          .loadMore(),
+      onLoadMore: () =>
+          ref.read(interestsControllerProvider.notifier).loadMore(),
     );
   }
 
@@ -96,25 +97,21 @@ class _InterestsManagementScreenState extends ConsumerState<InterestsManagementS
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SegmentedButton<String>(
               segments: const [
-                ButtonSegment<String>(
-                  value: 'sent',
-                  label: Text('Sent'),
-                ),
+                ButtonSegment<String>(value: 'sent', label: Text('Sent')),
                 ButtonSegment<String>(
                   value: 'received',
                   label: Text('Received'),
                 ),
-                ButtonSegment<String>(
-                  value: 'mutual',
-                  label: Text('Mutual'),
-                ),
+                ButtonSegment<String>(value: 'mutual', label: Text('Mutual')),
               ],
               selected: {_currentMode},
               onSelectionChanged: (Set<String> newSelection) {
                 setState(() {
                   _currentMode = newSelection.first;
                 });
-                ref.read(interestsControllerProvider.notifier).load(mode: _currentMode);
+                ref
+                    .read(interestsControllerProvider.notifier)
+                    .load(mode: _currentMode);
               },
             ),
           ),
@@ -142,36 +139,27 @@ class _InterestsManagementScreenState extends ConsumerState<InterestsManagementS
       ],
     );
 
-    return AppScaffold(
-      title: 'Interests',
-      child: content,
-    );
+    return AppScaffold(title: 'Interests', child: content);
   }
 
   Widget _buildListSliver(InterestsState state) {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index >= state.items.length) {
-            return PagedListFooter(
-              hasMore: state.hasMore,
-              isLoading: state.loading,
-            );
-          }
-          final interest = state.items[index];
-          return _InterestCard(interest: interest, mode: _currentMode);
-        },
-        childCount: state.items.length + (state.hasMore ? 1 : 0),
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index >= state.items.length) {
+          return PagedListFooter(
+            hasMore: state.hasMore,
+            isLoading: state.loading,
+          );
+        }
+        final interest = state.items[index];
+        return _InterestCard(interest: interest, mode: _currentMode);
+      }, childCount: state.items.length + (state.hasMore ? 1 : 0)),
     );
   }
 }
 
 class _InterestCard extends ConsumerWidget {
-  const _InterestCard({
-    required this.interest,
-    required this.mode,
-  });
+  const _InterestCard({required this.interest, required this.mode});
 
   final InterestEntry interest;
   final String mode;
@@ -180,14 +168,16 @@ class _InterestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isReceived = mode == 'received';
     final isMutual = mode == 'mutual';
-    
+
     // Get user info from snapshots
-    final otherUserSnapshot = isReceived ? interest.fromSnapshot : interest.toSnapshot;
+    final otherUserSnapshot = isReceived
+        ? interest.fromSnapshot
+        : interest.toSnapshot;
     final otherUserName = otherUserSnapshot?['fullName']?.toString() ?? 'User';
     final otherUserImage = otherUserSnapshot?['profileImageUrls'] is List
         ? (otherUserSnapshot!['profileImageUrls'] as List).isNotEmpty
-            ? otherUserSnapshot['profileImageUrls'][0]?.toString()
-            : null
+              ? otherUserSnapshot['profileImageUrls'][0]?.toString()
+              : null
         : null;
 
     return Card(
@@ -198,7 +188,11 @@ class _InterestCard extends ConsumerWidget {
               ? NetworkImage(otherUserImage)
               : null,
           child: otherUserImage == null
-              ? Text(otherUserName.isNotEmpty ? otherUserName.characters.first : '?')
+              ? Text(
+                  otherUserName.isNotEmpty
+                      ? otherUserName.characters.first
+                      : '?',
+                )
               : null,
         ),
         title: Text(otherUserName),
@@ -212,7 +206,6 @@ class _InterestCard extends ConsumerWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            
           ],
         ),
         trailing: isReceived && interest.status == 'pending'
@@ -228,14 +221,18 @@ class _InterestCard extends ConsumerWidget {
                             interestId: interest.id,
                             status: 'rejected',
                           );
-                      
+
                       if (result['success'] == true) {
                         ToastService.instance.success('Interest rejected');
                       } else {
-                        final error = result['error'] as String? ?? 'Failed to reject interest';
+                        final error =
+                            result['error'] as String? ??
+                            'Failed to reject interest';
                         final isPlanLimit = result['isPlanLimit'] == true;
                         if (isPlanLimit) {
-                          ToastService.instance.warning('Upgrade to respond to more interests');
+                          ToastService.instance.warning(
+                            'Upgrade to respond to more interests',
+                          );
                         } else {
                           ToastService.instance.error(error);
                         }
@@ -251,14 +248,18 @@ class _InterestCard extends ConsumerWidget {
                             interestId: interest.id,
                             status: 'accepted',
                           );
-                      
+
                       if (result['success'] == true) {
                         ToastService.instance.success('Interest accepted!');
                       } else {
-                        final error = result['error'] as String? ?? 'Failed to accept interest';
+                        final error =
+                            result['error'] as String? ??
+                            'Failed to accept interest';
                         final isPlanLimit = result['isPlanLimit'] == true;
                         if (isPlanLimit) {
-                          ToastService.instance.warning('Upgrade to respond to more interests');
+                          ToastService.instance.warning(
+                            'Upgrade to respond to more interests',
+                          );
                         } else {
                           ToastService.instance.error(error);
                         }
@@ -268,11 +269,11 @@ class _InterestCard extends ConsumerWidget {
                 ],
               )
             : isMutual
-                ? const Icon(Icons.favorite, color: Colors.pink)
-                : Icon(
-                    _getStatusIcon(interest.status),
-                    color: _getStatusColor(interest.status),
-                  ),
+            ? const Icon(Icons.favorite, color: Colors.pink)
+            : Icon(
+                _getStatusIcon(interest.status),
+                color: _getStatusColor(interest.status),
+              ),
       ),
     );
   }

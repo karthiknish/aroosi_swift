@@ -32,9 +32,10 @@ class ShortlistEntry extends Equatable {
   static ShortlistEntry fromJson(Map<String, dynamic> json) {
     return ShortlistEntry(
       userId: json['userId']?.toString() ?? '',
-      createdAt: json['createdAt'] is int 
-          ? json['createdAt'] 
-          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      createdAt: json['createdAt'] is int
+          ? json['createdAt']
+          : int.tryParse(json['createdAt']?.toString() ?? '') ??
+                DateTime.now().millisecondsSinceEpoch,
       fullName: json['fullName']?.toString(),
       profileImageUrls: json['profileImageUrls'] is List
           ? (json['profileImageUrls'] as List).map((e) => e.toString()).toList()
@@ -298,20 +299,23 @@ class MatchEntry extends Equatable {
       user1Id: json['user1Id']?.toString() ?? '',
       user2Id: json['user2Id']?.toString() ?? '',
       status: json['status']?.toString() ?? 'matched',
-      createdAt: json['createdAt'] is int 
-          ? json['createdAt'] 
-          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      createdAt: json['createdAt'] is int
+          ? json['createdAt']
+          : int.tryParse(json['createdAt']?.toString() ?? '') ??
+                DateTime.now().millisecondsSinceEpoch,
       conversationId: json['conversationId']?.toString() ?? '',
       lastMessageText: json['lastMessageText']?.toString(),
-      lastMessageAt: json['lastMessageAt'] is int 
-          ? json['lastMessageAt'] 
+      lastMessageAt: json['lastMessageAt'] is int
+          ? json['lastMessageAt']
           : int.tryParse(json['lastMessageAt']?.toString() ?? ''),
-      otherUserId: json['userId']?.toString() ?? json['otherUserId']?.toString(),
-      otherUserName: json['fullName']?.toString() ?? json['otherUserName']?.toString(),
+      otherUserId:
+          json['userId']?.toString() ?? json['otherUserId']?.toString(),
+      otherUserName:
+          json['fullName']?.toString() ?? json['otherUserName']?.toString(),
       otherUserImage: json['profileImageUrls'] is List
-          ? (json['profileImageUrls'] as List).isNotEmpty 
-              ? json['profileImageUrls'][0]?.toString()
-              : null
+          ? (json['profileImageUrls'] as List).isNotEmpty
+                ? json['profileImageUrls'][0]?.toString()
+                : null
           : json['otherUserImage']?.toString(),
       unreadCount: json['unreadCount'] is int ? json['unreadCount'] : 0,
       isMutual: json['isMutual'] == true || json['mutual'] == true,
@@ -321,9 +325,20 @@ class MatchEntry extends Equatable {
 
   @override
   List<Object?> get props => [
-    id, user1Id, user2Id, status, createdAt, conversationId,
-    lastMessageText, lastMessageAt, otherUserId, otherUserName, otherUserImage,
-    unreadCount, isMutual, isBlocked,
+    id,
+    user1Id,
+    user2Id,
+    status,
+    createdAt,
+    conversationId,
+    lastMessageText,
+    lastMessageAt,
+    otherUserId,
+    otherUserName,
+    otherUserImage,
+    unreadCount,
+    isMutual,
+    isBlocked,
   ];
 }
 
@@ -342,7 +357,8 @@ class InterestEntry extends Equatable {
   final String id;
   final String fromUserId;
   final String toUserId;
-  final String status; // 'pending', 'accepted', 'rejected', 'reciprocated', 'withdrawn'
+  final String
+  status; // 'pending', 'accepted', 'rejected', 'reciprocated', 'withdrawn'
   final int createdAt; // epoch millis
   final int updatedAt; // epoch millis
   final Map<String, dynamic>? fromSnapshot;
@@ -374,12 +390,14 @@ class InterestEntry extends Equatable {
       fromUserId: json['fromUserId']?.toString() ?? '',
       toUserId: json['toUserId']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
-      createdAt: json['createdAt'] is int 
-          ? json['createdAt'] 
-          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
-      updatedAt: json['updatedAt'] is int 
-          ? json['updatedAt'] 
-          : int.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      createdAt: json['createdAt'] is int
+          ? json['createdAt']
+          : int.tryParse(json['createdAt']?.toString() ?? '') ??
+                DateTime.now().millisecondsSinceEpoch,
+      updatedAt: json['updatedAt'] is int
+          ? json['updatedAt']
+          : int.tryParse(json['updatedAt']?.toString() ?? '') ??
+                DateTime.now().millisecondsSinceEpoch,
       fromSnapshot: json['fromSnapshot'] as Map<String, dynamic>?,
       toSnapshot: json['toSnapshot'] as Map<String, dynamic>?,
     );
@@ -387,8 +405,14 @@ class InterestEntry extends Equatable {
 
   @override
   List<Object?> get props => [
-    id, fromUserId, toUserId, status, createdAt, updatedAt,
-    fromSnapshot, toSnapshot,
+    id,
+    fromUserId,
+    toUserId,
+    status,
+    createdAt,
+    updatedAt,
+    fromSnapshot,
+    toSnapshot,
   ];
 }
 
@@ -466,7 +490,9 @@ class SearchFilters {
     sort: sort == _unset ? this.sort : sort as String?,
     cursor: cursor == _unset ? this.cursor : cursor as String?,
     pageSize: pageSize == _unset ? this.pageSize : pageSize as int?,
-    preferredGender: preferredGender == _unset ? this.preferredGender : preferredGender as String?,
+    preferredGender: preferredGender == _unset
+        ? this.preferredGender
+        : preferredGender as String?,
   );
 
   bool get hasQuery => query?.trim().isNotEmpty ?? false;

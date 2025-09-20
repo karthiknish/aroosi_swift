@@ -26,8 +26,10 @@ class AdaptiveRefresh extends StatelessWidget {
         controller: controller,
         slivers: [
           CupertinoSliverRefreshControl(onRefresh: onRefresh),
-          if (slivers != null && slivers!.isNotEmpty) ...slivers!
-          else SliverToBoxAdapter(child: child ?? const SizedBox.shrink()),
+          if (slivers != null && slivers!.isNotEmpty)
+            ...slivers!
+          else
+            SliverToBoxAdapter(child: child ?? const SizedBox.shrink()),
         ],
       );
     }
@@ -38,6 +40,9 @@ class AdaptiveRefresh extends StatelessWidget {
         child: CustomScrollView(controller: controller, slivers: slivers!),
       );
     }
-    return RefreshIndicator(onRefresh: onRefresh, child: child ?? const SizedBox.shrink());
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: child ?? const SizedBox.shrink(),
+    );
   }
 }

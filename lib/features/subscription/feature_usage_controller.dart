@@ -30,7 +30,7 @@ class FeatureUsageController extends Notifier<FeatureUsageState> {
   }
 
   bool requestUsage(UsageMetric metric) {
-  final access = ref.read(featureAccessProvider);
+    final access = ref.read(featureAccessProvider);
     final limit = access.usageLimit(metric);
 
     if (limit == 0) {
@@ -51,4 +51,6 @@ class FeatureUsageController extends Notifier<FeatureUsageState> {
 }
 
 final featureUsageControllerProvider =
-    NotifierProvider<FeatureUsageController, FeatureUsageState>(FeatureUsageController.new);
+    NotifierProvider<FeatureUsageController, FeatureUsageState>(
+      FeatureUsageController.new,
+    );

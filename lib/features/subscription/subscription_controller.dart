@@ -9,9 +9,10 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'subscription_models.dart';
 import 'subscription_repository.dart';
 
-final subscriptionControllerProvider = NotifierProvider<SubscriptionController, SubscriptionState>(
-  SubscriptionController.new,
-);
+final subscriptionControllerProvider =
+    NotifierProvider<SubscriptionController, SubscriptionState>(
+      SubscriptionController.new,
+    );
 
 class SubscriptionController extends Notifier<SubscriptionState> {
   SubscriptionController() : _iap = InAppPurchase.instance;
@@ -32,7 +33,9 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       _statusRefreshTimer?.cancel();
       if (_activePurchase != null && !(_activePurchase?.isCompleted ?? true)) {
         _activePurchase?.complete(
-          const PurchaseResult.failure(PurchaseError(PurchaseErrorType.unknown, 'Controller disposed')),
+          const PurchaseResult.failure(
+            PurchaseError(PurchaseErrorType.unknown, 'Controller disposed'),
+          ),
         );
       }
       _activePurchase = null;
@@ -50,7 +53,12 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     state = state.copyWith(
       isInitializing: false,
       isAvailable: available,
-      error: available ? null : const PurchaseError(PurchaseErrorType.productNotAvailable, 'In-app purchases unavailable'),
+      error: available
+          ? null
+          : const PurchaseError(
+              PurchaseErrorType.productNotAvailable,
+              'In-app purchases unavailable',
+            ),
       setError: true,
     );
 
@@ -82,7 +90,9 @@ class SubscriptionController extends Notifier<SubscriptionState> {
   void _startPeriodicStatusRefresh() {
     // Refresh status every 5 minutes for real-time updates
     _statusRefreshTimer?.cancel();
-    _statusRefreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+    _statusRefreshTimer = Timer.periodic(const Duration(minutes: 5), (
+      timer,
+    ) async {
       if (!state.isProcessingPurchase) {
         await refreshStatus();
       }
@@ -97,13 +107,21 @@ class SubscriptionController extends Notifier<SubscriptionState> {
 
   Future<void> loadProducts() async {
     final ids = <String>{};
-    final premium = SubscriptionConfig.productIdForPlan(SubscriptionPlan.premium);
-    final premiumPlus = SubscriptionConfig.productIdForPlan(SubscriptionPlan.premiumPlus);
+    final premium = SubscriptionConfig.productIdForPlan(
+      SubscriptionPlan.premium,
+    );
+    final premiumPlus = SubscriptionConfig.productIdForPlan(
+      SubscriptionPlan.premiumPlus,
+    );
     if (premium != null) ids.add(premium);
     if (premiumPlus != null) ids.add(premiumPlus);
     if (ids.isEmpty) return;
 
-    state = state.copyWith(isLoadingProducts: true, error: null, setError: true);
+    state = state.copyWith(
+      isLoadingProducts: true,
+      error: null,
+      setError: true,
+    );
     final response = await _iap.queryProductDetails(ids);
     if (response.error != null) {
       state = state.copyWith(
@@ -115,7 +133,9 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     }
 
     final products = response.productDetails.map((detail) {
-      final plan = SubscriptionPlanX.fromId(_planFromProductId(detail.id)) ?? SubscriptionPlan.premium;
+      final plan =
+          SubscriptionPlanX.fromId(_planFromProductId(detail.id)) ??
+          SubscriptionPlan.premium;
       return SubscriptionProduct(
         productId: detail.id,
         plan: plan,
@@ -137,7 +157,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     final productId = SubscriptionConfig.productIdForPlan(plan);
     if (productId == null) {
       return const PurchaseResult.failure(
-        PurchaseError(PurchaseErrorType.productNotAvailable, 'No product configured for this plan'),
+        PurchaseError(
+          PurchaseErrorType.productNotAvailable,
+          'No product configured for this plan',
+        ),
       );
     }
 
@@ -150,26 +173,45 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     }
     if (product == null || product.raw is! ProductDetails) {
       return const PurchaseResult.failure(
-        PurchaseError(PurchaseErrorType.productNotAvailable, 'Product information not loaded'),
+        PurchaseError(
+          PurchaseErrorType.productNotAvailable,
+          'Product information not loaded',
+        ),
       );
     }
 
     if (_activePurchase != null && !(_activePurchase?.isCompleted ?? true)) {
       return const PurchaseResult.failure(
-        PurchaseError(PurchaseErrorType.unknown, 'Another purchase is in progress'),
+        PurchaseError(
+          PurchaseErrorType.unknown,
+          'Another purchase is in progress',
+        ),
       );
     }
 
     _activePurchase = Completer<PurchaseResult>();
-    state = state.copyWith(isProcessingPurchase: true, error: null, setError: true);
+    state = state.copyWith(
+      isProcessingPurchase: true,
+      error: null,
+      setError: true,
+    );
 
     final success = await _iap.buyNonConsumable(
-      purchaseParam: PurchaseParam(productDetails: product.raw as ProductDetails),
+      purchaseParam: PurchaseParam(
+        productDetails: product.raw as ProductDetails,
+      ),
     );
 
     if (!success) {
-      final error = const PurchaseError(PurchaseErrorType.unknown, 'Unable to start purchase flow');
-      state = state.copyWith(isProcessingPurchase: false, error: error, setError: true);
+      final error = const PurchaseError(
+        PurchaseErrorType.unknown,
+        'Unable to start purchase flow',
+      );
+      state = state.copyWith(
+        isProcessingPurchase: false,
+        error: error,
+        setError: true,
+      );
       final result = PurchaseResult.failure(error);
       _activePurchase?.complete(result);
       _activePurchase = null;
@@ -183,29 +225,35 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     if (state.isProcessingPurchase) {
       return false;
     }
-    
-    state = state.copyWith(isProcessingPurchase: true, error: null, setError: true);
+
+    state = state.copyWith(
+      isProcessingPurchase: true,
+      error: null,
+      setError: true,
+    );
     _restoreCompleter = Completer<bool>();
-    
+
     try {
       // IAP 3.x restorePurchases returns Future<void>. Await and then rely on
       // purchaseStream callbacks to complete the restore flow.
       await _iap.restorePurchases();
-      
+
       // Set a timeout for the restore operation
       Timer(const Duration(seconds: 10), () {
         if (_restoreCompleter != null && !(_restoreCompleter!.isCompleted)) {
           logApi('⚠️ Restore purchases timed out after 10 seconds');
           state = state.copyWith(
             isProcessingPurchase: false,
-            error: const PurchaseError(PurchaseErrorType.unknown, 'Restore operation timed out'),
+            error: const PurchaseError(
+              PurchaseErrorType.unknown,
+              'Restore operation timed out',
+            ),
             setError: true,
           );
           _restoreCompleter?.complete(false);
           _restoreCompleter = null;
         }
       });
-      
     } catch (e) {
       state = state.copyWith(
         isProcessingPurchase: false,
@@ -215,7 +263,7 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       _restoreCompleter?.complete(false);
       _restoreCompleter = null;
     }
-    
+
     return _restoreCompleter!.future;
   }
 
@@ -224,14 +272,18 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       if (purchase.status == PurchaseStatus.pending) {
         continue;
       }
-      if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
         _validateAndFinish(purchase);
         continue;
       }
       // Treat anything else as an error/cancel flow.
       final err = purchase.error != null
           ? _mapIapError(purchase.error!)
-          : const PurchaseError(PurchaseErrorType.unknown, 'Purchase cancelled');
+          : const PurchaseError(
+              PurchaseErrorType.unknown,
+              'Purchase cancelled',
+            );
       _finish(purchase, success: false, error: err);
     }
   }
@@ -260,40 +312,68 @@ class SubscriptionController extends Notifier<SubscriptionState> {
 
     if (ok) {
       await refreshStatus();
-      state = state.copyWith(isProcessingPurchase: false, error: null, setError: true);
+      state = state.copyWith(
+        isProcessingPurchase: false,
+        error: null,
+        setError: true,
+      );
       final result = PurchaseResult.success(
         productId: productId,
         purchaseToken: purchaseToken,
-        transactionId: purchase.purchaseID ?? purchase.transactionDate?.toString() ?? '',
+        transactionId:
+            purchase.purchaseID ?? purchase.transactionDate?.toString() ?? '',
         receiptData: Platform.isIOS ? receipt : null,
       );
       _completeActive(result);
       _restoreCompleter?.complete(true);
       _restoreCompleter = null;
     } else {
-      const error = PurchaseError(PurchaseErrorType.validationFailed, 'Purchase validation failed after retries');
-      state = state.copyWith(isProcessingPurchase: false, error: error, setError: true);
+      const error = PurchaseError(
+        PurchaseErrorType.validationFailed,
+        'Purchase validation failed after retries',
+      );
+      state = state.copyWith(
+        isProcessingPurchase: false,
+        error: error,
+        setError: true,
+      );
       _completeActive(const PurchaseResult.failure(error));
       _restoreCompleter?.complete(false);
       _restoreCompleter = null;
     }
   }
 
-  void _finish(PurchaseDetails purchase, {required bool success, PurchaseError? error}) {
+  void _finish(
+    PurchaseDetails purchase, {
+    required bool success,
+    PurchaseError? error,
+  }) {
     if (purchase.pendingCompletePurchase) {
       _iap.completePurchase(purchase);
     }
-    state = state.copyWith(isProcessingPurchase: false, error: error, setError: true);
+    state = state.copyWith(
+      isProcessingPurchase: false,
+      error: error,
+      setError: true,
+    );
     if (success) {
       final result = PurchaseResult.success(
         productId: purchase.productID,
         purchaseToken: purchase.verificationData.serverVerificationData,
-        transactionId: purchase.purchaseID ?? purchase.transactionDate?.toString() ?? '',
-        receiptData: Platform.isIOS ? purchase.verificationData.serverVerificationData : null,
+        transactionId:
+            purchase.purchaseID ?? purchase.transactionDate?.toString() ?? '',
+        receiptData: Platform.isIOS
+            ? purchase.verificationData.serverVerificationData
+            : null,
       );
       _completeActive(result);
     } else {
-      _completeActive(PurchaseResult.failure(error ?? const PurchaseError(PurchaseErrorType.unknown, 'Purchase failed')));
+      _completeActive(
+        PurchaseResult.failure(
+          error ??
+              const PurchaseError(PurchaseErrorType.unknown, 'Purchase failed'),
+        ),
+      );
       _restoreCompleter?.complete(false);
       _restoreCompleter = null;
     }
@@ -310,24 +390,47 @@ class SubscriptionController extends Notifier<SubscriptionState> {
     if (error is IAPError) {
       return _mapIapError(error);
     }
-    return const PurchaseError(PurchaseErrorType.unknown, 'Unexpected purchase error');
+    return const PurchaseError(
+      PurchaseErrorType.unknown,
+      'Unexpected purchase error',
+    );
   }
 
   PurchaseError _mapIapError(IAPError error) {
     final code = error.code.toLowerCase();
     if (code.contains('canceled') || code.contains('cancelled')) {
-      return PurchaseError(PurchaseErrorType.userCancel, error.message, code: error.code);
+      return PurchaseError(
+        PurchaseErrorType.userCancel,
+        error.message,
+        code: error.code,
+      );
     }
     if (code.contains('item_unavailable')) {
-      return PurchaseError(PurchaseErrorType.productNotAvailable, error.message, code: error.code);
+      return PurchaseError(
+        PurchaseErrorType.productNotAvailable,
+        error.message,
+        code: error.code,
+      );
     }
     if (code.contains('network')) {
-      return PurchaseError(PurchaseErrorType.networkError, error.message, code: error.code);
+      return PurchaseError(
+        PurchaseErrorType.networkError,
+        error.message,
+        code: error.code,
+      );
     }
     if (code.contains('billing_unavailable')) {
-      return PurchaseError(PurchaseErrorType.paymentNotAllowed, error.message, code: error.code);
+      return PurchaseError(
+        PurchaseErrorType.paymentNotAllowed,
+        error.message,
+        code: error.code,
+      );
     }
-    return PurchaseError(PurchaseErrorType.unknown, error.message, code: error.code);
+    return PurchaseError(
+      PurchaseErrorType.unknown,
+      error.message,
+      code: error.code,
+    );
   }
 
   String _planFromProductId(String productId) {
@@ -347,7 +450,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return false;
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to refresh subscription'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to refresh subscription',
+        ),
         setError: true,
       );
       return false;
@@ -364,7 +470,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return false;
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to cancel subscription'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to cancel subscription',
+        ),
         setError: true,
       );
       return false;
@@ -376,7 +485,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return await _repository.getFeatures();
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch features'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to fetch features',
+        ),
         setError: true,
       );
       return null;
@@ -388,7 +500,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return await _repository.getUsageHistory();
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch usage history'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to fetch usage history',
+        ),
         setError: true,
       );
       return null;
@@ -400,7 +515,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return await _repository.getBoostQuota();
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch boost quota'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to fetch boost quota',
+        ),
         setError: true,
       );
       return null;
@@ -412,7 +530,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return await _repository.getVoiceQuota();
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to fetch voice quota'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to fetch voice quota',
+        ),
         setError: true,
       );
       return null;
@@ -429,7 +550,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return false;
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.networkError, 'Failed to update subscription status'),
+        error: PurchaseError(
+          PurchaseErrorType.networkError,
+          'Failed to update subscription status',
+        ),
         setError: true,
       );
       return false;
@@ -445,14 +569,17 @@ class SubscriptionController extends Notifier<SubscriptionState> {
         await refreshStatus();
         return true;
       }
-      
+
       // For Android, we would open Google Play subscription management
       // For now, we'll just refresh the status
       await refreshStatus();
       return true;
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.unknown, 'Failed to open subscription management'),
+        error: PurchaseError(
+          PurchaseErrorType.unknown,
+          'Failed to open subscription management',
+        ),
         setError: true,
       );
       return false;
@@ -466,7 +593,10 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       return await restorePurchases();
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.unknown, 'Failed to check purchase history'),
+        error: PurchaseError(
+          PurchaseErrorType.unknown,
+          'Failed to check purchase history',
+        ),
         setError: true,
       );
       return false;
@@ -479,7 +609,7 @@ class SubscriptionController extends Notifier<SubscriptionState> {
       if (currentStatus == null || !currentStatus.isActive) {
         return false;
       }
-      
+
       // If we have a product ID, try to validate the current subscription
       if (currentStatus.productId != null) {
         final platform = Platform.isIOS ? 'ios' : 'android';
@@ -489,18 +619,21 @@ class SubscriptionController extends Notifier<SubscriptionState> {
           purchaseToken: 'current', // This would be the actual purchase token
           maxRetries: 2,
         );
-        
+
         if (!success) {
           // If validation fails, refresh status to get updated information
           await refreshStatus();
           return false;
         }
       }
-      
+
       return true;
     } catch (e) {
       state = state.copyWith(
-        error: PurchaseError(PurchaseErrorType.validationFailed, 'Failed to validate current subscription'),
+        error: PurchaseError(
+          PurchaseErrorType.validationFailed,
+          'Failed to validate current subscription',
+        ),
         setError: true,
       );
       return false;

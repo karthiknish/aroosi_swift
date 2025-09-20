@@ -14,18 +14,20 @@ class ApiClient {
     storage: FileStorage(_cookiesDirPath()),
   );
 
-  static final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: Env.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-flutter-client': 'true', // Identify as Flutter client
-      },
-    ),
-  )..interceptors.add(CookieManager(_cookieJar))
-   ..interceptors.add(_ApiLoggingInterceptor());
+  static final Dio dio =
+      Dio(
+          BaseOptions(
+            baseUrl: Env.apiBaseUrl,
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 20),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-flutter-client': 'true', // Identify as Flutter client
+            },
+          ),
+        )
+        ..interceptors.add(CookieManager(_cookieJar))
+        ..interceptors.add(_ApiLoggingInterceptor());
 
   static String _cookiesDirPath() {
     // Use a subfolder in system temp to avoid needing platform channels; sufficient for our auth cookies.
@@ -96,28 +98,32 @@ void enableBearerTokenAuth(AuthTokenProvider provider) {
 /// Comprehensive API logging interceptor for debugging all HTTP requests
 class _ApiLoggingInterceptor extends Interceptor {
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final method = options.method.toUpperCase();
     final url = options.uri.toString();
     final headers = options.headers;
     final hasAuth = headers['Authorization'] != null;
-    
+
     logApi('🚀 $method $url | Auth: ${hasAuth ? "Yes" : "No"}');
-    
+
     // Log request body if present (but truncate large payloads)
     if (options.data != null) {
       String bodyStr = options.data.toString();
       if (bodyStr.length > 200) {
-        bodyStr = '${bodyStr.substring(0, 200)}... [truncated, ${bodyStr.length} chars]';
+        bodyStr =
+            '${bodyStr.substring(0, 200)}... [truncated, ${bodyStr.length} chars]';
       }
       logApi('📦 Request Body: $bodyStr');
     }
-    
+
     // Log query parameters if present
     if (options.queryParameters.isNotEmpty) {
       logApi('🔍 Query Params: ${options.queryParameters}');
     }
-    
+
     handler.next(options);
   }
 
@@ -126,19 +132,21 @@ class _ApiLoggingInterceptor extends Interceptor {
     final method = response.requestOptions.method.toUpperCase();
     final url = response.requestOptions.uri.toString();
     final status = response.statusCode;
-    final duration = response.requestOptions.receiveTimeout?.inMilliseconds ?? 0;
-    
+    final duration =
+        response.requestOptions.receiveTimeout?.inMilliseconds ?? 0;
+
     logApi('✅ $method $url | Status: $status | Duration: ${duration}ms');
-    
+
     // Log response data if present (but truncate large responses)
     if (response.data != null) {
       String dataStr = response.data.toString();
       if (dataStr.length > 300) {
-        dataStr = '${dataStr.substring(0, 300)}... [truncated, ${dataStr.length} chars]';
+        dataStr =
+            '${dataStr.substring(0, 300)}... [truncated, ${dataStr.length} chars]';
       }
       logApi('📄 Response Data: $dataStr');
     }
-    
+
     handler.next(response);
   }
 
@@ -148,23 +156,24 @@ class _ApiLoggingInterceptor extends Interceptor {
     final url = err.requestOptions.uri.toString();
     final status = err.response?.statusCode ?? 'UNKNOWN';
     final errorType = err.type.toString();
-    
+
     logApi('❌ $method $url | Status: $status | Type: $errorType');
-    
+
     // Log error details
     if (err.error != null) {
       logApi('💥 Error: ${err.error}');
     }
-    
+
     // Log response error data if present
     if (err.response?.data != null) {
       String errorDataStr = err.response!.data.toString();
       if (errorDataStr.length > 300) {
-        errorDataStr = '${errorDataStr.substring(0, 300)}... [truncated, ${errorDataStr.length} chars]';
+        errorDataStr =
+            '${errorDataStr.substring(0, 300)}... [truncated, ${errorDataStr.length} chars]';
       }
       logApi('📄 Error Response: $errorDataStr');
     }
-    
+
     handler.next(err);
   }
 }

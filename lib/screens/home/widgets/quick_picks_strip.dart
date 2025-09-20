@@ -51,9 +51,7 @@ class QuickPicksStrip extends StatelessWidget {
                 onPressed: onSeeAll,
                 icon: const Icon(Icons.arrow_forward, size: 16),
                 label: const Text('See all'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.orange,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.orange),
               ),
             ],
           ),
@@ -75,18 +73,11 @@ class QuickPicksStrip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.shade200,
-                  width: 1,
-                ),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.person_off,
-                    color: Colors.grey.shade400,
-                    size: 32,
-                  ),
+                  Icon(Icons.person_off, color: Colors.grey.shade400, size: 32),
                   const SizedBox(height: 8),
                   Text(
                     'No quick picks today',
@@ -99,10 +90,7 @@ class QuickPicksStrip extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Check back later for new matches',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -116,7 +104,10 @@ class QuickPicksStrip extends StatelessWidget {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final p = items[index];
-                  return QuickPickCard(item: p, onTap: () => onTapProfile(p.id));
+                  return QuickPickCard(
+                    item: p,
+                    onTap: () => onTapProfile(p.id),
+                  );
                 },
               ),
             ),
@@ -142,16 +133,13 @@ class QuickPickCard extends StatelessWidget {
             errorWidget: Image.asset(_placeholderAsset, fit: BoxFit.cover),
           )
         : Image.asset(_placeholderAsset, fit: BoxFit.cover);
-    
+
     return Container(
       width: 120,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -199,43 +187,46 @@ class QuickPickCard extends StatelessWidget {
                   ),
                 ),
               ),
-               Expanded(
-                 flex: 1,
-                 child: Padding(
-                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                   child: Column(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       Flexible(
-                         child: Text(
-                           item.displayName,
-                           maxLines: 1,
-                           overflow: TextOverflow.ellipsis,
-                           style: const TextStyle(
-                             fontSize: 11,
-                             fontWeight: FontWeight.bold,
-                             height: 1.2,
-                           ),
-                         ),
-                       ),
-                       if (item.age != null) ...[
-                         const SizedBox(height: 1),
-                         Flexible(
-                           child: Text(
-                             '${item.age} years',
-                             style: TextStyle(
-                               fontSize: 9,
-                               color: Colors.grey.shade600,
-                               height: 1.1,
-                             ),
-                           ),
-                         ),
-                       ],
-                     ],
-                   ),
-                 ),
-               ),
+              Expanded(
+                flex: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      if (item.age != null) ...[
+                        const SizedBox(height: 1),
+                        Flexible(
+                          child: Text(
+                            '${item.age} years',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.grey.shade600,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -246,7 +237,7 @@ class QuickPickCard extends StatelessWidget {
 
 class QuickPickSkeleton extends StatelessWidget {
   const QuickPickSkeleton({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -254,10 +245,7 @@ class QuickPickSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -281,35 +269,35 @@ class QuickPickSkeleton extends StatelessWidget {
               ),
             ),
           ),
-           Expanded(
-             flex: 1,
-             child: Padding(
-               padding: const EdgeInsets.all(8),
-               child: Column(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   Container(
-                     height: 10,
-                     width: 50,
-                     decoration: BoxDecoration(
-                       color: Colors.grey.shade200,
-                       borderRadius: BorderRadius.circular(5),
-                     ),
-                   ),
-                   const SizedBox(height: 3),
-                   Container(
-                     height: 7,
-                     width: 35,
-                     decoration: BoxDecoration(
-                       color: Colors.grey.shade100,
-                       borderRadius: BorderRadius.circular(3.5),
-                     ),
-                   ),
-                 ],
-               ),
-             ),
-           ),
+          Expanded(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 10,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Container(
+                    height: 7,
+                    width: 35,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(3.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

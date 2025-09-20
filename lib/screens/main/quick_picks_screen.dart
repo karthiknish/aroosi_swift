@@ -39,12 +39,18 @@ class QuickPicksScreen extends ConsumerWidget {
             // ignore: use_build_context_synchronously
             final date = await showAdaptiveDatePicker(ctx);
             if (date != null) {
-              final allowed = ref.read(featureUsageControllerProvider.notifier).requestUsage(UsageMetric.searchPerformed);
+              final allowed = ref
+                  .read(featureUsageControllerProvider.notifier)
+                  .requestUsage(UsageMetric.searchPerformed);
               if (!allowed) {
-                ToastService.instance.warning('Search filters are limited on Free. Upgrade for unlimited filters.');
+                ToastService.instance.warning(
+                  'Search filters are limited on Free. Upgrade for unlimited filters.',
+                );
                 return;
               }
-              ToastService.instance.success('Filter date: ${date.toLocal().toString().split(' ').first}');
+              ToastService.instance.success(
+                'Filter date: ${date.toLocal().toString().split(' ').first}',
+              );
             }
           },
           icon: const Icon(Icons.filter_alt_outlined),

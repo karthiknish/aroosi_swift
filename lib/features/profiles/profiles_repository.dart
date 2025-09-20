@@ -27,10 +27,7 @@ class ProfilesRepository {
       // Match React app: /matches (base URL already includes /api)
       final res = await _dio.get(
         '/matches',
-        queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-        },
+        queryParameters: {'page': page, 'pageSize': pageSize},
       );
       return _parseMatchesPaged(res);
     } on DioException catch (e) {
@@ -38,10 +35,7 @@ class ProfilesRepository {
         // Fallback to legacy endpoint
         final res = await _dio.get(
           '/matches',
-          queryParameters: {
-            'page': page,
-            'pageSize': pageSize,
-          },
+          queryParameters: {'page': page, 'pageSize': pageSize},
         );
         return _parseMatchesPaged(res);
       }
@@ -57,75 +51,109 @@ class ProfilesRepository {
     final qp = filters.toQuery();
     qp['page'] = page;
     qp['pageSize'] = pageSize;
-    
-    logDebug('Search API call', data: {
-      'endpoint': 'search',
-      'queryParameters': qp,
-      'page': page,
-      'pageSize': pageSize,
-    });
+
+    logDebug(
+      'Search API call',
+      data: {
+        'endpoint': 'search',
+        'queryParameters': qp,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
 
     Response res;
     String? lastError;
-    
+
     // Try canonical generic /search first (Next.js API route)
     try {
       logDebug('Trying primary search endpoint: /search');
       res = await _dio.get('/search', queryParameters: qp);
-      logDebug('Search success: /search', data: {
-        'status': res.statusCode,
-        'dataKeys': res.data is Map ? (res.data as Map).keys.toList() : 'not_a_map',
-      });
+      logDebug(
+        'Search success: /search',
+        data: {
+          'status': res.statusCode,
+          'dataKeys': res.data is Map
+              ? (res.data as Map).keys.toList()
+              : 'not_a_map',
+        },
+      );
       return _parsePaged(res);
     } catch (e, stackTrace) {
       lastError = 'Failed /search: ${e.toString()}';
       logDebug('Search failed: /search', error: e, stackTrace: stackTrace);
     }
-    
+
     // Fallback: profiles search
     try {
       logDebug('Trying fallback endpoint: /profiles/search');
       res = await _dio.get('/profiles/search', queryParameters: qp);
-      logDebug('Search success: /profiles/search', data: {
-        'status': res.statusCode,
-        'dataKeys': res.data is Map ? (res.data as Map).keys.toList() : 'not_a_map',
-      });
+      logDebug(
+        'Search success: /profiles/search',
+        data: {
+          'status': res.statusCode,
+          'dataKeys': res.data is Map
+              ? (res.data as Map).keys.toList()
+              : 'not_a_map',
+        },
+      );
       return _parsePaged(res);
     } catch (e, stackTrace) {
       lastError = 'Failed /profiles/search: ${e.toString()}';
-      logDebug('Search failed: /profiles/search', error: e, stackTrace: stackTrace);
+      logDebug(
+        'Search failed: /profiles/search',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
-    
+
     // Fallback: users search
     try {
       logDebug('Trying fallback endpoint: /users/search');
       res = await _dio.get('/users/search', queryParameters: qp);
-      logDebug('Search success: /users/search', data: {
-        'status': res.statusCode,
-        'dataKeys': res.data is Map ? (res.data as Map).keys.toList() : 'not_a_map',
-      });
+      logDebug(
+        'Search success: /users/search',
+        data: {
+          'status': res.statusCode,
+          'dataKeys': res.data is Map
+              ? (res.data as Map).keys.toList()
+              : 'not_a_map',
+        },
+      );
       return _parsePaged(res);
     } catch (e, stackTrace) {
       lastError = 'Failed /users/search: ${e.toString()}';
-      logDebug('Search failed: /users/search', error: e, stackTrace: stackTrace);
+      logDebug(
+        'Search failed: /users/search',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
-    
+
     // Fallback: profiles listing with q filter
     try {
       logDebug('Trying fallback endpoint: /profiles');
       res = await _dio.get('/profiles', queryParameters: qp);
-      logDebug('Search success: /profiles', data: {
-        'status': res.statusCode,
-        'dataKeys': res.data is Map ? (res.data as Map).keys.toList() : 'not_a_map',
-      });
+      logDebug(
+        'Search success: /profiles',
+        data: {
+          'status': res.statusCode,
+          'dataKeys': res.data is Map
+              ? (res.data as Map).keys.toList()
+              : 'not_a_map',
+        },
+      );
       return _parsePaged(res);
     } catch (e, stackTrace) {
       lastError = 'Failed /profiles: ${e.toString()}';
       logDebug('Search failed: /profiles', error: e, stackTrace: stackTrace);
     }
-    
+
     // Last resort: empty
-    logDebug('All search endpoints failed, returning empty response', error: lastError);
+    logDebug(
+      'All search endpoints failed, returning empty response',
+      error: lastError,
+    );
     return const PagedResponse(items: [], page: 1, pageSize: 0, total: 0);
   }
 
@@ -211,16 +239,12 @@ class ProfilesRepository {
         '/engagement/shortlist',
         data: {'toUserId': userId},
       );
-      
+
       final status = res.statusCode ?? 200;
       final data = res.data as Map<String, dynamic>? ?? {};
-      
+
       if (status >= 200 && status < 300) {
-        return {
-          'success': true,
-          'data': data,
-          'error': null,
-        };
+        return {'success': true, 'data': data, 'error': null};
       } else {
         return {
           'success': false,
@@ -236,11 +260,7 @@ class ProfilesRepository {
         'error': errorData['message'] ?? e.message ?? 'Network error',
       };
     } catch (e) {
-      return {
-        'success': false,
-        'data': null,
-        'error': e.toString(),
-      };
+      return {'success': false, 'data': null, 'error': e.toString()};
     }
   }
 
@@ -250,7 +270,7 @@ class ProfilesRepository {
         '/engagement/note',
         queryParameters: {'toUserId': userId},
       );
-      
+
       final status = res.statusCode ?? 200;
       if (status >= 200 && status < 300) {
         final data = res.data as Map<String, dynamic>? ?? {};
@@ -268,12 +288,12 @@ class ProfilesRepository {
         '/engagement/note',
         data: {'toUserId': userId, 'note': note},
       );
-      
+
       final status = res.statusCode ?? 200;
       final data = res.data as Map<String, dynamic>? ?? {};
-      
-      return (status >= 200 && status < 300) && 
-             ((data['success'] == true) || (data['data']['success'] == true));
+
+      return (status >= 200 && status < 300) &&
+          ((data['success'] == true) || (data['data']['success'] == true));
     } catch (_) {
       return false;
     }
@@ -310,13 +330,9 @@ class ProfilesRepository {
 
       final res = await _dio.post('/interests', data: data);
       final responseData = res.data as Map<String, dynamic>? ?? {};
-      
+
       if (responseData['success'] == true) {
-        return {
-          'success': true,
-          'data': responseData['data'],
-          'error': null,
-        };
+        return {'success': true, 'data': responseData['data'], 'error': null};
       } else {
         return {
           'success': false,
@@ -329,8 +345,14 @@ class ProfilesRepository {
       return {
         'success': false,
         'data': errorData,
-        'error': errorData['error'] ?? errorData['message'] ?? e.message ?? 'Network error',
-        'isPlanLimit': _isPlanLimitError(errorData['error'] ?? errorData['message'] ?? ''),
+        'error':
+            errorData['error'] ??
+            errorData['message'] ??
+            e.message ??
+            'Network error',
+        'isPlanLimit': _isPlanLimitError(
+          errorData['error'] ?? errorData['message'] ?? '',
+        ),
       };
     } catch (e) {
       return {
@@ -351,11 +373,7 @@ class ProfilesRepository {
     try {
       final res = await _dio.get(
         '/interests',
-        queryParameters: {
-          'mode': mode,
-          'page': page,
-          'pageSize': pageSize,
-        },
+        queryParameters: {'mode': mode, 'page': page, 'pageSize': pageSize},
       );
       return _parseInterestsPaged(res);
     } on DioException catch (e) {
@@ -363,11 +381,7 @@ class ProfilesRepository {
         // Fallback to legacy endpoint
         final res = await _dio.get(
           '/profiles/interests',
-          queryParameters: {
-            'mode': mode,
-            'page': page,
-            'pageSize': pageSize,
-          },
+          queryParameters: {'mode': mode, 'page': page, 'pageSize': pageSize},
         );
         return _parseInterestsPaged(res);
       }
@@ -383,12 +397,9 @@ class ProfilesRepository {
     try {
       final res = await _dio.get(
         '/interests/status',
-        queryParameters: {
-          'fromUserId': fromUserId,
-          'toUserId': toUserId,
-        },
+        queryParameters: {'fromUserId': fromUserId, 'toUserId': toUserId},
       );
-      
+
       final responseData = res.data as Map<String, dynamic>? ?? {};
       if (responseData['success'] == true) {
         return responseData['data'] as Map<String, dynamic>?;
@@ -591,7 +602,7 @@ class ProfilesRepository {
     );
   }
 
-PagedResponse<InterestEntry> _parseInterestsPaged(Response res) {
+  PagedResponse<InterestEntry> _parseInterestsPaged(Response res) {
     final meta = <String, dynamic>{};
     final rawItems = _extractInterestsList(res.data, meta);
 
@@ -623,7 +634,7 @@ PagedResponse<InterestEntry> _parseInterestsPaged(Response res) {
     );
   }
 
-PagedResponse<ShortlistEntry> _parseShortlistPaged(Response res) {
+  PagedResponse<ShortlistEntry> _parseShortlistPaged(Response res) {
     final meta = <String, dynamic>{};
     final rawItems = _extractShortlistList(res.data, meta);
 
@@ -678,13 +689,7 @@ PagedResponse<ShortlistEntry> _parseShortlistPaged(Response res) {
     if (data is List) return data;
     if (data is Map<String, dynamic>) {
       _collectMeta(data, meta);
-      for (final key in const [
-        'matches',
-        'items',
-        'results',
-        'data',
-        'list',
-      ]) {
+      for (final key in const ['matches', 'items', 'results', 'data', 'list']) {
         if (!data.containsKey(key)) continue;
         final result = _extractMatchesList(data[key], meta);
         if (result.isNotEmpty) return result;
@@ -693,7 +698,7 @@ PagedResponse<ShortlistEntry> _parseShortlistPaged(Response res) {
     return const [];
   }
 
-List<dynamic> _extractInterestsList(dynamic data, Map<String, dynamic> meta) {
+  List<dynamic> _extractInterestsList(dynamic data, Map<String, dynamic> meta) {
     if (data is List) return data;
     if (data is Map<String, dynamic>) {
       _collectMeta(data, meta);
@@ -712,7 +717,7 @@ List<dynamic> _extractInterestsList(dynamic data, Map<String, dynamic> meta) {
     return const [];
   }
 
-List<dynamic> _extractShortlistList(dynamic data, Map<String, dynamic> meta) {
+  List<dynamic> _extractShortlistList(dynamic data, Map<String, dynamic> meta) {
     if (data is List) return data;
     if (data is Map<String, dynamic>) {
       _collectMeta(data, meta);
@@ -776,14 +781,14 @@ List<dynamic> _extractShortlistList(dynamic data, Map<String, dynamic> meta) {
     return null;
   }
 
-bool _isPlanLimitError(String error) {
-  final lower = error.toLowerCase();
-  return lower.contains('plan') || 
-         lower.contains('limit') ||
-         lower.contains('subscription') ||
-         lower.contains('upgrade') ||
-         lower.contains('premium');
-}
+  bool _isPlanLimitError(String error) {
+    final lower = error.toLowerCase();
+    return lower.contains('plan') ||
+        lower.contains('limit') ||
+        lower.contains('subscription') ||
+        lower.contains('upgrade') ||
+        lower.contains('premium');
+  }
 
   // endregion
 
@@ -793,24 +798,28 @@ bool _isPlanLimitError(String error) {
     try {
       final res = await _dio.get('/matches/unread');
       final data = res.data as Map<String, dynamic>? ?? {};
-      
+
       if (data['success'] == true) {
         final countsData = data['data'] as Map<String, dynamic>? ?? {};
-        return countsData.map((key, value) => MapEntry(key, (value as num).toInt()));
+        return countsData.map(
+          (key, value) => MapEntry(key, (value as num).toInt()),
+        );
       }
-      
+
       // Fallback: try legacy endpoint
       try {
         final legacyRes = await _dio.get('/conversations/unread');
         final legacyData = legacyRes.data as Map<String, dynamic>? ?? {};
         if (legacyData['success'] == true) {
           final countsData = legacyData['data'] as Map<String, dynamic>? ?? {};
-          return countsData.map((key, value) => MapEntry(key, (value as num).toInt()));
+          return countsData.map(
+            (key, value) => MapEntry(key, (value as num).toInt()),
+          );
         }
       } catch (_) {
         // Ignore fallback error
       }
-      
+
       return {};
     } catch (_) {
       return {};
@@ -843,12 +852,9 @@ bool _isPlanLimitError(String error) {
     try {
       final res = await _dio.post('/blocks', data: {'userId': userId});
       final responseData = res.data as Map<String, dynamic>? ?? {};
-      
+
       if (responseData['success'] == true) {
-        return {
-          'success': true,
-          'error': null,
-        };
+        return {'success': true, 'error': null};
       } else {
         return {
           'success': false,
@@ -859,15 +865,17 @@ bool _isPlanLimitError(String error) {
       final errorData = e.response?.data as Map<String, dynamic>? ?? {};
       return {
         'success': false,
-        'error': errorData['error'] ?? errorData['message'] ?? e.message ?? 'Network error',
-        'isPlanLimit': _isPlanLimitError(errorData['error'] ?? errorData['message'] ?? ''),
+        'error':
+            errorData['error'] ??
+            errorData['message'] ??
+            e.message ??
+            'Network error',
+        'isPlanLimit': _isPlanLimitError(
+          errorData['error'] ?? errorData['message'] ?? '',
+        ),
       };
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-        'isPlanLimit': false,
-      };
+      return {'success': false, 'error': e.toString(), 'isPlanLimit': false};
     }
   }
 
@@ -875,12 +883,9 @@ bool _isPlanLimitError(String error) {
     try {
       final res = await _dio.delete('/blocks/$userId');
       final responseData = res.data as Map<String, dynamic>? ?? {};
-      
+
       if (responseData['success'] == true) {
-        return {
-          'success': true,
-          'error': null,
-        };
+        return {'success': true, 'error': null};
       } else {
         return {
           'success': false,
@@ -888,11 +893,7 @@ bool _isPlanLimitError(String error) {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-        'isPlanLimit': false,
-      };
+      return {'success': false, 'error': e.toString(), 'isPlanLimit': false};
     }
   }
 

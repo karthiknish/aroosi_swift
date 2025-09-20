@@ -52,13 +52,16 @@ class ConversationListScreen extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           final error = e.toString();
-          final isOfflineError = error.toLowerCase().contains('network') ||
-                                error.toLowerCase().contains('connection');
+          final isOfflineError =
+              error.toLowerCase().contains('network') ||
+              error.toLowerCase().contains('connection');
 
           if (isOfflineError) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('No internet connection. Please try again when connected.'),
+                content: Text(
+                  'No internet connection. Please try again when connected.',
+                ),
               ),
             );
           } else {
@@ -105,9 +108,10 @@ class ConversationListScreen extends ConsumerWidget {
             }
             if (state.error != null) {
               final error = state.error.toString();
-              final isOfflineError = error.toLowerCase().contains('network') ||
-                                    error.toLowerCase().contains('connection') ||
-                                    error.toLowerCase().contains('timeout');
+              final isOfflineError =
+                  error.toLowerCase().contains('network') ||
+                  error.toLowerCase().contains('connection') ||
+                  error.toLowerCase().contains('timeout');
 
               return FadeIn(
                 duration: AppMotionDurations.short,
@@ -115,7 +119,8 @@ class ConversationListScreen extends ConsumerWidget {
                     ? OfflineState(
                         title: 'Connection Lost',
                         subtitle: 'Unable to load conversations',
-                        description: 'Check your internet connection and try again',
+                        description:
+                            'Check your internet connection and try again',
                         onRetry: () => ref
                             .read(conversationListControllerProvider.notifier)
                             .refresh(),

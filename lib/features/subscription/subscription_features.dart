@@ -270,12 +270,7 @@ final List<FeatureComparisonRow> kFeatureComparison = [
     premium: '10 / month',
     premiumPlus: 'Unlimited',
   ),
-  (
-    feature: 'Spotlight Badge',
-    free: false,
-    premium: false,
-    premiumPlus: true,
-  ),
+  (feature: 'Spotlight Badge', free: false, premium: false, premiumPlus: true),
 ];
 
 String planDisplayName(SubscriptionPlan plan) {

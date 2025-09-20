@@ -16,7 +16,8 @@ class PagedListFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasMore) return const SizedBox.shrink();
-    final isCupertino = Theme.of(context).platform == TargetPlatform.iOS ||
+    final isCupertino =
+        Theme.of(context).platform == TargetPlatform.iOS ||
         Theme.of(context).platform == TargetPlatform.macOS;
 
     return Padding(
@@ -24,7 +25,11 @@ class PagedListFooter extends StatelessWidget {
       child: Center(
         child: isCupertino
             ? const CupertinoActivityIndicator()
-            : const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.6)),
+            : const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.6),
+              ),
       ),
     );
   }

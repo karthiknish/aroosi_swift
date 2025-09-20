@@ -45,15 +45,13 @@ class ErrorState extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) ...[
-            icon!,
-            SizedBox(height: spacing!),
-          ],
+          if (icon != null) ...[icon!, SizedBox(height: spacing!)],
           Text(
             title,
             style: textTheme.headlineSmall?.copyWith(
@@ -66,9 +64,7 @@ class ErrorState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               subtitle!,
-              style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.text,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: AppColors.text),
               textAlign: TextAlign.center,
             ),
           ],
@@ -76,9 +72,7 @@ class ErrorState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               description!,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.muted,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -89,7 +83,9 @@ class ErrorState extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.3),
+                ),
               ),
               child: Text(
                 errorMessage!,
@@ -111,7 +107,8 @@ class ErrorState extends StatelessWidget {
                 onPressed: onRetryPressed,
               ),
             if (onActionPressed != null && actionLabel != null) ...[
-              if (showRetry && onRetryPressed != null) const SizedBox(height: 12),
+              if (showRetry && onRetryPressed != null)
+                const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: onActionPressed,
                 style: OutlinedButton.styleFrom(
@@ -157,13 +154,10 @@ class NetworkErrorState extends StatelessWidget {
     return ErrorState(
       title: title ?? 'Connection Error',
       subtitle: subtitle ?? 'Unable to connect to the internet',
-      description: description ?? 'Please check your internet connection and try again',
+      description:
+          description ?? 'Please check your internet connection and try again',
       errorMessage: errorMessage,
-      icon: Icon(
-        Icons.wifi_off_outlined,
-        size: 64,
-        color: AppColors.error,
-      ),
+      icon: Icon(Icons.wifi_off_outlined, size: 64, color: AppColors.error),
       onRetryPressed: onRetry,
       showErrorDetails: showErrorDetails,
     );
@@ -194,13 +188,10 @@ class ServerErrorState extends StatelessWidget {
     return ErrorState(
       title: title ?? 'Server Error',
       subtitle: subtitle ?? 'Something went wrong on our end',
-      description: description ?? 'Our team has been notified. Please try again later',
+      description:
+          description ?? 'Our team has been notified. Please try again later',
       errorMessage: errorMessage,
-      icon: Icon(
-        Icons.cloud_off_outlined,
-        size: 64,
-        color: AppColors.error,
-      ),
+      icon: Icon(Icons.cloud_off_outlined, size: 64, color: AppColors.error),
       onRetryPressed: onRetry,
       showErrorDetails: showErrorDetails,
     );
@@ -235,18 +226,11 @@ class AuthErrorState extends StatelessWidget {
       subtitle: subtitle ?? 'Your session has expired',
       description: description ?? 'Please log in again to continue',
       errorMessage: errorMessage,
-      icon: Icon(
-        Icons.lock_outline,
-        size: 64,
-        color: AppColors.error,
-      ),
+      icon: Icon(Icons.lock_outline, size: 64, color: AppColors.error),
       showRetry: onRetry != null,
       onRetryPressed: onRetry,
       action: onLogin != null
-          ? PrimaryButton(
-              label: 'Log In',
-              onPressed: onLogin,
-            )
+          ? PrimaryButton(label: 'Log In', onPressed: onLogin)
           : null,
       showErrorDetails: showErrorDetails,
     );
@@ -279,13 +263,10 @@ class PermissionErrorState extends StatelessWidget {
     return ErrorState(
       title: title ?? 'Permission Required',
       subtitle: subtitle ?? 'Access denied',
-      description: description ?? 'Please grant the required permissions to continue',
+      description:
+          description ?? 'Please grant the required permissions to continue',
       errorMessage: errorMessage,
-      icon: Icon(
-        Icons.security_outlined,
-        size: 64,
-        color: AppColors.error,
-      ),
+      icon: Icon(Icons.security_outlined, size: 64, color: AppColors.error),
       onRetryPressed: onRetry,
       action: onGrantPermission != null
           ? PrimaryButton(
@@ -326,11 +307,7 @@ class DataLoadErrorState extends StatelessWidget {
       subtitle: subtitle ?? 'Unable to load your content',
       description: description ?? 'Please try again to refresh your data',
       errorMessage: errorMessage,
-      icon: Icon(
-        Icons.refresh_outlined,
-        size: 64,
-        color: AppColors.error,
-      ),
+      icon: Icon(Icons.refresh_outlined, size: 64, color: AppColors.error),
       onRetryPressed: onRetry ?? onRefresh,
       retryLabel: 'Refresh',
       showErrorDetails: showErrorDetails,
@@ -368,14 +345,11 @@ class GenericErrorState extends StatelessWidget {
     return ErrorState(
       title: title ?? 'Something went wrong',
       subtitle: subtitle ?? 'An unexpected error occurred',
-      description: description ?? 'Please try again or contact support if the problem persists',
+      description:
+          description ??
+          'Please try again or contact support if the problem persists',
       errorMessage: errorMessage,
-      icon: icon ??
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
+      icon: icon ?? Icon(Icons.error_outline, size: 64, color: AppColors.error),
       onRetryPressed: onRetry,
       onActionPressed: onAction,
       actionLabel: actionLabel,
@@ -412,18 +386,12 @@ class InlineError extends StatelessWidget {
       child: Row(
         children: [
           if (showIcon)
-            Icon(
-              Icons.error_outline,
-              color: AppColors.error,
-              size: 20,
-            ),
+            Icon(Icons.error_outline, color: AppColors.error, size: 20),
           if (showIcon) const SizedBox(width: 8),
           Expanded(
             child: Text(
               error,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.error,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.error),
             ),
           ),
           if (onRetry != null) ...[

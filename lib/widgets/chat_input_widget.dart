@@ -100,9 +100,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
             height: 280,
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              border: Border(
-                top: BorderSide(color: AppColors.borderPrimary),
-              ),
+              border: Border(top: BorderSide(color: AppColors.borderPrimary)),
             ),
             child: EmojiPicker(
               onEmojiSelected: (category, emoji) {
@@ -127,9 +125,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            border: Border(
-              top: BorderSide(color: AppColors.borderPrimary),
-            ),
+            border: Border(top: BorderSide(color: AppColors.borderPrimary)),
           ),
           child: SafeArea(
             child: Row(
@@ -140,7 +136,9 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
                   onPressed: _toggleEmoji,
                   icon: Icon(
                     _showEmoji ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                    color: _showEmoji ? theme.colorScheme.primary : AppColors.muted,
+                    color: _showEmoji
+                        ? theme.colorScheme.primary
+                        : AppColors.muted,
                   ),
                   tooltip: _showEmoji ? 'Hide emoji' : 'Emoji',
                 ),
@@ -151,10 +149,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
                 if (widget.canSendImage)
                   IconButton(
                     onPressed: _pickImage,
-                    icon: Icon(
-                      Icons.photo_outlined,
-                      color: AppColors.muted,
-                    ),
+                    icon: Icon(Icons.photo_outlined, color: AppColors.muted),
                     tooltip: 'Send image',
                   ),
 
@@ -232,7 +227,9 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: hasText && !widget.isSending ? widget.onSend : null,
+                    onPressed: hasText && !widget.isSending
+                        ? widget.onSend
+                        : null,
                     icon: widget.isSending
                         ? SizedBox(
                             width: 20,
@@ -396,9 +393,7 @@ class ChatInputLoadingWidget extends StatelessWidget {
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Center(
-                child: Text('Loading...'),
-              ),
+              child: const Center(child: Text('Loading...')),
             ),
           ),
           const SizedBox(width: 12),

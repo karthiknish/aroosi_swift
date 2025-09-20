@@ -44,10 +44,7 @@ class StateBuilder<T> extends StatelessWidget {
 
       // Check if it's an offline error
       if (handleOffline && _isOfflineError(error)) {
-        return offlineWidget ??
-            OfflineState(
-              onRetry: onRetry,
-            );
+        return offlineWidget ?? OfflineState(onRetry: onRetry);
       }
 
       return errorWidget ??
@@ -79,10 +76,10 @@ class StateBuilder<T> extends StatelessWidget {
   bool _isOfflineError(String error) {
     final lowerError = error.toLowerCase();
     return lowerError.contains('network') ||
-           lowerError.contains('connection') ||
-           lowerError.contains('timeout') ||
-           lowerError.contains('offline') ||
-           lowerError.contains('no internet');
+        lowerError.contains('connection') ||
+        lowerError.contains('timeout') ||
+        lowerError.contains('offline') ||
+        lowerError.contains('no internet');
   }
 
   bool _isEmpty(dynamic data) {
@@ -99,9 +96,7 @@ class _LoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: CircularProgressIndicator(
-        color: AppColors.primary,
-      ),
+      child: CircularProgressIndicator(color: AppColors.primary),
     );
   }
 }
@@ -131,16 +126,14 @@ class LoadingOverlay extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(
-                    color: AppColors.primary,
-                  ),
+                  const CircularProgressIndicator(color: AppColors.primary),
                   if (loadingMessage != null) ...[
                     const SizedBox(height: 16),
                     Text(
                       loadingMessage!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.text,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppColors.text),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -177,10 +170,12 @@ class RefreshableStateBuilder<T> extends StatefulWidget {
   });
 
   @override
-  State<RefreshableStateBuilder<T>> createState() => _RefreshableStateBuilderState<T>();
+  State<RefreshableStateBuilder<T>> createState() =>
+      _RefreshableStateBuilderState<T>();
 }
 
-class _RefreshableStateBuilderState<T> extends State<RefreshableStateBuilder<T>> {
+class _RefreshableStateBuilderState<T>
+    extends State<RefreshableStateBuilder<T>> {
   late Future<T> _future;
 
   @override
@@ -289,9 +284,7 @@ class _RetryableOperationState extends State<RetryableOperation> {
           Container(
             color: AppColors.background.withValues(alpha: 0.8),
             child: const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
+              child: CircularProgressIndicator(color: AppColors.primary),
             ),
           ),
         if (_hasError)
@@ -448,10 +441,7 @@ class ConnectionStatus extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return OfflineBanner(
-      message: 'No internet connection',
-      onRetry: onRetry,
-    );
+    return OfflineBanner(message: 'No internet connection', onRetry: onRetry);
   }
 }
 

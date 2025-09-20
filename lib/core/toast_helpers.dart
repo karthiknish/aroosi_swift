@@ -7,7 +7,10 @@ extension ToastHelper on WidgetRef {
   ToastService get toast => read(toastServiceProvider);
 
   /// Quick access to common toast methods
-  void showError(dynamic error, [String fallback = "Something went wrong. Please try again."]) {
+  void showError(
+    dynamic error, [
+    String fallback = "Something went wrong. Please try again.",
+  ]) {
     toast.errorToast(error, fallback: fallback);
   }
 
@@ -27,7 +30,11 @@ extension ToastHelper on WidgetRef {
     toast.primary(message);
   }
 
-  void showUndo(String message, VoidCallback onUndo, {String actionLabel = "Undo"}) {
+  void showUndo(
+    String message,
+    VoidCallback onUndo, {
+    String actionLabel = "Undo",
+  }) {
     toast.successWithUndo(message, onUndo, actionLabel: actionLabel);
   }
 
@@ -39,7 +46,11 @@ extension ToastHelper on WidgetRef {
     toast.operationSuccess(operation);
   }
 
-  void showOperationFailed(String operation, {String? details, VoidCallback? onRetry}) {
+  void showOperationFailed(
+    String operation, {
+    String? details,
+    VoidCallback? onRetry,
+  }) {
     toast.serverError(operation: operation, onRetry: onRetry);
   }
 
@@ -68,7 +79,10 @@ extension ToastHelper on WidgetRef {
 mixin ToastMixin {
   ToastService get toast => ToastService.instance;
 
-  void showErrorToast(dynamic error, [String fallback = "Something went wrong. Please try again."]) {
+  void showErrorToast(
+    dynamic error, [
+    String fallback = "Something went wrong. Please try again.",
+  ]) {
     toast.errorToast(error, fallback: fallback);
   }
 
@@ -88,7 +102,11 @@ mixin ToastMixin {
     toast.primary(message);
   }
 
-  void showUndoToast(String message, VoidCallback onUndo, {String actionLabel = "Undo"}) {
+  void showUndoToast(
+    String message,
+    VoidCallback onUndo, {
+    String actionLabel = "Undo",
+  }) {
     toast.successWithUndo(message, onUndo, actionLabel: actionLabel);
   }
 
@@ -100,7 +118,11 @@ mixin ToastMixin {
     toast.operationSuccess(operation);
   }
 
-  void showOperationFailedToast(String operation, {String? details, VoidCallback? onRetry}) {
+  void showOperationFailedToast(
+    String operation, {
+    String? details,
+    VoidCallback? onRetry,
+  }) {
     toast.serverError(operation: operation, onRetry: onRetry);
   }
 
@@ -140,7 +162,9 @@ class ToastErrorHandler {
 
       if (showRetry && onRetry != null) {
         toast.retryableError(
-          operationName != null ? 'Failed to $operationName' : 'Operation failed',
+          operationName != null
+              ? 'Failed to $operationName'
+              : 'Operation failed',
           onRetry: onRetry,
         );
       } else {
@@ -168,7 +192,9 @@ class ToastErrorHandler {
 
       if (showRetry && onRetry != null) {
         toast.retryableError(
-          operationName != null ? 'Failed to $operationName' : 'Operation failed',
+          operationName != null
+              ? 'Failed to $operationName'
+              : 'Operation failed',
           onRetry: onRetry,
         );
       } else {

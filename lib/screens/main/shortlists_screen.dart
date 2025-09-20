@@ -37,7 +37,8 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
         final s = ref.read(shortlistControllerProvider);
         return s.hasMore && !s.loading;
       },
-      onLoadMore: () => ref.read(shortlistControllerProvider.notifier).loadMore(),
+      onLoadMore: () =>
+          ref.read(shortlistControllerProvider.notifier).loadMore(),
     );
   }
 
@@ -62,7 +63,8 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
               Text(state.error!),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => ref.read(shortlistControllerProvider.notifier).refresh(),
+                onPressed: () =>
+                    ref.read(shortlistControllerProvider.notifier).refresh(),
                 child: const Text('Retry'),
               ),
             ],
@@ -75,9 +77,7 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
     if (!state.loading && state.error == null && state.items.isEmpty) {
       return AppScaffold(
         title: 'Shortlists',
-        child: const Center(
-          child: Text('No profiles in your shortlist yet.'),
-        ),
+        child: const Center(child: Text('No profiles in your shortlist yet.')),
       );
     }
 
@@ -86,7 +86,10 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
         return const ShortlistListSkeleton();
       }
       if (index >= state.items.length) {
-        return PagedListFooter(hasMore: state.hasMore, isLoading: state.loading);
+        return PagedListFooter(
+          hasMore: state.hasMore,
+          isLoading: state.loading,
+        );
       }
       final entry = state.items[index];
       return ShortlistListItem(
@@ -101,19 +104,19 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
             // Note button
             IconButton(
               icon: Icon(
-                entry.note != null && entry.note!.isNotEmpty 
-                    ? Icons.note 
+                entry.note != null && entry.note!.isNotEmpty
+                    ? Icons.note
                     : Icons.note_add_outlined,
-                color: entry.note != null && entry.note!.isNotEmpty 
-                    ? Theme.of(context).primaryColor 
+                color: entry.note != null && entry.note!.isNotEmpty
+                    ? Theme.of(context).primaryColor
                     : null,
               ),
               onPressed: () async {
                 _draftNote = entry.note ?? '';
                 _editingUserId = entry.userId;
-                
+
                 if (!mounted) return;
-                
+
                 await showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -134,11 +137,13 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          final success = await ref.read(shortlistControllerProvider.notifier).setNote(entry.userId, _draftNote.trim());
+                          final success = await ref
+                              .read(shortlistControllerProvider.notifier)
+                              .setNote(entry.userId, _draftNote.trim());
                           if (!mounted) return;
-                          
+
                           Navigator.of(context).pop();
-                          
+
                           if (success) {
                             ToastService.instance.success('Note saved');
                           } else {
@@ -162,15 +167,19 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
                   message: 'This will remove the match from your shortlist.',
                 );
                 if (confirmed == true) {
-                  final result = await ref.read(shortlistControllerProvider.notifier).toggleShortlist(entry.userId);
+                  final result = await ref
+                      .read(shortlistControllerProvider.notifier)
+                      .toggleShortlist(entry.userId);
                   if (!mounted) return;
-                  
+
                   if (result['success'] == true) {
                     ToastService.instance.success('Removed from shortlist');
                   } else {
-                    final error = result['error'] as String? ?? 'Failed to remove from shortlist';
+                    final error =
+                        result['error'] as String? ??
+                        'Failed to remove from shortlist';
                     final isPlanLimit = result['isPlanLimit'] as bool? ?? false;
-                    
+
                     if (isPlanLimit) {
                       // Show upgrade dialog for plan limits
                       final shouldUpgrade = await showAdaptiveConfirm(

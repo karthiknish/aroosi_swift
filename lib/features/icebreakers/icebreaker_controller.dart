@@ -51,15 +51,9 @@ class IcebreakerController extends Notifier<IcebreakerState> {
 
     try {
       final icebreakers = await _repository.fetchDailyIcebreakers();
-      state = state.copyWith(
-        isLoading: false,
-        icebreakers: icebreakers,
-      );
+      state = state.copyWith(isLoading: false, icebreakers: icebreakers);
     } on DioException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: _extractErrorMessage(e),
-      );
+      state = state.copyWith(isLoading: false, error: _extractErrorMessage(e));
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -86,9 +80,7 @@ class IcebreakerController extends Notifier<IcebreakerState> {
     }
 
     // Set saving state
-    state = state.copyWith(
-      savingIds: {...state.savingIds, questionId},
-    );
+    state = state.copyWith(savingIds: {...state.savingIds, questionId});
 
     try {
       final result = await _repository.submitAnswer(
@@ -119,14 +111,15 @@ class IcebreakerController extends Notifier<IcebreakerState> {
     if (e.response?.data is Map<String, dynamic>) {
       final errorData = e.response?.data as Map<String, dynamic>;
       return errorData['error']?.toString() ??
-             errorData['message']?.toString() ??
-             'Network error';
+          errorData['message']?.toString() ??
+          'Network error';
     }
     return e.message ?? 'Network error';
   }
 }
 
 // Provider for the controller
-final icebreakerControllerProvider = NotifierProvider<IcebreakerController, IcebreakerState>(
-  IcebreakerController.new,
-);
+final icebreakerControllerProvider =
+    NotifierProvider<IcebreakerController, IcebreakerState>(
+      IcebreakerController.new,
+    );

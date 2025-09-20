@@ -59,29 +59,29 @@ class WelcomeScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Spacer(),
-                      FadeIn(
-                        delay: const Duration(milliseconds: 80),
-                        child: Text(
-                          'Welcome to Aroosi',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                    FadeIn(
+                      delay: const Duration(milliseconds: 80),
+                      child: Text(
+                        'Welcome to Aroosi',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      FadeIn(
-                        delay: const Duration(milliseconds: 140),
-                        child: Text(
-                          'Let\'s create your profile and find your perfect match. We\'ll guide you through a few simple steps to get started.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                            height: 1.4,
-                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    FadeIn(
+                      delay: const Duration(milliseconds: 140),
+                      child: Text(
+                        'Let\'s create your profile and find your perfect match. We\'ll guide you through a few simple steps to get started.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                          height: 1.4,
                         ),
                       ),
+                    ),
                     const SizedBox(height: 24),
                     FadeScaleIn(
                       delay: AppMotionDurations.fast,

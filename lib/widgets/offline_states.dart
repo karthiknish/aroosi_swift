@@ -36,12 +36,9 @@ class OfflineState extends StatelessWidget {
       title: title ?? 'You\'re Offline',
       subtitle: subtitle ?? 'No internet connection detected',
       description: description ?? 'Please check your connection and try again',
-      icon: icon ??
-          Icon(
-            Icons.wifi_off_outlined,
-            size: 64,
-            color: AppColors.warning,
-          ),
+      icon:
+          icon ??
+          Icon(Icons.wifi_off_outlined, size: 64, color: AppColors.warning),
       onRetryPressed: showRetry ? onRetry : null,
       action: showCheckConnection && onCheckConnection != null
           ? PrimaryButton(
@@ -76,7 +73,8 @@ class OfflineContentState extends StatelessWidget {
     return OfflineState(
       title: title ?? 'Content Unavailable',
       subtitle: subtitle ?? 'Unable to load content while offline',
-      description: description ?? 'Connect to the internet to access this content',
+      description:
+          description ?? 'Connect to the internet to access this content',
       onRetry: onRetry,
       onCheckConnection: onGoOffline,
     );
@@ -113,11 +111,7 @@ class OfflineActionState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.wifi_off_outlined,
-            size: 64,
-            color: AppColors.warning,
-          ),
+          Icon(Icons.wifi_off_outlined, size: 64, color: AppColors.warning),
           const SizedBox(height: 16),
           Text(
             title ?? 'Internet Required',
@@ -132,18 +126,14 @@ class OfflineActionState extends StatelessWidget {
             actionName != null
                 ? 'This action requires an internet connection'
                 : (subtitle ?? 'An internet connection is required'),
-            style: textTheme.bodyMedium?.copyWith(
-              color: AppColors.text,
-            ),
+            style: textTheme.bodyMedium?.copyWith(color: AppColors.text),
             textAlign: TextAlign.center,
           ),
           if (description != null) ...[
             const SizedBox(height: 8),
             Text(
               description!,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.muted,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -166,13 +156,11 @@ class OfflineActionState extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (onCancel != null && onRetry != null) const SizedBox(width: 12),
+              if (onCancel != null && onRetry != null)
+                const SizedBox(width: 12),
               if (onRetry != null)
                 Expanded(
-                  child: PrimaryButton(
-                    label: 'Try Again',
-                    onPressed: onRetry,
-                  ),
+                  child: PrimaryButton(label: 'Try Again', onPressed: onRetry),
                 ),
             ],
           ),
@@ -213,11 +201,7 @@ class CachedContentState extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: AppColors.info,
-            size: 24,
-          ),
+          Icon(Icons.info_outline, color: AppColors.info, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -232,10 +216,9 @@ class CachedContentState extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle ?? 'You\'re currently offline. Some content may be outdated.',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.muted,
-                  ),
+                  subtitle ??
+                      'You\'re currently offline. Some content may be outdated.',
+                  style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
                 ),
                 if (description != null) ...[
                   const SizedBox(height: 2),
@@ -303,18 +286,12 @@ class OfflineBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.wifi_off_outlined,
-            color: AppColors.warning,
-            size: 20,
-          ),
+          Icon(Icons.wifi_off_outlined, color: AppColors.warning, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message ?? 'No internet connection',
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.text,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.text),
             ),
           ),
           if (onRetry != null) ...[
@@ -339,16 +316,9 @@ class OfflineBanner extends StatelessWidget {
             const SizedBox(width: 8),
             IconButton(
               onPressed: onDismiss,
-              icon: Icon(
-                Icons.close,
-                color: AppColors.muted,
-                size: 20,
-              ),
+              icon: Icon(Icons.close, color: AppColors.muted, size: 20),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             ),
           ],
         ],
@@ -406,18 +376,14 @@ class OfflineSyncState extends StatelessWidget {
             pendingItemsCount != null
                 ? '$pendingItemsCount items waiting to sync'
                 : (subtitle ?? 'Unable to sync while offline'),
-            style: textTheme.bodyMedium?.copyWith(
-              color: AppColors.text,
-            ),
+            style: textTheme.bodyMedium?.copyWith(color: AppColors.text),
             textAlign: TextAlign.center,
           ),
           if (description != null) ...[
             const SizedBox(height: 8),
             Text(
               description!,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.muted,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -441,7 +407,8 @@ class OfflineSyncState extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (onSyncLater != null && onRetry != null) const SizedBox(width: 12),
+                if (onSyncLater != null && onRetry != null)
+                  const SizedBox(width: 12),
                 if (onRetry != null)
                   Expanded(
                     child: PrimaryButton(

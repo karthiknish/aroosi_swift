@@ -26,18 +26,20 @@ void logState(String message) => _baseLog('STATE', message);
 void logApi(String message) => _baseLog('API', message);
 
 /// File-based logging for GlobalKey errors
-Future<void> logGlobalKeyError(String errorType, String message, {
+Future<void> logGlobalKeyError(
+  String errorType,
+  String message, {
   Object? error,
   StackTrace? stackTrace,
   String? widgetType,
   String? keyHash,
 }) async {
   if (!kVerboseLogs) return;
-  
+
   final timestamp = DateTime.now().toIso8601String();
   var fullMessage = '[$timestamp] GlobalKey Error: $errorType\n';
   fullMessage += 'Message: $message\n';
-  
+
   if (widgetType != null) {
     fullMessage += 'Widget Type: $widgetType\n';
   }
@@ -51,14 +53,16 @@ Future<void> logGlobalKeyError(String errorType, String message, {
     fullMessage += 'Stack Trace:\n$stackTrace\n';
   }
   fullMessage += '=' * 80 + '\n';
-  
+
   // Log to console as well
   _baseLog('GLOBALKEY', fullMessage);
-  
+
   // Write to file
   try {
     final directory = await getApplicationDocumentsDirectory();
-    final logFile = File(path.join(directory.path, 'aroosi_globalkey_errors.log'));
+    final logFile = File(
+      path.join(directory.path, 'aroosi_globalkey_errors.log'),
+    );
     await logFile.writeAsString(fullMessage, mode: FileMode.append);
   } catch (e) {
     // If file logging fails, at least we have console logs
@@ -67,9 +71,14 @@ Future<void> logGlobalKeyError(String errorType, String message, {
 }
 
 /// Generic debug logging function
-void logDebug(String message, {Object? data, Object? error, StackTrace? stackTrace}) {
+void logDebug(
+  String message, {
+  Object? data,
+  Object? error,
+  StackTrace? stackTrace,
+}) {
   if (!kVerboseLogs) return;
-  
+
   var fullMessage = message;
   if (data != null) {
     fullMessage += ' | Data: $data';
@@ -80,6 +89,6 @@ void logDebug(String message, {Object? data, Object? error, StackTrace? stackTra
   if (stackTrace != null) {
     fullMessage += ' | Stack: $stackTrace';
   }
-  
+
   _baseLog('DEBUG', fullMessage);
 }

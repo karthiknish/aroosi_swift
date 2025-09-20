@@ -20,15 +20,15 @@ class IcebreakerRepository {
   Future<List<Icebreaker>> fetchDailyIcebreakers() async {
     try {
       final res = await _dio.get('/icebreakers');
-      
-      logDebug('Icebreaker API response', data: {
-        'status': res.statusCode,
-        'data': res.data,
-      });
+
+      logDebug(
+        'Icebreaker API response',
+        data: {'status': res.statusCode, 'data': res.data},
+      );
 
       final data = res.data;
       List<dynamic> items;
-      
+
       if (data is Map<String, dynamic>) {
         // Handle wrapped response: { data: [...] }
         if (data['data'] is List) {
@@ -65,22 +65,22 @@ class IcebreakerRepository {
     try {
       final res = await _dio.post(
         '/icebreakers/answer',
+        data: {'questionId': questionId, 'answer': answer.trim()},
+      );
+
+      logDebug(
+        'Icebreaker answer submission',
         data: {
           'questionId': questionId,
-          'answer': answer.trim(),
+          'answerLength': answer.length,
+          'status': res.statusCode,
+          'response': res.data,
         },
       );
 
-      logDebug('Icebreaker answer submission', data: {
-        'questionId': questionId,
-        'answerLength': answer.length,
-        'status': res.statusCode,
-        'response': res.data,
-      });
-
       final data = res.data;
       Map<String, dynamic> resultData;
-      
+
       if (data is Map<String, dynamic>) {
         resultData = data;
       } else {
@@ -90,15 +90,15 @@ class IcebreakerRepository {
       return IcebreakerSubmissionResult.fromJson(resultData);
     } on DioException catch (e) {
       logDebug('Failed to submit icebreaker answer', error: e);
-      
+
       // Extract error message from response if available
       String? errorMessage;
       if (e.response?.data is Map<String, dynamic>) {
         final errorData = e.response?.data as Map<String, dynamic>;
-        errorMessage = errorData['error']?.toString() ?? 
-                       errorData['message']?.toString();
+        errorMessage =
+            errorData['error']?.toString() ?? errorData['message']?.toString();
       }
-      
+
       return IcebreakerSubmissionResult(
         success: false,
         error: errorMessage ?? e.message ?? 'Failed to submit answer',
@@ -121,7 +121,7 @@ class IcebreakerRepository {
 
       final data = res.data;
       List<dynamic> items;
-      
+
       if (data is Map<String, dynamic>) {
         if (data['data'] is List) {
           items = data['data'] as List;
@@ -154,7 +154,7 @@ class IcebreakerRepository {
 
       final data = res.data;
       List<dynamic> items;
-      
+
       if (data is Map<String, dynamic>) {
         if (data['data'] is List) {
           items = data['data'] as List;
@@ -237,7 +237,7 @@ class IcebreakerRepository {
   Future<bool> deleteQuestion(String questionId) async {
     try {
       final res = await _dio.delete('/icebreakers/questions/$questionId');
-      
+
       final status = res.statusCode ?? 200;
       return status >= 200 && status < 300;
     } on DioException catch (e) {

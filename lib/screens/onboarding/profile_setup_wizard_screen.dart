@@ -30,11 +30,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   int _currentStepIndex = 0;
-   final Map<String, dynamic> _data = <String, dynamic>{
-     'country': 'UK',
-     'profileFor': 'self',
-     'interests': <String>[],
-   };
+  final Map<String, dynamic> _data = <String, dynamic>{
+    'country': 'UK',
+    'profileFor': 'self',
+    'interests': <String>[],
+  };
 
   final TextEditingController _fullNameCtrl = TextEditingController();
   final TextEditingController _cityCtrl = TextEditingController();
@@ -42,12 +42,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final TextEditingController _occupationCtrl = TextEditingController();
   final TextEditingController _annualIncomeCtrl = TextEditingController();
   final TextEditingController _ethnicityCtrl = TextEditingController();
-   final TextEditingController _aboutMeCtrl = TextEditingController();
-   final TextEditingController _phoneCtrl = TextEditingController();
-   final TextEditingController _heightCtrl = TextEditingController();
-   final TextEditingController _partnerMinAgeCtrl = TextEditingController();
-   final TextEditingController _partnerMaxAgeCtrl = TextEditingController();
-   final Set<String> _interests = {};
+  final TextEditingController _aboutMeCtrl = TextEditingController();
+  final TextEditingController _phoneCtrl = TextEditingController();
+  final TextEditingController _heightCtrl = TextEditingController();
+  final TextEditingController _partnerMinAgeCtrl = TextEditingController();
+  final TextEditingController _partnerMaxAgeCtrl = TextEditingController();
+  final Set<String> _interests = {};
 
   DateTime? _dateOfBirth;
 
@@ -137,17 +137,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     'Other',
   ];
 
-   static const List<Map<String, String>> _steps = <Map<String, String>>[
-     {'title': 'Basic Info', 'subtitle': 'Tell us about yourself'},
-     {'title': 'Location', 'subtitle': 'Where are you based?'},
-     {'title': 'Physical Details', 'subtitle': 'Your physical attributes'},
-     {'title': 'Professional', 'subtitle': 'Your career & education'},
-     {'title': 'Cultural', 'subtitle': 'Your cultural background'},
-     {'title': 'Lifestyle', 'subtitle': 'Your preferences'},
-     {'title': 'About Me', 'subtitle': 'Describe yourself'},
-     {'title': 'Photos', 'subtitle': 'Add your profile photos'},
-     {'title': 'Review', 'subtitle': 'Confirm & create your profile'},
-   ];
+  static const List<Map<String, String>> _steps = <Map<String, String>>[
+    {'title': 'Basic Info', 'subtitle': 'Tell us about yourself'},
+    {'title': 'Location', 'subtitle': 'Where are you based?'},
+    {'title': 'Physical Details', 'subtitle': 'Your physical attributes'},
+    {'title': 'Professional', 'subtitle': 'Your career & education'},
+    {'title': 'Cultural', 'subtitle': 'Your cultural background'},
+    {'title': 'Lifestyle', 'subtitle': 'Your preferences'},
+    {'title': 'About Me', 'subtitle': 'Describe yourself'},
+    {'title': 'Photos', 'subtitle': 'Add your profile photos'},
+    {'title': 'Review', 'subtitle': 'Confirm & create your profile'},
+  ];
 
   static const List<String> _globalRequiredFields = <String>[
     'fullName',
@@ -453,34 +453,31 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return tokens.length >= words;
   }
 
-  InputDecoration _decoration(BuildContext buildContext, String label, {String? hint}) =>
-      InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      );
+  InputDecoration _decoration(
+    BuildContext buildContext,
+    String label, {
+    String? hint,
+  }) => InputDecoration(
+    labelText: label,
+    hintText: hint,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.primary,
+        width: 2,
+      ),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  );
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
@@ -582,8 +579,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     final filledFields = requiredFields.where((field) {
       final value = _data[field];
       return value != null &&
-             value != '' &&
-             (value is! List || value.isNotEmpty);
+          value != '' &&
+          (value is! List || value.isNotEmpty);
     }).length;
 
     final fieldProgress = filledFields / requiredFields.length;
@@ -667,7 +664,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: TextFormField(
                 readOnly: true,
-                decoration: _decoration(context,
+                decoration: _decoration(
+                  context,
                   'Date of birth',
                   hint: 'Select date',
                 ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),
@@ -705,7 +703,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Religion'),
+                decoration: _decoration(context, 'Religion'),
                 initialValue: (_data['religion'] as String?) ?? '',
                 items: _religionOptions
                     .map(
@@ -735,7 +733,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Mother tongue'),
+                decoration: _decoration(context, 'Mother tongue'),
                 initialValue: (_data['motherTongue'] as String?) ?? '',
                 items: _motherTongueOptions
                     .map(
@@ -761,7 +759,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: TextFormField(
                 controller: _ethnicityCtrl,
-                decoration: _decoration(context,
+                decoration: _decoration(
+                  context,
                   'Ethnicity (optional)',
                   hint: 'e.g., British Afghan',
                 ),
@@ -780,7 +779,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          decoration: _decoration(context,'Profile for'),
+          decoration: _decoration(context, 'Profile for'),
           initialValue: (_data['profileFor'] as String?) ?? 'self',
           items: _profileForOptions
               .map(
@@ -815,7 +814,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       children: [
         DropdownButtonFormField<String>(
           isExpanded: true,
-          decoration: _decoration(context,'Country'),
+          decoration: _decoration(context, 'Country'),
           initialValue: (_data['country'] as String?) ?? 'UK',
           items: _countries
               .map(
@@ -832,7 +831,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _cityCtrl,
-          decoration: _decoration(context,'City'),
+          decoration: _decoration(context, 'City'),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please enter your city';
@@ -858,7 +857,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       children: [
         TextFormField(
           controller: _heightCtrl,
-          decoration: _decoration(context,'Height (cm)', hint: '100 - 250'),
+          decoration: _decoration(context, 'Height (cm)', hint: '100 - 250'),
           keyboardType: TextInputType.number,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
@@ -879,7 +878,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          decoration: _decoration(context,'Marital status'),
+          decoration: _decoration(context, 'Marital status'),
           initialValue: (_data['maritalStatus'] as String?),
           items: _maritalStatusOptions
               .map(
@@ -903,7 +902,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       children: [
         TextFormField(
           controller: _educationCtrl,
-          decoration: _decoration(context,'Education'),
+          decoration: _decoration(context, 'Education'),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please enter your education level';
@@ -919,7 +918,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _occupationCtrl,
-          decoration: _decoration(context,'Occupation'),
+          decoration: _decoration(context, 'Occupation'),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please enter your occupation';
@@ -935,7 +934,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _annualIncomeCtrl,
-          decoration: _decoration(context,
+          decoration: _decoration(
+            context,
             'Annual income (£) (optional)',
             hint: 'e.g., 50000',
           ),
@@ -971,14 +971,16 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Mother tongue'),
+                decoration: _decoration(context, 'Mother tongue'),
                 initialValue: (_data['motherTongue'] as String?) ?? '',
                 items: _motherTongueOptions
                     .map(
                       (value) => DropdownMenuItem(
                         value: value,
                         child: Text(
-                          value.isEmpty ? 'Prefer not to say' : _capitalize(value),
+                          value.isEmpty
+                              ? 'Prefer not to say'
+                              : _capitalize(value),
                           style: textStyle,
                         ),
                       ),
@@ -998,14 +1000,16 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Religion'),
+                decoration: _decoration(context, 'Religion'),
                 initialValue: (_data['religion'] as String?) ?? '',
                 items: _religionOptions
                     .map(
                       (value) => DropdownMenuItem(
                         value: value,
                         child: Text(
-                          value.isEmpty ? 'Prefer not to say' : _capitalize(value),
+                          value.isEmpty
+                              ? 'Prefer not to say'
+                              : _capitalize(value),
                           style: textStyle,
                         ),
                       ),
@@ -1026,7 +1030,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _ethnicityCtrl,
-          decoration: _decoration(context,
+          decoration: _decoration(
+            context,
             'Ethnicity (optional)',
             hint: 'e.g., British Afghan',
           ),
@@ -1088,7 +1093,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       children: [
         TextFormField(
           controller: _aboutMeCtrl,
-          decoration: _decoration(context,
+          decoration: _decoration(
+            context,
             'About me',
             hint: 'Share your story (min $_minimumAboutMeWords words)',
           ),
@@ -1113,7 +1119,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               flex: 4,
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Code'),
+                decoration: _decoration(context, 'Code'),
                 value: _selectedDialCode,
                 items: kCountryDialCodes
                     .map(
@@ -1141,7 +1147,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               flex: 12,
               child: TextFormField(
                 controller: _phoneCtrl,
-                decoration: _decoration(context,
+                decoration: _decoration(
+                  context,
                   'Phone number',
                   hint: 'National number',
                 ),
@@ -1179,7 +1186,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Diet (optional)'),
+                decoration: _decoration(context, 'Diet (optional)'),
                 initialValue: (_data['diet'] as String?),
                 items: _dietOptions
                     .map(
@@ -1202,7 +1209,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,'Physical status (optional)'),
+                decoration: _decoration(context, 'Physical status (optional)'),
                 initialValue: (_data['physicalStatus'] as String?),
                 items: _physicalStatusOptions
                     .map(
@@ -1226,7 +1233,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          decoration: _decoration(context,'Smoking preference (optional)'),
+          decoration: _decoration(context, 'Smoking preference (optional)'),
           initialValue: (_data['smoking'] as String?),
           items: _smokingDrinkingOptions
               .map(
@@ -1247,7 +1254,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          decoration: _decoration(context,'Drinking preference (optional)'),
+          decoration: _decoration(context, 'Drinking preference (optional)'),
           initialValue: (_data['drinking'] as String?),
           items: _smokingDrinkingOptions
               .map(
@@ -1279,7 +1286,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: TextFormField(
                 controller: _partnerMinAgeCtrl,
-                decoration: _decoration(context,'Min age', hint: '18'),
+                decoration: _decoration(context, 'Min age', hint: '18'),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
@@ -1308,7 +1315,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: TextFormField(
                 controller: _partnerMaxAgeCtrl,
-                decoration: _decoration(context,'Max age', hint: '120'),
+                decoration: _decoration(context, 'Max age', hint: '120'),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
@@ -1657,8 +1664,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return _globalRequiredFields.where((field) {
       final value = payload[field];
       return value == null ||
-             (value is String && value.trim().isEmpty) ||
-             (value is List && value.isEmpty);
+          (value is String && value.trim().isEmpty) ||
+          (value is List && value.isEmpty);
     }).toList();
   }
 

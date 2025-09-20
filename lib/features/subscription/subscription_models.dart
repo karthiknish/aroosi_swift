@@ -103,7 +103,7 @@ class SubscriptionStatus {
   final bool? autoRenewing;
   final bool? isTrialPeriod;
   final String? productId;
-  
+
   // Next.js API aligned fields
   final int? daysRemaining;
   final bool? cancelAtPeriodEnd;
@@ -114,7 +114,7 @@ class SubscriptionStatus {
   final bool? hasSpotlightBadge;
   final DateTime? spotlightBadgeExpiresAt;
   final String? correlationId;
-  
+
   // Legacy compatibility fields
   final String? subscriptionPlan;
   final DateTime? subscriptionExpiresAt;
@@ -189,11 +189,13 @@ class SubscriptionStatus {
       trialDaysRemaining: trialDaysRemaining ?? this.trialDaysRemaining,
       boostsRemaining: boostsRemaining ?? this.boostsRemaining,
       hasSpotlightBadge: hasSpotlightBadge ?? this.hasSpotlightBadge,
-      spotlightBadgeExpiresAt: spotlightBadgeExpiresAt ?? this.spotlightBadgeExpiresAt,
+      spotlightBadgeExpiresAt:
+          spotlightBadgeExpiresAt ?? this.spotlightBadgeExpiresAt,
       correlationId: correlationId ?? this.correlationId,
       // Legacy compatibility fields
       subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
-      subscriptionExpiresAt: subscriptionExpiresAt ?? this.subscriptionExpiresAt,
+      subscriptionExpiresAt:
+          subscriptionExpiresAt ?? this.subscriptionExpiresAt,
     );
   }
 }
@@ -426,16 +428,27 @@ class FeatureLimits {
 
   factory FeatureLimits.fromJson(Map<String, dynamic> json) {
     return FeatureLimits(
-      messagesSent: json['messagesSent'] as int? ?? json['maxMessages'] as int? ?? 0,
-      interestsSent: json['interestsSent'] as int? ?? json['maxInterests'] as int? ?? 0,
-      searchesPerformed: json['searchesPerformed'] as int? ?? json['maxSearches'] as int? ?? 0,
-      profileBoosts: json['profileBoosts'] as int? ?? json['maxProfileBoosts'] as int? ?? 0,
-      profileViews: json['profileViews'] as int? ?? json['profile_view'] as int? ?? json['maxProfileViews'] as int? ?? 0,
+      messagesSent:
+          json['messagesSent'] as int? ?? json['maxMessages'] as int? ?? 0,
+      interestsSent:
+          json['interestsSent'] as int? ?? json['maxInterests'] as int? ?? 0,
+      searchesPerformed:
+          json['searchesPerformed'] as int? ?? json['maxSearches'] as int? ?? 0,
+      profileBoosts:
+          json['profileBoosts'] as int? ??
+          json['maxProfileBoosts'] as int? ??
+          0,
+      profileViews:
+          json['profileViews'] as int? ??
+          json['profile_view'] as int? ??
+          json['maxProfileViews'] as int? ??
+          0,
       dailyLikes: json['dailyLikes'] as int? ?? 0,
       // Legacy names for backward compatibility
       maxMessages: json['maxMessages'] as int? ?? 0,
       maxInterests: json['maxInterests'] as int? ?? 0,
-      maxProfileViews: json['maxProfileViews'] as int? ?? json['profile_view'] as int? ?? 0,
+      maxProfileViews:
+          json['maxProfileViews'] as int? ?? json['profile_view'] as int? ?? 0,
       maxSearches: json['maxSearches'] as int? ?? 0,
       maxProfileBoosts: json['maxProfileBoosts'] as int? ?? 0,
       // Feature access limits
@@ -489,31 +502,50 @@ class FeatureUsage {
 
   factory FeatureUsage.fromJson(Map<String, dynamic> json) {
     return FeatureUsage(
-      plan: SubscriptionPlanX.fromId(json['plan']?.toString()) ?? SubscriptionPlan.free,
+      plan:
+          SubscriptionPlanX.fromId(json['plan']?.toString()) ??
+          SubscriptionPlan.free,
       currentMonth: json['currentMonth'] as String,
-      resetDate: json['resetDate'] != null ? DateTime.fromMillisecondsSinceEpoch(json['resetDate'] as int) : DateTime.now(),
-      features: (json['features'] as List?)?.map((e) => FeatureUsageItem.fromJson(e as Map<String, dynamic>)).toList() ?? [],
-      periodStart: json['periodStart'] != null ? DateTime.fromMillisecondsSinceEpoch(json['periodStart'] as int) : DateTime.now(),
-      periodEnd: json['periodEnd'] != null ? DateTime.fromMillisecondsSinceEpoch(json['periodEnd'] as int) : DateTime.now(),
+      resetDate: json['resetDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['resetDate'] as int)
+          : DateTime.now(),
+      features:
+          (json['features'] as List?)
+              ?.map((e) => FeatureUsageItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      periodStart: json['periodStart'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['periodStart'] as int)
+          : DateTime.now(),
+      periodEnd: json['periodEnd'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['periodEnd'] as int)
+          : DateTime.now(),
       messagesSent: json['messagesSent'] as int? ?? 0,
       interestsSent: json['interestsSent'] as int? ?? 0,
       searchesPerformed: json['searchesPerformed'] as int? ?? 0,
       profileBoosts: json['profileBoosts'] as int? ?? 0,
       limits: FeatureLimits.fromJson(json['limits'] as Map<String, dynamic>),
       // Legacy format for backward compatibility
-      messaging: MessagingUsage.fromJson(json['messaging'] as Map<String, dynamic>? ?? {}),
-      profileViews: ProfileViewsUsage.fromJson(json['profileViews'] as Map<String, dynamic>? ?? json['profile_view'] as Map<String, dynamic>? ?? {}),
-      searches: SearchesUsage.fromJson(json['searches'] as Map<String, dynamic>? ?? {}),
-      boosts: BoostsUsage.fromJson(json['boosts'] as Map<String, dynamic>? ?? {}),
+      messaging: MessagingUsage.fromJson(
+        json['messaging'] as Map<String, dynamic>? ?? {},
+      ),
+      profileViews: ProfileViewsUsage.fromJson(
+        json['profileViews'] as Map<String, dynamic>? ??
+            json['profile_view'] as Map<String, dynamic>? ??
+            {},
+      ),
+      searches: SearchesUsage.fromJson(
+        json['searches'] as Map<String, dynamic>? ?? {},
+      ),
+      boosts: BoostsUsage.fromJson(
+        json['boosts'] as Map<String, dynamic>? ?? {},
+      ),
     );
   }
 }
 
 class MessagingUsage {
-  const MessagingUsage({
-    required this.sent,
-    required this.limit,
-  });
+  const MessagingUsage({required this.sent, required this.limit});
 
   final int sent;
   final int limit;
@@ -527,10 +559,7 @@ class MessagingUsage {
 }
 
 class ProfileViewsUsage {
-  const ProfileViewsUsage({
-    required this.count,
-    required this.limit,
-  });
+  const ProfileViewsUsage({required this.count, required this.limit});
 
   final int count;
   final int limit;
@@ -544,10 +573,7 @@ class ProfileViewsUsage {
 }
 
 class SearchesUsage {
-  const SearchesUsage({
-    required this.count,
-    required this.limit,
-  });
+  const SearchesUsage({required this.count, required this.limit});
 
   final int count;
   final int limit;
@@ -561,10 +587,7 @@ class SearchesUsage {
 }
 
 class BoostsUsage {
-  const BoostsUsage({
-    required this.used,
-    required this.monthlyLimit,
-  });
+  const BoostsUsage({required this.used, required this.monthlyLimit});
 
   final int used;
   final int monthlyLimit;

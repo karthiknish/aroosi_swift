@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 class ActionsRow extends StatelessWidget {
   const ActionsRow({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -53,7 +53,8 @@ class ActionsRow extends StatelessWidget {
                   icon: Icons.edit,
                   label: 'Edit Profile',
                   color: Colors.green,
-                  onTap: () => GoRouter.of(context).pushNamed('mainEditProfile'),
+                  onTap: () =>
+                      GoRouter.of(context).pushNamed('mainEditProfile'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -62,7 +63,8 @@ class ActionsRow extends StatelessWidget {
                   icon: Icons.workspace_premium,
                   label: 'Upgrade',
                   color: Colors.purple,
-                  onTap: () => GoRouter.of(context).pushNamed('mainSubscription'),
+                  onTap: () =>
+                      GoRouter.of(context).pushNamed('mainSubscription'),
                 ),
               ),
             ],
@@ -80,22 +82,19 @@ class _ActionCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
-  
+
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -120,11 +119,7 @@ class _ActionCard extends StatelessWidget {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: color, size: 24),
                 ),
                 const SizedBox(height: 8),
                 Text(

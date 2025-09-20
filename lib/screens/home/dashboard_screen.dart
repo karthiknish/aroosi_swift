@@ -194,10 +194,7 @@ class DashboardScreen extends ConsumerWidget {
                     const Expanded(
                       child: Text(
                         'Loading subscription information...',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.blue,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.blue),
                       ),
                     ),
                   ],
@@ -219,19 +216,12 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 20,
-                    ),
+                    Icon(Icons.error_outline, color: Colors.red, size: 20),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
                         'Subscription usage information is unavailable right now.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.red),
                       ),
                     ),
                   ],
@@ -262,19 +252,12 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.warning_amber,
-                      color: Colors.orange,
-                      size: 20,
-                    ),
+                    Icon(Icons.warning_amber, color: Colors.orange, size: 20),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
                         'Unable to load quick picks. Pull to refresh later.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.orange,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.orange),
                       ),
                     ),
                   ],
@@ -368,10 +351,7 @@ Map<String, dynamic>? _normalizeUsagePayload(Map<String, dynamic>? raw) {
 }
 
 class _IcebreakerProgressCard extends StatelessWidget {
-  const _IcebreakerProgressCard({
-    required this.progress,
-    required this.onTap,
-  });
+  const _IcebreakerProgressCard({required this.progress, required this.onTap});
 
   final Map<String, int> progress;
   final VoidCallback onTap;

@@ -49,9 +49,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
         final s = ref.read(matchesControllerProvider);
         return s.hasMore && !s.loading;
       },
-      onLoadMore: () => ref
-          .read(matchesControllerProvider.notifier)
-          .loadMore(),
+      onLoadMore: () => ref.read(matchesControllerProvider.notifier).loadMore(),
     );
   }
 
@@ -71,14 +69,16 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     ref.listen(matchesControllerProvider, (prev, next) {
       if (next.error != null && prev?.error != next.error) {
         final error = next.error.toString();
-        final isOfflineError = error.toLowerCase().contains('network') ||
-                              error.toLowerCase().contains('connection') ||
-                              error.toLowerCase().contains('timeout');
+        final isOfflineError =
+            error.toLowerCase().contains('network') ||
+            error.toLowerCase().contains('connection') ||
+            error.toLowerCase().contains('timeout');
 
         if (isOfflineError) {
           ref.showNetworkError(
             operation: 'load matches',
-            onRetry: () => ref.read(matchesControllerProvider.notifier).refresh(),
+            onRetry: () =>
+                ref.read(matchesControllerProvider.notifier).refresh(),
           );
         } else {
           ref.showError(error, 'Failed to load matches');
@@ -88,9 +88,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
     if (!state.loading && state.error != null && state.items.isEmpty) {
       final error = state.error.toString();
-      final isOfflineError = error.toLowerCase().contains('network') ||
-                            error.toLowerCase().contains('connection') ||
-                            error.toLowerCase().contains('timeout');
+      final isOfflineError =
+          error.toLowerCase().contains('network') ||
+          error.toLowerCase().contains('connection') ||
+          error.toLowerCase().contains('timeout');
 
       return AppScaffold(
         title: 'Matches',
@@ -98,18 +99,17 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             ? OfflineState(
                 title: 'No Connection',
                 subtitle: 'Unable to load matches',
-                description: 'Please check your internet connection and try again',
-                onRetry: () => ref
-                    .read(matchesControllerProvider.notifier)
-                    .refresh(),
+                description:
+                    'Please check your internet connection and try again',
+                onRetry: () =>
+                    ref.read(matchesControllerProvider.notifier).refresh(),
               )
             : ErrorState(
                 title: 'Failed to Load Matches',
                 subtitle: 'Something went wrong',
                 errorMessage: error,
-                onRetryPressed: () => ref
-                    .read(matchesControllerProvider.notifier)
-                    .refresh(),
+                onRetryPressed: () =>
+                    ref.read(matchesControllerProvider.notifier).refresh(),
               ),
       );
     }
@@ -146,18 +146,23 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 onPressed: () {
                   if (!_canViewProfile()) return;
                   if (!_requestUsage(UsageMetric.profileView)) return;
-                  
+
                   // For mutual matches, navigate to conversation
                   if (match.isMutual && match.conversationId.isNotEmpty) {
                     // Mark conversation as read when opening
-                    ref.read(matchesControllerProvider.notifier)
+                    ref
+                        .read(matchesControllerProvider.notifier)
                         .markConversationAsRead(match.conversationId);
                     context.push('/chat/${match.conversationId}');
                   } else {
                     // For non-mutual matches, navigate to profile
-                    final targetUserId = match.otherUserId ?? 
-                        (match.user1Id == match.user2Id ? match.user1Id : 
-                         (match.user1Id.isNotEmpty ? match.user1Id : match.user2Id));
+                    final targetUserId =
+                        match.otherUserId ??
+                        (match.user1Id == match.user2Id
+                            ? match.user1Id
+                            : (match.user1Id.isNotEmpty
+                                  ? match.user1Id
+                                  : match.user2Id));
                     ref
                         .read(lastSelectedProfileIdProvider.notifier)
                         .set(targetUserId);
@@ -177,18 +182,26 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                     ],
                   );
                   if (action == null) return;
-                  final targetUserId = match.otherUserId ?? 
-                      (match.user1Id == match.user2Id ? match.user1Id : 
-                       (match.user1Id.isNotEmpty ? match.user1Id : match.user2Id));
+                  final targetUserId =
+                      match.otherUserId ??
+                      (match.user1Id == match.user2Id
+                          ? match.user1Id
+                          : (match.user1Id.isNotEmpty
+                                ? match.user1Id
+                                : match.user2Id));
                   if (action == 0) {
                     if (!_requestUsage(UsageMetric.interestSent)) return;
                     final result = await ref
                         .read(matchesControllerProvider.notifier)
                         .sendInterest(targetUserId);
                     if (result['success'] == true) {
-                      ref.showSuccess('Interest sent to ${match.otherUserName ?? 'match'}');
+                      ref.showSuccess(
+                        'Interest sent to ${match.otherUserName ?? 'match'}',
+                      );
                     } else {
-                      final error = result['error'] as String? ?? 'Failed to send interest';
+                      final error =
+                          result['error'] as String? ??
+                          'Failed to send interest';
                       final isPlanLimit = result['isPlanLimit'] == true;
                       if (isPlanLimit) {
                         ref.showWarning('Upgrade to send more interests');
@@ -217,9 +230,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
     final content = AdaptiveRefresh(
       onRefresh: () async {
-        await ref
-            .read(matchesControllerProvider.notifier)
-            .refresh();
+        await ref.read(matchesControllerProvider.notifier).refresh();
         ref.showSuccess('Matches refreshed');
       },
       controller: _scrollController,
@@ -281,9 +292,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               }
             });
             if (selection != null) {
-              await ref
-                  .read(matchesControllerProvider.notifier)
-                  .refresh();
+              await ref.read(matchesControllerProvider.notifier).refresh();
               ref.showSuccess('Sort applied');
             }
           },
@@ -357,7 +366,7 @@ class _MatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = match.otherUserName ?? 'Match';
     final avatarUrl = match.otherUserImage;
-    
+
     return Card(
       elevation: 2,
       child: Stack(
@@ -419,12 +428,17 @@ class _MatchCard extends StatelessWidget {
                   match.status,
                   style: TextStyle(
                     fontSize: 10,
-                    color: match.status == 'pending' ? Colors.orange : Colors.green,
+                    color: match.status == 'pending'
+                        ? Colors.orange
+                        : Colors.green,
                   ),
                 ),
               if (match.isMutual)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.pink.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -451,10 +465,7 @@ class _MatchCard extends StatelessWidget {
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                constraints: const BoxConstraints(
-                  minWidth: 20,
-                  minHeight: 20,
-                ),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                 child: Text(
                   match.unreadCount > 99 ? '99+' : match.unreadCount.toString(),
                   style: const TextStyle(

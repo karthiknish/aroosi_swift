@@ -55,23 +55,17 @@ class SubscriptionStatusHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final planColor = _getPlanColor(plan);
     final planIcon = _getPlanIcon(plan);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            planColor.withOpacity(0.1),
-            planColor.withOpacity(0.05),
-          ],
+          colors: [planColor.withOpacity(0.1), planColor.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: planColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: planColor.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -93,11 +87,7 @@ class SubscriptionStatusHeader extends StatelessWidget {
                     color: planColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    planIcon,
-                    color: planColor,
-                    size: 24,
-                  ),
+                  child: Icon(planIcon, color: planColor, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -148,7 +138,10 @@ class SubscriptionStatusHeader extends StatelessWidget {
             if (isActive && expiresAt != null) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isApproachingExpiry
                       ? Colors.orange.withOpacity(0.1)
@@ -169,7 +162,9 @@ class SubscriptionStatusHeader extends StatelessWidget {
                           '${_formatDate(expiresAt!)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isApproachingExpiry ? Colors.orange : Colors.green,
+                        color: isApproachingExpiry
+                            ? Colors.orange
+                            : Colors.green,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

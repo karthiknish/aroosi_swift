@@ -26,7 +26,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           SwitchListTile(
             title: const Text('Share profile with matches'),
             value: shareProfileWithMatches,
-            onChanged: (value) => setState(() => shareProfileWithMatches = value),
+            onChanged: (value) =>
+                setState(() => shareProfileWithMatches = value),
           ),
           SwitchListTile(
             title: const Text('Appear in search results'),

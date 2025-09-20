@@ -40,7 +40,9 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
     if (!icebreakersAsync.isLoading && icebreakersAsync.error == null) {
       final icebreakers = icebreakersAsync.icebreakers;
       final answeredCount = icebreakers.where((q) => q.answered).length;
-      final progress = icebreakers.isEmpty ? 0.0 : answeredCount / icebreakers.length;
+      final progress = icebreakers.isEmpty
+          ? 0.0
+          : answeredCount / icebreakers.length;
 
       progressWidget = Padding(
         padding: const EdgeInsets.only(right: 16),
@@ -51,7 +53,9 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
               height: 8,
               child: LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withOpacity(0.3),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
                 ),
@@ -87,62 +91,67 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
       body: icebreakersAsync.isLoading
           ? const Center(child: CircularProgressIndicator())
           : icebreakersAsync.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${icebreakersAsync.error}'),
-                      ElevatedButton(
-                        onPressed: () => controller.fetchDailyIcebreakers(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${icebreakersAsync.error}'),
+                  ElevatedButton(
+                    onPressed: () => controller.fetchDailyIcebreakers(),
+                    child: const Text('Retry'),
                   ),
-                )
-              : icebreakersAsync.icebreakers.isEmpty
-                  ? const Center(
-                      child: Text('No icebreakers available today.'),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async {
-                        await controller.refreshIcebreakers();
-                      },
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: icebreakersAsync.icebreakers.length,
-                  itemBuilder: (context, index) {
-                    final icebreaker = icebreakersAsync.icebreakers[index];
-                    final controller = _getController(icebreaker.id);
-                    final focusNode = _getFocusNode(icebreaker.id);
+                ],
+              ),
+            )
+          : icebreakersAsync.icebreakers.isEmpty
+          ? const Center(child: Text('No icebreakers available today.'))
+          : RefreshIndicator(
+              onRefresh: () async {
+                await controller.refreshIcebreakers();
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: icebreakersAsync.icebreakers.length,
+                itemBuilder: (context, index) {
+                  final icebreaker = icebreakersAsync.icebreakers[index];
+                  final controller = _getController(icebreaker.id);
+                  final focusNode = _getFocusNode(icebreaker.id);
 
-                    return AnimatedOpacity(
-                      opacity: 1.0,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.1),
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: ModalRoute.of(context)!.animation!,
-                            curve: Curves.easeOut,
+                  return AnimatedOpacity(
+                    opacity: 1.0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: SlideTransition(
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(0, 0.1),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: ModalRoute.of(context)!.animation!,
+                              curve: Curves.easeOut,
+                            ),
                           ),
+                      child: IcebreakerCard(
+                        icebreaker: icebreaker,
+                        controller: controller,
+                        focusNode: focusNode,
+                        onSave: (answer) => _handleSave(icebreaker.id, answer),
+                        onSkip: () => _handleSkip(
+                          index,
+                          icebreakersAsync.icebreakers.length,
                         ),
-                        child: IcebreakerCard(
-                          icebreaker: icebreaker,
-                          controller: controller,
-                          focusNode: focusNode,
-                          onSave: (answer) => _handleSave(icebreaker.id, answer),
-                          onSkip: () => _handleSkip(index, icebreakersAsync.icebreakers.length),
-                          onNext: () => _handleNext(index, icebreakersAsync.icebreakers.length),
+                        onNext: () => _handleNext(
+                          index,
+                          icebreakersAsync.icebreakers.length,
                         ),
                       ),
-                    );
-                  },
-                 ),
-               ),
+                    ),
+                  );
+                },
+              ),
+            ),
     );
   }
 
@@ -306,17 +315,13 @@ class IcebreakerCard extends ConsumerWidget {
                   onPressed: onSkip,
                   child: Text(
                     'Skip',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ),
                 Row(
                   children: [
                     ElevatedButton(
-                      onPressed: canSave
-                          ? () => onSave(controller.text)
-                          : null,
+                      onPressed: canSave ? () => onSave(controller.text) : null,
                       child: isSaving
                           ? const SizedBox(
                               width: 16,

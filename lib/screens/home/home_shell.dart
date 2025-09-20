@@ -33,8 +33,18 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
         child: SafeArea(
           child: Row(
             children: [
-              _buildTabItem(context, 0, CupertinoIcons.square_grid_2x2, 'Dashboard'),
-              _buildTabItem(context, 1, null, 'Aroosi'), // null icon for custom search icon
+              _buildTabItem(
+                context,
+                0,
+                CupertinoIcons.square_grid_2x2,
+                'Dashboard',
+              ),
+              _buildTabItem(
+                context,
+                1,
+                null,
+                'Aroosi',
+              ), // null icon for custom search icon
               _buildTabItem(context, 2, CupertinoIcons.person, 'Profile'),
             ],
           ),
@@ -43,7 +53,12 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
     );
   }
 
-  Widget _buildTabItem(BuildContext context, int index, IconData? icon, String label) {
+  Widget _buildTabItem(
+    BuildContext context,
+    int index,
+    IconData? icon,
+    String label,
+  ) {
     final isSelected = currentIndex == index;
     final color = isSelected
         ? CupertinoColors.activeBlue.resolveFrom(context)
@@ -94,7 +109,10 @@ class HomeShell extends StatelessWidget {
     }
     // Ensure index is within valid range (0, 1, 2)
     final validIndex = index < 0 ? 0 : (index > 2 ? 2 : index);
-    shell.goBranch(validIndex, initialLocation: validIndex == shell.currentIndex);
+    shell.goBranch(
+      validIndex,
+      initialLocation: validIndex == shell.currentIndex,
+    );
   }
 
   @override
@@ -153,11 +171,7 @@ class HomeShell extends StatelessWidget {
 }
 
 class _SearchCircleIcon extends StatelessWidget {
-  const _SearchCircleIcon({
-    super.key,
-    this.selected = false,
-    this.onTap,
-  });
+  const _SearchCircleIcon({super.key, this.selected = false, this.onTap});
 
   final bool selected;
   final VoidCallback? onTap;
@@ -179,10 +193,7 @@ class _SearchCircleIcon extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: scheme.primary,
-            width: selected ? 0 : 2.5,
-          ),
+          border: Border.all(color: scheme.primary, width: selected ? 0 : 2.5),
           boxShadow: selected
               ? [
                   BoxShadow(

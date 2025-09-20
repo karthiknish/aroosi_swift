@@ -38,15 +38,13 @@ class EmptyState extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) ...[
-            icon!,
-            SizedBox(height: spacing!),
-          ],
+          if (icon != null) ...[icon!, SizedBox(height: spacing!)],
           Text(
             title,
             style: textTheme.headlineSmall?.copyWith(
@@ -59,9 +57,7 @@ class EmptyState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               subtitle!,
-              style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.muted,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -69,9 +65,7 @@ class EmptyState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               description!,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.muted,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -80,10 +74,7 @@ class EmptyState extends StatelessWidget {
             if (action != null)
               action!
             else if (onActionPressed != null && actionLabel != null)
-              PrimaryButton(
-                label: actionLabel!,
-                onPressed: onActionPressed,
-              ),
+              PrimaryButton(label: actionLabel!, onPressed: onActionPressed),
           ],
         ],
       ),
@@ -114,11 +105,7 @@ class NoDataEmptyState extends StatelessWidget {
       title: title ?? 'No data found',
       subtitle: subtitle ?? 'There are no items to display',
       description: description,
-      icon: Icon(
-        Icons.inbox_outlined,
-        size: 64,
-        color: AppColors.muted,
-      ),
+      icon: Icon(Icons.inbox_outlined, size: 64, color: AppColors.muted),
       showAction: onRefresh != null,
       onActionPressed: onRefresh,
       actionLabel: refreshLabel ?? 'Refresh',
@@ -149,11 +136,7 @@ class EmptyListState extends StatelessWidget {
       title: title ?? 'No items yet',
       subtitle: subtitle ?? 'Your list is empty',
       description: description ?? 'Add some items to get started',
-      icon: Icon(
-        Icons.list_alt_outlined,
-        size: 64,
-        color: AppColors.muted,
-      ),
+      icon: Icon(Icons.list_alt_outlined, size: 64, color: AppColors.muted),
       showAction: onAction != null,
       onActionPressed: onAction,
       actionLabel: actionLabel ?? 'Add Item',
@@ -189,12 +172,9 @@ class EmptySearchState extends StatelessWidget {
       subtitle: searchQuery != null
           ? 'No results for "$searchQuery"'
           : (subtitle ?? 'Try adjusting your search'),
-      description: description ?? 'Try different keywords or check your spelling',
-      icon: Icon(
-        Icons.search_off_outlined,
-        size: 64,
-        color: AppColors.muted,
-      ),
+      description:
+          description ?? 'Try different keywords or check your spelling',
+      icon: Icon(Icons.search_off_outlined, size: 64, color: AppColors.muted),
       showAction: onAction != null,
       onActionPressed: onAction,
       actionLabel: actionLabel ?? 'Clear Search',
@@ -222,7 +202,8 @@ class EmptyFavoritesState extends StatelessWidget {
     return EmptyState(
       title: title ?? 'No favorites yet',
       subtitle: subtitle ?? 'Your favorites list is empty',
-      description: description ?? 'Add some items to your favorites to see them here',
+      description:
+          description ?? 'Add some items to your favorites to see them here',
       icon: Icon(
         Icons.favorite_border_outlined,
         size: 64,
@@ -255,7 +236,8 @@ class EmptyShortlistState extends StatelessWidget {
     return EmptyState(
       title: title ?? 'No shortlisted items',
       subtitle: subtitle ?? 'Your shortlist is empty',
-      description: description ?? 'Add items to your shortlist to see them here',
+      description:
+          description ?? 'Add items to your shortlist to see them here',
       icon: Icon(
         Icons.bookmark_border_outlined,
         size: 64,
@@ -290,7 +272,9 @@ class EmptyMatchesState extends StatelessWidget {
     return EmptyState(
       title: title ?? 'No matches yet',
       subtitle: subtitle ?? 'Start exploring to find your perfect match',
-      description: description ?? 'Complete your profile and start swiping to get matches',
+      description:
+          description ??
+          'Complete your profile and start swiping to get matches',
       icon: Icon(
         Icons.people_outline_outlined,
         size: 64,
@@ -300,10 +284,7 @@ class EmptyMatchesState extends StatelessWidget {
       action: Column(
         children: [
           if (onExplore != null)
-            PrimaryButton(
-              label: 'Start Exploring',
-              onPressed: onExplore,
-            ),
+            PrimaryButton(label: 'Start Exploring', onPressed: onExplore),
           if (onImproveProfile != null) ...[
             const SizedBox(height: 12),
             OutlinedButton(

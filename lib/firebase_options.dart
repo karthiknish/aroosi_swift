@@ -51,8 +51,10 @@ class DefaultFirebaseOptions {
     projectId: 'aroosi-project',
     storageBucket: 'aroosi-project.firebasestorage.app',
     iosBundleId: 'com.aroosi.mobile',
-    iosClientId: '762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com',
-    androidClientId: '762041256503-f949ndu5cidrerbt4ng6ddv4cg7rskd8.apps.googleusercontent.com',
+    iosClientId:
+        '762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com',
+    androidClientId:
+        '762041256503-f949ndu5cidrerbt4ng6ddv4cg7rskd8.apps.googleusercontent.com',
     measurementId: 'G-LW4V9JBD39',
   );
 }

@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/theme.dart';
 
-Future<DateTime?> showAdaptiveDatePicker(BuildContext context, {DateTime? initialDate, DateTime? firstDate, DateTime? lastDate}) async {
+Future<DateTime?> showAdaptiveDatePicker(
+  BuildContext context, {
+  DateTime? initialDate,
+  DateTime? firstDate,
+  DateTime? lastDate,
+}) async {
   initialDate ??= DateTime.now();
   firstDate ??= DateTime(1900);
   lastDate ??= DateTime(2100);
@@ -30,17 +35,25 @@ Future<DateTime?> showAdaptiveDatePicker(BuildContext context, {DateTime? initia
             CupertinoButton(
               child: const Text('Done'),
               onPressed: () => Navigator.of(ctx).pop(),
-            )
+            ),
           ],
         ),
       ),
     );
     return temp;
   }
-  return showDatePicker(context: context, initialDate: initialDate, firstDate: firstDate, lastDate: lastDate);
+  return showDatePicker(
+    context: context,
+    initialDate: initialDate,
+    firstDate: firstDate,
+    lastDate: lastDate,
+  );
 }
 
-Future<TimeOfDay?> showAdaptiveTimePicker(BuildContext context, {TimeOfDay? initialTime}) async {
+Future<TimeOfDay?> showAdaptiveTimePicker(
+  BuildContext context, {
+  TimeOfDay? initialTime,
+}) async {
   initialTime ??= TimeOfDay.now();
   if (isCupertinoPlatform(context)) {
     TimeOfDay temp = initialTime;
@@ -58,7 +71,10 @@ Future<TimeOfDay?> showAdaptiveTimePicker(BuildContext context, {TimeOfDay? init
                 onDateTimeChanged: (d) => temp = TimeOfDay.fromDateTime(d),
               ),
             ),
-            CupertinoButton(child: const Text('Done'), onPressed: () => Navigator.of(ctx).pop())
+            CupertinoButton(
+              child: const Text('Done'),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
           ],
         ),
       ),

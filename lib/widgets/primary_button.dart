@@ -8,7 +8,12 @@ class PrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool loading;
 
-  const PrimaryButton({super.key, required this.label, this.onPressed, this.loading = false});
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.loading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +21,11 @@ class PrimaryButton extends StatelessWidget {
       return CupertinoButton.filled(
         onPressed: loading ? null : onPressed,
         child: loading
-            ? const SizedBox(height: 24, width: 24, child: CupertinoActivityIndicator())
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CupertinoActivityIndicator(),
+              )
             : Text(label),
       );
     }

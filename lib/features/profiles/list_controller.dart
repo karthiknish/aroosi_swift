@@ -67,16 +67,17 @@ class ProfilesListState {
     Object? nextPage = _sentinel,
     Object? nextCursor = _sentinel,
   }) => ProfilesListState(
-        items: items ?? this.items,
-        page: page ?? this.page,
-        hasMore: hasMore ?? this.hasMore,
-        loading: loading ?? this.loading,
-        error: setError ? error : this.error,
-        filters: filters ?? this.filters,
-        nextPage: nextPage == _sentinel ? this.nextPage : nextPage as int?,
-        nextCursor:
-            nextCursor == _sentinel ? this.nextCursor : nextCursor as String?,
-      );
+    items: items ?? this.items,
+    page: page ?? this.page,
+    hasMore: hasMore ?? this.hasMore,
+    loading: loading ?? this.loading,
+    error: setError ? error : this.error,
+    filters: filters ?? this.filters,
+    nextPage: nextPage == _sentinel ? this.nextPage : nextPage as int?,
+    nextCursor: nextCursor == _sentinel
+        ? this.nextCursor
+        : nextCursor as String?,
+  );
 }
 
 const Object _sentinel = Object();
@@ -161,30 +162,21 @@ class MatchesController extends Notifier<MatchesState> {
 
   Future<Map<String, dynamic>> sendInterest(String userId) async {
     try {
-      final result = await _repo.manageInterest(action: 'send', toUserId: userId);
-      
+      final result = await _repo.manageInterest(
+        action: 'send',
+        toUserId: userId,
+      );
+
       if (result['success'] == true) {
-        return {
-          'success': true,
-          'error': null,
-          'isPlanLimit': false,
-        };
+        return {'success': true, 'error': null, 'isPlanLimit': false};
       } else {
         final error = result['error'] as String? ?? 'Failed to send interest';
         final isPlanLimit = result['isPlanLimit'] == true;
-        
-        return {
-          'success': false,
-          'error': error,
-          'isPlanLimit': isPlanLimit,
-        };
+
+        return {'success': false, 'error': error, 'isPlanLimit': isPlanLimit};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-        'isPlanLimit': false,
-      };
+      return {'success': false, 'error': e.toString(), 'isPlanLimit': false};
     }
   }
 
@@ -196,7 +188,7 @@ class MatchesController extends Notifier<MatchesState> {
         final unreadCount = counts[match.conversationId] ?? 0;
         return match.copyWith(unreadCount: unreadCount);
       }).toList();
-      
+
       state = state.copyWith(items: updatedItems);
     } catch (_) {
       // Silently fail for unread counts
@@ -213,7 +205,7 @@ class MatchesController extends Notifier<MatchesState> {
         }
         return match;
       }).toList();
-      
+
       state = state.copyWith(items: updatedItems);
     } catch (_) {
       // Silently fail for marking as read
@@ -241,15 +233,18 @@ class SearchController extends Notifier<ProfilesListState> {
   ProfilesListState build() => const ProfilesListState();
 
   Future<void> search(SearchFilters filters) async {
-    logDebug('SearchController: Starting search', data: {
-      'filters': filters.toQuery(),
-      'currentState': {
-        'itemsCount': state.items.length,
-        'loading': state.loading,
-        'hasMore': state.hasMore,
-        'error': state.error,
-      }
-    });
+    logDebug(
+      'SearchController: Starting search',
+      data: {
+        'filters': filters.toQuery(),
+        'currentState': {
+          'itemsCount': state.items.length,
+          'loading': state.loading,
+          'hasMore': state.hasMore,
+          'error': state.error,
+        },
+      },
+    );
 
     // Set loading state immediately to prevent duplicate requests
     state = state.copyWith(
@@ -269,12 +264,15 @@ class SearchController extends Notifier<ProfilesListState> {
         pageSize: filters.pageSize ?? 20,
       );
 
-      logDebug('SearchController: Search completed successfully', data: {
-        'returnedItems': page.items.length,
-        'page': page.page,
-        'hasMore': page.hasMore,
-        'total': page.total,
-      });
+      logDebug(
+        'SearchController: Search completed successfully',
+        data: {
+          'returnedItems': page.items.length,
+          'page': page.page,
+          'hasMore': page.hasMore,
+          'total': page.total,
+        },
+      );
 
       state = state.copyWith(
         loading: false,
@@ -286,32 +284,39 @@ class SearchController extends Notifier<ProfilesListState> {
         hasMore: page.hasMore,
       );
     } catch (e, stackTrace) {
-      logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
-
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
+      logDebug(
+        'SearchController: Search failed',
+        error: e,
+        stackTrace: stackTrace,
       );
+
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 
   Future<void> loadMore() async {
     if (!state.hasMore || state.loading || state.filters == null) {
-      logDebug('SearchController: Load more skipped', data: {
-        'hasMore': state.hasMore,
-        'loading': state.loading,
-        'hasFilters': state.filters != null,
-      });
+      logDebug(
+        'SearchController: Load more skipped',
+        data: {
+          'hasMore': state.hasMore,
+          'loading': state.loading,
+          'hasFilters': state.filters != null,
+        },
+      );
       return;
     }
-    
-    logDebug('SearchController: Starting load more', data: {
-      'currentPage': state.page,
-      'currentItems': state.items.length,
-      'nextCursor': state.nextCursor,
-      'nextPage': state.nextPage,
-    });
-    
+
+    logDebug(
+      'SearchController: Starting load more',
+      data: {
+        'currentPage': state.page,
+        'currentItems': state.items.length,
+        'nextCursor': state.nextCursor,
+        'nextPage': state.nextPage,
+      },
+    );
+
     state = state.copyWith(loading: true);
     try {
       final filters = state.filters!;
@@ -322,16 +327,19 @@ class SearchController extends Notifier<ProfilesListState> {
         page: nextPage,
         pageSize: filters.pageSize ?? 20,
       );
-      
-      logDebug('SearchController: Load more completed', data: {
-        'newItems': page.items.length,
-        'totalItems': state.items.length + page.items.length,
-        'page': page.page,
-        'hasMore': page.hasMore,
-        'nextPage': page.nextPage,
-        'nextCursor': page.nextCursor,
-      });
-      
+
+      logDebug(
+        'SearchController: Load more completed',
+        data: {
+          'newItems': page.items.length,
+          'totalItems': state.items.length + page.items.length,
+          'page': page.page,
+          'hasMore': page.hasMore,
+          'nextPage': page.nextPage,
+          'nextCursor': page.nextCursor,
+        },
+      );
+
       state = state.copyWith(
         items: [...state.items, ...page.items],
         page: page.page,
@@ -342,18 +350,25 @@ class SearchController extends Notifier<ProfilesListState> {
         filters: filters.copyWith(cursor: page.nextCursor),
       );
     } catch (e, stackTrace) {
-      logDebug('SearchController: Load more failed', error: e, stackTrace: stackTrace);
+      logDebug(
+        'SearchController: Load more failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
       state = state.copyWith(loading: false);
     }
   }
 
   void clear() {
-    logDebug('SearchController: Clearing search state', data: {
-      'previousItems': state.items.length,
-      'previousPage': state.page,
-      'hadFilters': state.filters != null,
-    });
-    
+    logDebug(
+      'SearchController: Clearing search state',
+      data: {
+        'previousItems': state.items.length,
+        'previousPage': state.page,
+        'hadFilters': state.filters != null,
+      },
+    );
+
     state = const ProfilesListState(
       items: [],
       page: 1,
@@ -465,32 +480,30 @@ class ShortlistController extends Notifier<ShortlistState> {
   Future<Map<String, dynamic>> toggleShortlist(String userId) async {
     try {
       final result = await _repo.toggleShortlistEntry(userId);
-      
+
       if (result['success'] == true) {
         // Check if the entry was removed (based on API response)
         final data = result['data'] as Map<String, dynamic>? ?? {};
         final action = data['action'] as String? ?? 'added';
-        
+
         if (action == 'removed' || data['removed'] == true) {
           // Remove from local state
           final updated = state.items.where((e) => e.userId != userId).toList();
           state = state.copyWith(items: updated);
         }
         // If added, the item will appear on next refresh
-        
-        return {
-          'success': true,
-          'action': action,
-          'error': null,
-        };
+
+        return {'success': true, 'action': action, 'error': null};
       } else {
         // Check for plan limit error
-        final error = result['error'] as String? ?? 'Failed to toggle shortlist';
-        final isPlanLimit = error.toLowerCase().contains('plan') || 
-                           error.toLowerCase().contains('limit') ||
-                           error.toLowerCase().contains('subscription') ||
-                           error.toLowerCase().contains('upgrade');
-        
+        final error =
+            result['error'] as String? ?? 'Failed to toggle shortlist';
+        final isPlanLimit =
+            error.toLowerCase().contains('plan') ||
+            error.toLowerCase().contains('limit') ||
+            error.toLowerCase().contains('subscription') ||
+            error.toLowerCase().contains('upgrade');
+
         return {
           'success': false,
           'action': 'error',
@@ -551,7 +564,6 @@ class ShortlistController extends Notifier<ShortlistState> {
     }
   }
 }
-
 
 final searchControllerProvider =
     NotifierProvider<SearchController, ProfilesListState>(SearchController.new);
@@ -681,9 +693,9 @@ class InterestsController extends Notifier<InterestsState> {
 
   Future<void> load({String mode = 'sent'}) async {
     state = state.copyWith(
-      loading: true, 
-      setError: true, 
-      error: null, 
+      loading: true,
+      setError: true,
+      error: null,
       page: 1,
       currentMode: mode,
     );
@@ -710,8 +722,8 @@ class InterestsController extends Notifier<InterestsState> {
     try {
       final next = state.page + 1;
       final page = await _repo.getInterests(
-        mode: state.currentMode, 
-        page: next, 
+        mode: state.currentMode,
+        page: next,
         pageSize: 20,
       );
       state = state.copyWith(
@@ -735,7 +747,7 @@ class InterestsController extends Notifier<InterestsState> {
         interestId: interestId,
         status: status,
       );
-      
+
       if (result['success'] == true) {
         // Update the interest status in local state
         final updated = state.items.map((e) {
@@ -744,30 +756,19 @@ class InterestsController extends Notifier<InterestsState> {
           }
           return e;
         }).toList();
-        
+
         state = state.copyWith(items: updated);
-        
-        return {
-          'success': true,
-          'error': null,
-          'isPlanLimit': false,
-        };
+
+        return {'success': true, 'error': null, 'isPlanLimit': false};
       } else {
-        final error = result['error'] as String? ?? 'Failed to respond to interest';
+        final error =
+            result['error'] as String? ?? 'Failed to respond to interest';
         final isPlanLimit = result['isPlanLimit'] == true;
-        
-        return {
-          'success': false,
-          'error': error,
-          'isPlanLimit': isPlanLimit,
-        };
+
+        return {'success': false, 'error': error, 'isPlanLimit': isPlanLimit};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-        'isPlanLimit': false,
-      };
+      return {'success': false, 'error': e.toString(), 'isPlanLimit': false};
     }
   }
 
@@ -806,9 +807,9 @@ class InterestsController extends Notifier<InterestsState> {
       }
       return e;
     }).toList();
-    
+
     state = state.copyWith(items: updated);
-    
+
     // Optionally sync with server
     try {
       await refreshInterestStatus(interestId);
@@ -818,12 +819,8 @@ class InterestsController extends Notifier<InterestsState> {
   }
 }
 
-
-
 final matchesControllerProvider =
-    NotifierProvider<MatchesController, MatchesState>(
-      MatchesController.new,
-    );
+    NotifierProvider<MatchesController, MatchesState>(MatchesController.new);
 final userInterestsControllerProvider =
     NotifierProvider<UserInterestsController, UserInterestsState>(
       UserInterestsController.new,

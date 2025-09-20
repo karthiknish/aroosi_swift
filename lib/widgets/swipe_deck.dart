@@ -40,7 +40,8 @@ class SwipeDeck<T> extends StatefulWidget {
 class SwipeDeckGlobalKey<T> {
   final GlobalKey<_SwipeDeckState<T>> _key;
 
-  SwipeDeckGlobalKey({String? debugLabel}) : _key = GlobalKey(debugLabel: debugLabel);
+  SwipeDeckGlobalKey({String? debugLabel})
+    : _key = GlobalKey(debugLabel: debugLabel);
 
   _SwipeDeckState<T>? get currentState => _key.currentState;
 
@@ -85,7 +86,8 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
 
   int get currentIndex => _currentIndex;
 
-  T? get currentCard => _currentIndex < widget.items.length ? widget.items[_currentIndex] : null;
+  T? get currentCard =>
+      _currentIndex < widget.items.length ? widget.items[_currentIndex] : null;
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +111,10 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final cards = <Widget>[];
-                final maxStack = math.min(3, widget.items.length - _currentIndex);
+                final maxStack = math.min(
+                  3,
+                  widget.items.length - _currentIndex,
+                );
 
                 for (int i = maxStack - 1; i >= 0; i--) {
                   final itemIndex = _currentIndex + i;
@@ -131,7 +136,8 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
                   if (isTop) {
                     cards.add(
                       Semantics(
-                        label: 'Profile card. Use heart button to like, cross button to pass',
+                        label:
+                            'Profile card. Use heart button to like, cross button to pass',
                         child: card,
                       ),
                     );
@@ -152,7 +158,8 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
     try {
       // Try to extract image URL from the item
       final dynamic itemData = item;
-      final url = itemData.avatarUrl ?? itemData.imageUrl ?? itemData.profileImageUrl;
+      final url =
+          itemData.avatarUrl ?? itemData.imageUrl ?? itemData.profileImageUrl;
 
       if (url is String && url.trim().isNotEmpty && _isValidUrl(url)) {
         precacheImage(NetworkImage(url), context);
@@ -173,10 +180,7 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
 
   Widget _buildCard(T item) {
     return Container(
-      constraints: const BoxConstraints(
-        minHeight: 400,
-        minWidth: 300,
-      ),
+      constraints: const BoxConstraints(minHeight: 400, minWidth: 300),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Material(elevation: 3, child: widget.itemBuilder(context, item)),
@@ -240,17 +244,17 @@ class _ProgressSwipeOverlay extends StatelessWidget {
                       end: Alignment.centerRight,
                     )
                   : direction == SwipeDirection.left
-                      ? LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.red.withValues(alpha: 0.1 * passOpacity),
-                            Colors.red.withValues(alpha: 0.3 * passOpacity),
-                          ],
-                          stops: [0.0, 0.5, 1.0],
-                          begin: Alignment.centerRight,
-                          end: Alignment.centerLeft,
-                        )
-                      : null,
+                  ? LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.red.withValues(alpha: 0.1 * passOpacity),
+                        Colors.red.withValues(alpha: 0.3 * passOpacity),
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -406,10 +410,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _ProgressIndicator extends StatelessWidget {
-  const _ProgressIndicator({
-    required this.current,
-    required this.total,
-  });
+  const _ProgressIndicator({required this.current, required this.total});
 
   final int current;
   final int total;
@@ -442,7 +443,9 @@ class _ProgressIndicator extends StatelessWidget {
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(
               Theme.of(context).colorScheme.primary,
             ),

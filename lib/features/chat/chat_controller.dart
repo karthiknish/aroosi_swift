@@ -157,8 +157,6 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
-  
-
   Future<void> reactToMessage({
     required String messageId,
     required String emoji,

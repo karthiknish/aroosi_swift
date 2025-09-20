@@ -88,7 +88,7 @@ class ToastExample2 extends ConsumerWidget {
 // Example 3: Simple notifier example (commented due to StateNotifier issues)
 // class ExampleNotifier extends StateNotifier<String> {
 //   ExampleNotifier() : super('');
-// 
+//
 //   Future<void> performOperation() async {
 //     try {
 //       // Simulate some operation
@@ -99,7 +99,7 @@ class ToastExample2 extends ConsumerWidget {
 //       showErrorToast('Failed to perform operation');
 //     }
 //   }
-// 
+//
 //   void deleteItem() {
 //     showUndoToast(
 //       'Item deleted',
@@ -129,7 +129,8 @@ class ToastExample4 extends ConsumerWidget {
           ),
           ListTile(
             title: const Text('Feature Unavailable'),
-            onTap: () => AppToastUtils.showFeatureUnavailable('unlimited likes'),
+            onTap: () =>
+                AppToastUtils.showFeatureUnavailable('unlimited likes'),
           ),
           ListTile(
             title: const Text('Coming Soon'),
@@ -220,10 +221,7 @@ class ToastExample6 extends ConsumerWidget {
             title: const Text('Network Error'),
             onTap: _simulateNetworkError,
           ),
-          ListTile(
-            title: const Text('Auth Error'),
-            onTap: _simulateAuthError,
-          ),
+          ListTile(title: const Text('Auth Error'), onTap: _simulateAuthError),
           ListTile(
             title: const Text('Permission Error'),
             onTap: _simulatePermissionError,

@@ -93,8 +93,6 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

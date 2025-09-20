@@ -39,24 +39,17 @@ class IcebreakerQuestion extends Equatable {
       text: json['text']?.toString() ?? '',
       active: json['active'] == true,
       category: json['category']?.toString(),
-      weight: json['weight'] is int 
-          ? json['weight'] 
+      weight: json['weight'] is int
+          ? json['weight']
           : int.tryParse(json['weight']?.toString() ?? '') ?? 1,
-      createdAt: json['createdAt'] is int 
-          ? json['createdAt'] 
+      createdAt: json['createdAt'] is int
+          ? json['createdAt']
           : int.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    text,
-    active,
-    category,
-    weight,
-    createdAt,
-  ];
+  List<Object?> get props => [id, text, active, category, weight, createdAt];
 }
 
 class Icebreaker extends Equatable {
@@ -94,12 +87,7 @@ class Icebreaker extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    text,
-    answered,
-    answer,
-  ];
+  List<Object?> get props => [id, text, answered, answer];
 }
 
 class IcebreakerAnswer extends Equatable {
@@ -137,20 +125,15 @@ class IcebreakerAnswer extends Equatable {
       userId: json['userId']?.toString() ?? '',
       questionId: json['questionId']?.toString() ?? '',
       answer: json['answer']?.toString() ?? '',
-      createdAt: json['createdAt'] is int 
-          ? json['createdAt'] 
-          : int.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now().millisecondsSinceEpoch,
+      createdAt: json['createdAt'] is int
+          ? json['createdAt']
+          : int.tryParse(json['createdAt']?.toString() ?? '') ??
+                DateTime.now().millisecondsSinceEpoch,
     );
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    userId,
-    questionId,
-    answer,
-    createdAt,
-  ];
+  List<Object?> get props => [id, userId, questionId, answer, createdAt];
 }
 
 class IcebreakerSubmissionResult extends Equatable {
@@ -193,11 +176,5 @@ class IcebreakerSubmissionResult extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    success,
-    created,
-    updated,
-    incremented,
-    error,
-  ];
+  List<Object?> get props => [success, created, updated, incremented, error];
 }

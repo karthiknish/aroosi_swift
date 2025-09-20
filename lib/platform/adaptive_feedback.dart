@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/platform/platform_utils.dart';
 
-@Deprecated('Use ToastService.instance.{info,success,warning,error,show} instead for centralized toasts')
+@Deprecated(
+  'Use ToastService.instance.{info,success,warning,error,show} instead for centralized toasts',
+)
 void showAdaptiveToast(
   BuildContext context,
   String message, {
@@ -13,7 +15,12 @@ void showAdaptiveToast(
   ToastService.instance.show(message, type: type);
 }
 
-Future<int?> showAdaptiveActionSheet(BuildContext context, {required String title, required List<String> actions, String cancelText = 'Cancel'}) async {
+Future<int?> showAdaptiveActionSheet(
+  BuildContext context, {
+  required String title,
+  required List<String> actions,
+  String cancelText = 'Cancel',
+}) async {
   if (isCupertinoPlatform(context)) {
     return await showCupertinoModalPopup<int>(
       context: context,
@@ -25,7 +32,7 @@ Future<int?> showAdaptiveActionSheet(BuildContext context, {required String titl
               onPressed: () => Navigator.of(ctx).pop(i),
               isDestructiveAction: true,
               child: Text(actions[i]),
-            )
+            ),
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.of(ctx).pop(),
@@ -40,7 +47,9 @@ Future<int?> showAdaptiveActionSheet(BuildContext context, {required String titl
     builder: (ctx) => SafeArea(
       child: Wrap(
         children: [
-          ListTile(title: Text(title, style: Theme.of(ctx).textTheme.titleMedium)),
+          ListTile(
+            title: Text(title, style: Theme.of(ctx).textTheme.titleMedium),
+          ),
           for (var i = 0; i < actions.length; i++)
             ListTile(
               title: Text(
@@ -49,7 +58,10 @@ Future<int?> showAdaptiveActionSheet(BuildContext context, {required String titl
               ),
               onTap: () => Navigator.of(ctx).pop(i),
             ),
-          ListTile(title: Text(cancelText), onTap: () => Navigator.of(ctx).pop())
+          ListTile(
+            title: Text(cancelText),
+            onTap: () => Navigator.of(ctx).pop(),
+          ),
         ],
       ),
     ),

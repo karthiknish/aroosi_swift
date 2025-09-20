@@ -27,18 +27,25 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (previous?.error != next.error && next.error != null) {
         _showSnack(next.error!.message, type: ToastType.error);
       }
-      if (previous?.isProcessingPurchase == true && !next.isProcessingPurchase) {
+      if (previous?.isProcessingPurchase == true &&
+          !next.isProcessingPurchase) {
         if (next.error == null && _pendingPlan != null) {
-          _showSnack('Subscription updated successfully.', type: ToastType.success);
+          _showSnack(
+            'Subscription updated successfully.',
+            type: ToastType.success,
+          );
         }
         _pendingPlan = null;
       }
     });
 
     final authState = ref.watch(authControllerProvider);
-    final currentPlan = subscriptionState.status?.plan ??
+    final currentPlan =
+        subscriptionState.status?.plan ??
         SubscriptionPlanX.fromId(authState.profile?.plan);
-    final isBusy = subscriptionState.isInitializing || subscriptionState.isProcessingPurchase;
+    final isBusy =
+        subscriptionState.isInitializing ||
+        subscriptionState.isProcessingPurchase;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Subscription')),
@@ -46,19 +53,33 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
-                await ref.read(subscriptionControllerProvider.notifier).loadProducts();
-                await ref.read(subscriptionControllerProvider.notifier).refreshStatus();
+                await ref
+                    .read(subscriptionControllerProvider.notifier)
+                    .loadProducts();
+                await ref
+                    .read(subscriptionControllerProvider.notifier)
+                    .refreshStatus();
               },
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _CurrentStatusCard(status: subscriptionState.status, fallbackPlan: currentPlan),
+                  _CurrentStatusCard(
+                    status: subscriptionState.status,
+                    fallbackPlan: currentPlan,
+                  ),
                   const SizedBox(height: 16),
-                  ..._buildPlanCards(context, subscriptionState, currentPlan, isBusy),
+                  ..._buildPlanCards(
+                    context,
+                    subscriptionState,
+                    currentPlan,
+                    isBusy,
+                  ),
                   const SizedBox(height: 24),
                   _buildManagementSection(subscriptionState, isBusy),
                   const SizedBox(height: 24),
-                  _FeatureComparisonCard(plan: currentPlan ?? SubscriptionPlan.free),
+                  _FeatureComparisonCard(
+                    plan: currentPlan ?? SubscriptionPlan.free,
+                  ),
                   const SizedBox(height: 24),
                   _buildTerms(),
                 ],
@@ -84,17 +105,31 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           plan: info.plan,
           title: info.name,
           description: info.name,
-          price: (amount: info.priceLabel, currency: '', localized: info.priceLabel),
+          price: (
+            amount: info.priceLabel,
+            currency: '',
+            localized: info.priceLabel,
+          ),
           raw: null,
         ),
       );
-      final isCurrent = currentPlan == info.plan && subscriptionState.status?.isActive == true;
+      final isCurrent =
+          currentPlan == info.plan &&
+          subscriptionState.status?.isActive == true;
       final isProductLoaded = product.raw != null;
-      final isSelectable = info.plan != SubscriptionPlan.free && !isCurrent && !isBusy && isProductLoaded;
-      final priceLabel = product.price.localized.isNotEmpty ? product.price.localized : info.priceLabel;
+      final isSelectable =
+          info.plan != SubscriptionPlan.free &&
+          !isCurrent &&
+          !isBusy &&
+          isProductLoaded;
+      final priceLabel = product.price.localized.isNotEmpty
+          ? product.price.localized
+          : info.priceLabel;
       cards.add(
         Card(
-          color: isCurrent ? Theme.of(context).colorScheme.primaryContainer : null,
+          color: isCurrent
+              ? Theme.of(context).colorScheme.primaryContainer
+              : null,
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -103,12 +138,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               children: [
                 Row(
                   children: [
-                    Text(info.name, style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      info.name,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     if (info.popular) ...[
                       const SizedBox(width: 12),
                       Chip(
                         label: const Text('Popular'),
-                        backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.secondaryContainer,
                       ),
                     ],
                     if (isCurrent) ...[
@@ -116,7 +156,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                       Chip(
                         label: const Text('Current plan'),
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ],
                   ],
@@ -124,21 +166,29 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 const SizedBox(height: 8),
                 Text(priceLabel, style: Theme.of(context).textTheme.bodyLarge),
                 const SizedBox(height: 12),
-                ...info.features.map((feature) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle, size: 18, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(feature)),
-                        ],
-                      ),
-                    )),
+                ...info.features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(feature)),
+                      ],
+                    ),
+                  ),
+                ),
                 if (!isProductLoaded && info.plan != SubscriptionPlan.free) ...[
                   const SizedBox(height: 12),
                   Text(
                     'Product unavailable. Pull to refresh to retry.',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ] else if (isSelectable) ...[
                   const SizedBox(height: 16),
@@ -150,12 +200,19 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                       final result = await controller.purchasePlan(info.plan);
                       if (!mounted) return;
                       if (!result.success) {
-                        if (result.error != null && result.error!.type != PurchaseErrorType.userCancel) {
-                          _showSnack(result.error!.message, type: ToastType.error);
+                        if (result.error != null &&
+                            result.error!.type !=
+                                PurchaseErrorType.userCancel) {
+                          _showSnack(
+                            result.error!.message,
+                            type: ToastType.error,
+                          );
                         }
                       }
                     },
-                    child: _pendingPlan == info.plan && subscriptionState.isProcessingPurchase
+                    child:
+                        _pendingPlan == info.plan &&
+                            subscriptionState.isProcessingPurchase
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
@@ -165,7 +222,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -192,7 +251,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   Widget _buildManagementSection(SubscriptionState state, bool isBusy) {
     final hasActiveSubscription = state.status?.isActive ?? false;
     final controller = ref.read(subscriptionControllerProvider.notifier);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -209,10 +268,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     _showSnack('No purchases to restore.');
                   }
                 },
-          child: Text(state.isProcessingPurchase ? 'Restoring…' : 'Restore Purchases'),
+          child: Text(
+            state.isProcessingPurchase ? 'Restoring…' : 'Restore Purchases',
+          ),
         ),
         const SizedBox(height: 8),
-        
+
         // Refresh Status
         OutlinedButton(
           onPressed: isBusy
@@ -220,12 +281,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               : () async {
                   await controller.forceStatusRefresh();
                   if (!mounted) return;
-                  _showSnack('Subscription status refreshed.', type: ToastType.success);
+                  _showSnack(
+                    'Subscription status refreshed.',
+                    type: ToastType.success,
+                  );
                 },
           child: const Text('Refresh Status'),
         ),
         const SizedBox(height: 8),
-        
+
         // Manage Subscription (only if active)
         if (hasActiveSubscription) ...[
           OutlinedButton(
@@ -235,33 +299,46 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     final success = await controller.manageSubscription();
                     if (!mounted) return;
                     if (success) {
-                      _showSnack('Opening subscription management...', type: ToastType.info);
+                      _showSnack(
+                        'Opening subscription management...',
+                        type: ToastType.info,
+                      );
                     } else {
-                      _showSnack('Unable to open subscription management.', type: ToastType.error);
+                      _showSnack(
+                        'Unable to open subscription management.',
+                        type: ToastType.error,
+                      );
                     }
                   },
             child: const Text('Manage Subscription'),
           ),
           const SizedBox(height: 8),
-          
+
           // Validate Current Subscription
           OutlinedButton(
             onPressed: isBusy
                 ? null
                 : () async {
-                    final isValid = await controller.validateCurrentSubscription();
+                    final isValid = await controller
+                        .validateCurrentSubscription();
                     if (!mounted) return;
                     if (isValid) {
-                      _showSnack('Subscription is valid and active.', type: ToastType.success);
+                      _showSnack(
+                        'Subscription is valid and active.',
+                        type: ToastType.success,
+                      );
                     } else {
-                      _showSnack('Subscription validation failed or expired.', type: ToastType.error);
+                      _showSnack(
+                        'Subscription validation failed or expired.',
+                        type: ToastType.error,
+                      );
                     }
                   },
             child: const Text('Validate Subscription'),
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // Open Store Subscriptions
         OutlinedButton(
           onPressed: () => _openStoreSubscriptions(),
@@ -303,9 +380,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         ? Uri.parse('itms-apps://apps.apple.com/account/subscriptions')
         : Uri.parse('https://play.google.com/store/account/subscriptions');
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched && mounted) {
-        _showSnack('Unable to open store subscriptions.', type: ToastType.error);
+        _showSnack(
+          'Unable to open store subscriptions.',
+          type: ToastType.error,
+        );
       }
     } catch (_) {
       if (!mounted) return;
@@ -325,7 +408,9 @@ class _CurrentStatusCard extends StatelessWidget {
     final plan = status?.plan ?? fallbackPlan ?? SubscriptionPlan.free;
     final info = kDefaultPlanCatalog[plan]!;
     final isActive = status?.isActive ?? false;
-    final expiresLabel = status?.expiresAt != null ? _formatDate(status!.expiresAt!) : null;
+    final expiresLabel = status?.expiresAt != null
+        ? _formatDate(status!.expiresAt!)
+        : null;
     final daysRemaining = status?.daysRemaining;
     final isTrial = status?.isTrial ?? false;
     final trialDaysRemaining = status?.trialDaysRemaining;
@@ -341,28 +426,38 @@ class _CurrentStatusCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Current Plan', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Current Plan',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 if (hasSpotlightBadge) ...[
-                  Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
-                  const SizedBox(width: 4),
-                  Text('Spotlight', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  Icon(
+                    Icons.star,
                     color: Theme.of(context).colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
-                  )),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Spotlight',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              info.name,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text(info.name, style: Theme.of(context).textTheme.headlineSmall),
             if (isActive) ...[
               const SizedBox(height: 8),
               if (isTrial && trialDaysRemaining != null) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(12),
@@ -399,7 +494,11 @@ class _CurrentStatusCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.bolt, color: Theme.of(context).colorScheme.secondary, size: 16),
+                    Icon(
+                      Icons.bolt,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '$boostsRemaining profile boost${boostsRemaining == 1 ? '' : 's'} remaining',
@@ -447,36 +546,67 @@ class _FeatureComparisonCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: Text('Feature', style: theme.textTheme.labelLarge)),
                 Expanded(
-                  child: Text('Free',
-                      style: _headerStyle(theme, plan == SubscriptionPlan.free),
-                      textAlign: TextAlign.center),
+                  child: Text('Feature', style: theme.textTheme.labelLarge),
                 ),
                 Expanded(
-                  child: Text('Premium',
-                      style: _headerStyle(theme, plan == SubscriptionPlan.premium),
-                      textAlign: TextAlign.center),
+                  child: Text(
+                    'Free',
+                    style: _headerStyle(theme, plan == SubscriptionPlan.free),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 Expanded(
-                  child: Text('Premium Plus',
-                      style: _headerStyle(theme, plan == SubscriptionPlan.premiumPlus),
-                      textAlign: TextAlign.center),
+                  child: Text(
+                    'Premium',
+                    style: _headerStyle(
+                      theme,
+                      plan == SubscriptionPlan.premium,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Premium Plus',
+                    style: _headerStyle(
+                      theme,
+                      plan == SubscriptionPlan.premiumPlus,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            ...kFeatureComparison.map((row) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(row.feature)),
-                      Expanded(child: _ComparisonValue(value: row.free, highlight: plan == SubscriptionPlan.free)),
-                      Expanded(child: _ComparisonValue(value: row.premium, highlight: plan == SubscriptionPlan.premium)),
-                      Expanded(child: _ComparisonValue(value: row.premiumPlus, highlight: plan == SubscriptionPlan.premiumPlus)),
-                    ],
-                  ),
-                )),
+            ...kFeatureComparison.map(
+              (row) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(row.feature)),
+                    Expanded(
+                      child: _ComparisonValue(
+                        value: row.free,
+                        highlight: plan == SubscriptionPlan.free,
+                      ),
+                    ),
+                    Expanded(
+                      child: _ComparisonValue(
+                        value: row.premium,
+                        highlight: plan == SubscriptionPlan.premium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _ComparisonValue(
+                        value: row.premiumPlus,
+                        highlight: plan == SubscriptionPlan.premiumPlus,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -502,8 +632,10 @@ class _ComparisonValue extends StatelessWidget {
       final bool boolValue = value as bool;
       return Icon(
         boolValue ? Icons.check_circle : Icons.cancel,
-    color: boolValue
-      ? (highlight ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: 0.8))
+        color: boolValue
+            ? (highlight
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.primary.withValues(alpha: 0.8))
             : theme.colorScheme.outline,
         size: 18,
       );
@@ -512,8 +644,8 @@ class _ComparisonValue extends StatelessWidget {
       value.toString(),
       textAlign: TextAlign.center,
       style: (highlight
-              ? theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)
-              : theme.textTheme.bodySmall),
+          ? theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)
+          : theme.textTheme.bodySmall),
     );
   }
 }
