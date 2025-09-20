@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aroosi_flutter/theme/theme.dart';
+import 'package:aroosi_flutter/features/auth/auth_controller.dart';
+import 'package:aroosi_flutter/features/auth/auth_state.dart';
 // Use a local scaffold messenger key in tests to avoid reusing the
 // app-level `toastMessengerKey` which can cause "Multiple widgets used
 // the same GlobalKey" errors when tests build their own MaterialApp.
@@ -32,7 +34,14 @@ void main() {
   testWidgets('App renders startup, login, or dashboard', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: TestApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuthController.new),
+        ],
+        child: const TestApp(),
+      ),
+    );
     // Allow navigation and async bootstrapping without risking timeout
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
@@ -43,4 +52,9 @@ void main() {
     final isStartup = find.text('Welcome to Aroosi').evaluate().isNotEmpty;
     expect(isLogin || isDashboard || isStartup, true);
   });
+}
+
+class _FakeAuthController extends Notifier<AuthState> {
+  @override
+  AuthState build() => const AuthState(isAuthenticated: false, loading: false);
 }
