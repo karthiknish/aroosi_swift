@@ -111,7 +111,7 @@ class AuthRepository {
           } catch (e2) {
             // Try other legacy endpoints
             try {
-              res = await _dio.get('/api/auth/me');
+              res = await _dio.get('/auth/me');
             } catch (e3) {
               rethrow;
             }
@@ -146,10 +146,10 @@ class AuthRepository {
   /// Fetch the current user's profile
   Future<Map<String, dynamic>?> getProfile() async {
     try {
-      // Match React app: /api/user/me (primary)
+      // Match React Native: /profile (primary) - same as aroosi-mobile implementation
       Response res;
       try {
-        res = await _dio.get('/user/me');
+        res = await _dio.get('/profile');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
           // Fallback: /user/profile to match React app patterns
@@ -157,8 +157,8 @@ class AuthRepository {
             res = await _dio.get('/user/profile');
           } on DioException catch (e2) {
             if (e2.response?.statusCode == 404) {
-              // Legacy fallback
-              res = await _dio.get('/profile');
+              // Legacy fallback: /user/me
+              res = await _dio.get('/user/me');
             } else {
               rethrow;
             }

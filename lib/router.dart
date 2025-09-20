@@ -31,9 +31,11 @@ import 'package:aroosi_flutter/screens/onboarding/welcome_screen.dart';
 import 'package:aroosi_flutter/screens/settings/about_screen.dart';
 import 'package:aroosi_flutter/screens/settings/blocked_users_screen.dart';
 import 'package:aroosi_flutter/screens/settings/notification_settings_screen.dart';
+import 'package:aroosi_flutter/screens/settings/privacy_policy_screen.dart';
 import 'package:aroosi_flutter/screens/settings/privacy_settings_screen.dart';
 import 'package:aroosi_flutter/screens/settings/safety_guidelines_screen.dart';
 import 'package:aroosi_flutter/screens/settings/settings_screen.dart';
+import 'package:aroosi_flutter/screens/settings/terms_of_service_screen.dart';
 import 'package:aroosi_flutter/screens/support/ai_chatbot_screen.dart';
 import 'package:aroosi_flutter/screens/support/contact_screen.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
@@ -283,6 +285,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'settingsSafety',
             pageBuilder: (context, state) =>
                 _adaptivePage(state, const SafetyGuidelinesScreen()),
+          ),
+          GoRoute(
+            path: 'privacy-policy',
+            name: 'settingsPrivacyPolicy',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const PrivacyPolicyScreen()),
+          ),
+          GoRoute(
+            path: 'terms-of-service',
+            name: 'settingsTermsOfService',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const TermsOfServiceScreen()),
           ),
         ],
       ),

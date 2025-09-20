@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:aroosi_flutter/theme/theme.dart';
 
@@ -94,28 +93,7 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched && mounted) {
-        _showLinkError();
-      }
-    } catch (_) {
-      if (mounted) {
-        _showLinkError();
-      }
-    }
-  }
 
-  void _showLinkError() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Could not open link.')));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,11 +127,11 @@ class _AboutScreenState extends State<AboutScreen> {
                 items: [
                   _LinkItem(
                     label: 'Terms of Service',
-                    onTap: () => _openUrl('https://aroosi.com/terms'),
+                    onTap: () => context.push('/settings/terms-of-service'),
                   ),
                   _LinkItem(
                     label: 'Privacy Policy',
-                    onTap: () => _openUrl('https://aroosi.com/privacy'),
+                    onTap: () => context.push('/settings/privacy-policy'),
                   ),
                   _LinkItem(
                     label: 'Contact Support',

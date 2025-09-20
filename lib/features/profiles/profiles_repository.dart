@@ -24,9 +24,9 @@ class ProfilesRepository {
     int pageSize = 20,
   }) async {
     try {
-      // Match React app: /api/matches
+      // Match React app: /matches (base URL already includes /api)
       final res = await _dio.get(
-        '/api/matches',
+        '/matches',
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
@@ -37,7 +37,7 @@ class ProfilesRepository {
       if (e.response?.statusCode == 404) {
         // Fallback to legacy endpoint
         final res = await _dio.get(
-          '/profiles/matches',
+          '/matches',
           queryParameters: {
             'page': page,
             'pageSize': pageSize,

@@ -76,3 +76,4 @@ coverage/
 .env
 .env
 android/app/src/main/google-services.json
+ios/fastlane/asc_api_key.p8

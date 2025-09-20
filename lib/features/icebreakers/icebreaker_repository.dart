@@ -19,7 +19,7 @@ class IcebreakerRepository {
   /// Returns a list of icebreaker questions with answered status
   Future<List<Icebreaker>> fetchDailyIcebreakers() async {
     try {
-      final res = await _dio.get('/api/icebreakers');
+      final res = await _dio.get('/icebreakers');
       
       logDebug('Icebreaker API response', data: {
         'status': res.statusCode,
@@ -64,7 +64,7 @@ class IcebreakerRepository {
   }) async {
     try {
       final res = await _dio.post(
-        '/api/icebreakers/answer',
+        '/icebreakers/answer',
         data: {
           'questionId': questionId,
           'answer': answer.trim(),
@@ -115,7 +115,7 @@ class IcebreakerRepository {
       }
 
       final res = await _dio.get(
-        '/api/icebreakers/answers',
+        '/icebreakers/answers',
         queryParameters: queryParams,
       );
 
@@ -150,7 +150,7 @@ class IcebreakerRepository {
   /// Get all available icebreaker questions (for admin)
   Future<List<IcebreakerQuestion>> getAllQuestions() async {
     try {
-      final res = await _dio.get('/api/icebreakers/questions');
+      final res = await _dio.get('/icebreakers/questions');
 
       final data = res.data;
       List<dynamic> items;
@@ -188,7 +188,7 @@ class IcebreakerRepository {
   }) async {
     try {
       final res = await _dio.post(
-        '/api/icebreakers/questions',
+        '/icebreakers/questions',
         data: {
           'text': text.trim(),
           'category': category,
@@ -221,7 +221,7 @@ class IcebreakerRepository {
       if (active != null) data['active'] = active;
 
       final res = await _dio.put(
-        '/api/icebreakers/questions/$questionId',
+        '/icebreakers/questions/$questionId',
         data: data,
       );
 
@@ -236,7 +236,7 @@ class IcebreakerRepository {
   /// Delete an icebreaker question (admin)
   Future<bool> deleteQuestion(String questionId) async {
     try {
-      final res = await _dio.delete('/api/icebreakers/questions/$questionId');
+      final res = await _dio.delete('/icebreakers/questions/$questionId');
       
       final status = res.statusCode ?? 200;
       return status >= 200 && status < 300;
@@ -255,7 +255,7 @@ class IcebreakerRepository {
       }
 
       final res = await _dio.get(
-        '/api/icebreakers/stats',
+        '/icebreakers/stats',
         queryParameters: queryParams,
       );
 

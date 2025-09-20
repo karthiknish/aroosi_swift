@@ -63,17 +63,40 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   DateTime? _dob; // dateOfBirth
   bool _saving = false;
+  bool _hasBootstrapped = false;
 
   @override
   void initState() {
     super.initState();
-    _bootstrapFromProfile();
+    // Add a small delay to ensure profile data is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootstrapFromProfile();
+    });
   }
 
-  void _bootstrapFromProfile() {
-    final authState = ref.read(authControllerProvider);
-    final p = authState.profile;
-    if (p == null) return;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Listen for auth state changes and refresh profile data
+    final authState = ref.watch(authControllerProvider);
+    if (authState.profile != null && !_hasBootstrapped) {
+      _bootstrapFromProfile();
+      _hasBootstrapped = true;
+    }
+  }
+
+   void _bootstrapFromProfile() {
+     final authState = ref.read(authControllerProvider);
+     final p = authState.profile;
+
+     if (p == null) {
+       // Profile not loaded yet, try to refresh it
+       ref.read(authControllerProvider.notifier).refreshProfileOnly();
+       return;
+     }
+
+     _hasBootstrapped = true;
+
     _nameCtrl.text = p.fullName ?? '';
     _aboutCtrl.text = p.aboutMe ?? '';
     _cityCtrl.text = p.city ?? '';
@@ -346,15 +369,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           runSpacing: 8,
           children: options.map((o) {
             final selected = o == value;
-            return ChoiceChip(
-              label: Text(o),
-              selected: selected,
-              onSelected: (_) => onChanged(selected ? null : o),
-              selectedColor: theme.colorScheme.primaryContainer,
-              labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: selected
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onSurface,
+            return SizedBox(
+              height: 32, // Fixed height to prevent sizing issues
+              child: ChoiceChip(
+                label: Text(o),
+                selected: selected,
+                onSelected: (_) => onChanged(selected ? null : o),
+                selectedColor: theme.colorScheme.primaryContainer,
+                labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: selected
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface,
+                ),
               ),
             );
           }).toList(),
@@ -411,7 +437,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           runSpacing: 8,
           children: [
             ...values.map(
-              (v) => InputChip(label: Text(v), onDeleted: () => onRemove(v)),
+              (v) => SizedBox(
+                height: 32, // Fixed height to prevent sizing issues
+                child: InputChip(label: Text(v), onDeleted: () => onRemove(v)),
+              ),
             ),
             SizedBox(
               width: 220,
@@ -464,6 +493,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+
+    // Trigger bootstrap when profile becomes available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (authState.profile != null && !_hasBootstrapped) {
+        _bootstrapFromProfile();
+      }
+    });
+
+    // Show loading if profile is not loaded yet
+    if (authState.loading && authState.profile == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Show error if there's an error loading profile
+    if (authState.error != null && authState.profile == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error loading profile: ${authState.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(authControllerProvider.notifier).refreshProfileOnly();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final saveBtn = FilledButton.icon(
       onPressed: _saving ? null : _save,
       icon: _saving
@@ -479,12 +547,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: saveBtn,
-          ),
-        ],
       ),
       body: SafeArea(
         child: Form(
