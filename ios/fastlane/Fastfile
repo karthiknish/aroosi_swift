@@ -2,6 +2,18 @@ require 'base64'
 
 default_platform(:ios)
 
+def load_asc_key_content
+  raw = ENV['ASC_API_KEY_P8_BASE64'] || ENV['ASC_API_KEY_P8']
+  return nil unless raw
+
+  cleaned = raw.strip
+  return cleaned if cleaned.empty? || cleaned.start_with?('-----BEGIN')
+
+  Base64.decode64(cleaned)
+rescue ArgumentError
+  cleaned
+end
+
 platform :ios do
   desc "Upload App Store metadata (from repo)"
   lane :upload_metadata do
@@ -9,7 +21,7 @@ platform :ios do
 
     api_key_id = ENV['ASC_API_KEY_ID']
     issuer_id = ENV['ASC_API_KEY_ISSUER_ID']
-    key_content = ENV['ASC_API_KEY_P8_BASE64']
+    key_content = load_asc_key_content
 
     unless api_key_id && issuer_id && key_content
       UI.user_error!("ASC_API_KEY_ID, ASC_API_KEY_ISSUER_ID, and ASC_API_KEY_P8_BASE64 environment variables are required")
@@ -28,7 +40,8 @@ platform :ios do
       skip_screenshots: true,
       skip_binary_upload: true,
       submit_for_review: false,
-      force: true
+      force: true,
+      team_id: ENV['APPLE_TEAM_ID']
     )
   end
 
@@ -38,7 +51,7 @@ platform :ios do
 
     api_key_id = ENV['ASC_API_KEY_ID']
     issuer_id = ENV['ASC_API_KEY_ISSUER_ID']
-    key_content = ENV['ASC_API_KEY_P8_BASE64']
+    key_content = load_asc_key_content
 
     unless api_key_id && issuer_id && key_content
       UI.user_error!("ASC_API_KEY_ID, ASC_API_KEY_ISSUER_ID, and ASC_API_KEY_P8_BASE64 environment variables are required")
@@ -59,7 +72,8 @@ platform :ios do
       app_identifier: app_identifier,
       ipa: "./build/Runner.ipa",
       skip_submission: true,
-      skip_waiting_for_build_processing: true
+      skip_waiting_for_build_processing: true,
+      team_id: ENV['APPLE_TEAM_ID']
     )
 
     UI.success("Successfully uploaded to TestFlight!")
@@ -71,7 +85,7 @@ platform :ios do
 
     api_key_id = ENV['ASC_API_KEY_ID']
     issuer_id = ENV['ASC_API_KEY_ISSUER_ID']
-    key_content = ENV['ASC_API_KEY_P8_BASE64']
+    key_content = load_asc_key_content
 
     unless api_key_id && issuer_id && key_content
       UI.user_error!("ASC_API_KEY_ID, ASC_API_KEY_ISSUER_ID, and ASC_API_KEY_P8_BASE64 environment variables are required")
@@ -96,7 +110,8 @@ platform :ios do
       submit_for_review: true,
       automatic_release: false,
       force: true,
-      precheck_include_in_app_purchases: false
+      precheck_include_in_app_purchases: false,
+      team_id: ENV['APPLE_TEAM_ID']
     )
 
     UI.success("Successfully submitted for App Store review!")
@@ -119,6 +134,21 @@ platform :ios do
       podfile: "./Podfile"
     )
 
+    profile_specifier = ENV['PROVISIONING_PROFILE_SPECIFIER']
+    export_options = nil
+    unless profile_specifier.to_s.strip.empty?
+      export_options = {
+        provisioningProfiles: {
+          (ENV['IOS_APP_IDENTIFIER'] || 'com.aroosi.mobile') => profile_specifier
+        }
+      }
+    end
+
+    xcargs = nil
+    unless profile_specifier.to_s.strip.empty?
+      xcargs = "PROVISIONING_PROFILE_SPECIFIER=\"#{profile_specifier}\""
+    end
+
     # Archive the app
     gym(
       workspace: "Runner.xcworkspace",
@@ -129,7 +159,11 @@ platform :ios do
       clean: true,
       include_bitcode: false,
       include_symbols: true,
-      export_method: "app-store"
+      export_method: "app-store",
+      codesigning_identity: "Apple Distribution",
+      export_team_id: ENV['APPLE_TEAM_ID'],
+      export_options: export_options,
+      xcargs: xcargs
     )
 
     UI.success("IPA built successfully!")
