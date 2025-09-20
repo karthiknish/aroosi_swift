@@ -191,19 +191,21 @@ jobs:
           export CERT_PATH PROFILE_PATH
 
           python3 <<'PY'
-import base64, os, pathlib, sys
+          import base64, os, pathlib, sys, textwrap
 
 
-def decode_to(path_env, output_path):
-    data = os.environ.get(path_env, '').strip()
-    if not data:
-        sys.exit(f"Environment variable {path_env} is missing")
-    pathlib.Path(output_path).write_bytes(base64.b64decode(data))
+          exec(textwrap.dedent('''
+          def decode_to(path_env, output_path):
+              data = os.environ.get(path_env, '').strip()
+              if not data:
+                  sys.exit(f"Environment variable {path_env} is missing")
+              pathlib.Path(output_path).write_bytes(base64.b64decode(data))
 
 
-decode_to('IOS_CERT_BASE64', os.environ['CERT_PATH'])
-decode_to('IOS_PROFILE_BASE64', os.environ['PROFILE_PATH'])
-PY
+          decode_to('IOS_CERT_BASE64', os.environ['CERT_PATH'])
+          decode_to('IOS_PROFILE_BASE64', os.environ['PROFILE_PATH'])
+          '''))
+          PY
 
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
