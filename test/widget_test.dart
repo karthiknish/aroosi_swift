@@ -54,7 +54,7 @@ void main() {
   });
 }
 
-class _FakeAuthController extends Notifier<AuthState> {
+class _FakeAuthController extends AuthController {
   @override
   AuthState build() => const AuthState(isAuthenticated: false, loading: false);
 }
