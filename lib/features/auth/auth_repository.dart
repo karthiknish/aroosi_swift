@@ -105,11 +105,16 @@ class AuthRepository {
         res = await _dio.get('/user/me');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
-          // Fallback to legacy endpoints
+          // Fallback to legacy endpoints - remove the /api prefix since it's already in base URL
           try {
-            res = await _dio.get('/api/auth/me');
-          } catch (e2) {
             res = await _dio.get('/auth/me');
+          } catch (e2) {
+            // Try other legacy endpoints
+            try {
+              res = await _dio.get('/api/auth/me');
+            } catch (e3) {
+              rethrow;
+            }
           }
         } else {
           rethrow;
@@ -144,7 +149,7 @@ class AuthRepository {
       // Match React app: /api/user/me (primary)
       Response res;
       try {
-        res = await _dio.get('/api/user/me');
+        res = await _dio.get('/user/me');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
           // Fallback: /user/profile to match React app patterns

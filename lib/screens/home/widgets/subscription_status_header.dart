@@ -125,21 +125,23 @@ class SubscriptionStatusHeader extends StatelessWidget {
                   ),
                 ),
                 if (!isActive)
-                  ElevatedButton(
-                    onPressed: onUpgrade,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: planColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: onUpgrade,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: planColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
+                      child: const Text('Upgrade'),
                     ),
-                    child: const Text('Upgrade'),
                   ),
               ],
             ),

@@ -34,12 +34,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh profile when widget is updated (e.g., after returning from edit profile)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(authControllerProvider.notifier).refreshProfileOnly();
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Fetch latest profile when screen regains focus (like RN useFocusEffect)
     // Note: addScopedWillPopCallback is deprecated, but keeping functionality for now
     final route = ModalRoute.of(context);
     if (route != null) {
+      // Using addScopedWillPopCallback for backward compatibility
+      // ignore: deprecated_member_use
       route.addScopedWillPopCallback(_onFocus);
     }
   }
@@ -68,7 +79,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ? auth.profile!.fullName!.trim()
         : 'Your Name';
     final email = auth.profile?.email ?? '';
-    final avatar = auth.profile?.avatarUrl;
+    final avatar = auth.profile?.profileImageUrls?.isNotEmpty ?? false
+        ? auth.profile!.profileImageUrls!.first
+        : null;
     final plan = auth.profile?.plan ?? 'free';
     final expires = auth.profile?.subscriptionExpiresAt;
     final formattedPlan = _formatPlan(plan);
@@ -188,7 +201,7 @@ class _ProfileHeader extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             theme.colorScheme.primaryContainer,
-            theme.colorScheme.primaryContainer.withOpacity(0.2),
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -199,7 +212,14 @@ class _ProfileHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (avatarUrl != null && avatarUrl!.isNotEmpty)
-            CircleAvatar(radius: 42, backgroundImage: NetworkImage(avatarUrl!))
+            CircleAvatar(
+              radius: 42,
+              backgroundImage: NetworkImage(avatarUrl!),
+              onBackgroundImageError: (_, __) {
+                // Handle image loading error gracefully - fallback to initials
+                return;
+              },
+            )
           else
             CircleAvatar(
               radius: 42,

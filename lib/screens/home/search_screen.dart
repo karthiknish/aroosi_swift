@@ -381,21 +381,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: const Icon(Icons.close),
                 ),
               ),
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    // Show more info - get current profile and navigate to details
-                    final state = ref.read(searchControllerProvider);
-                    if (state.items.isNotEmpty && _currentCardIndex < state.items.length) {
-                      final profile = state.items[_currentCardIndex];
-                      ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
-                      context.push('/details/${profile.id}');
-                    }
-                  },
-                  child: const Icon(Icons.info_outline),
-                ),
+              FilledButton.tonal(
+                onPressed: () {
+                  // Show more info - get current profile and navigate to details
+                  final state = ref.read(searchControllerProvider);
+                  if (state.items.isNotEmpty && _currentCardIndex < state.items.length) {
+                    final profile = state.items[_currentCardIndex];
+                    ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
+                    context.push('/details/${profile.id}');
+                  }
+                },
+                child: const Text('View Profile'),
               ),
               SizedBox(
                 width: 60,

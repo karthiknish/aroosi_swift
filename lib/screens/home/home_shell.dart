@@ -21,8 +21,6 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
     return Scaffold(
       body: shell,
       bottomNavigationBar: Container(
-        // Add bottom margin to make space for the floating search button
-        margin: const EdgeInsets.only(bottom: 32),
         decoration: BoxDecoration(
           color: CupertinoColors.systemBackground.resolveFrom(context),
           border: Border(
@@ -36,7 +34,7 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
           child: Row(
             children: [
               _buildTabItem(context, 0, CupertinoIcons.square_grid_2x2, 'Dashboard'),
-              _buildTabItem(context, 1, null, 'Search'), // null icon for custom search icon
+              _buildTabItem(context, 1, null, 'Aroosi'), // null icon for custom search icon
               _buildTabItem(context, 2, CupertinoIcons.person, 'Profile'),
             ],
           ),
@@ -115,8 +113,6 @@ class HomeShell extends StatelessWidget {
       key: ValueKey('material_scaffold'),
       body: shell,
       bottomNavigationBar: Container(
-        // Add padding to the bottom to ensure the search button has space to bleed
-        margin: const EdgeInsets.only(bottom: 32),
         child: NavigationBar(
           selectedIndex: shell.currentIndex,
           onDestinationSelected: (index) {
@@ -141,7 +137,7 @@ class HomeShell extends StatelessWidget {
                 selected: true,
                 onTap: () => _handleTap(context, 1),
               ),
-              label: 'Search',
+              label: 'Aroosi',
             ),
             NavigationDestination(
               key: const ValueKey('profile'),
@@ -174,63 +170,49 @@ class _SearchCircleIcon extends StatelessWidget {
     final fg = selected ? scheme.onPrimary : scheme.primary;
     final bg = selected ? scheme.primary : Colors.transparent;
 
-    // Make the circle much larger and bleed outside the nav bar using SizedBox and Transform
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          Transform.translate(
-            offset: Offset(0, -size * 0.85),
-            child: GestureDetector(
-              onTap: onTap,
-              behavior: HitTestBehavior.translucent,
-              child: Container(
-                width: size * 3.0,
-                height: size * 3.0,
-                decoration: BoxDecoration(
-                  color: bg,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: scheme.primary,
-                    width: selected ? 0 : 2.5,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: scheme.primary.withOpacity(0.25),
-                            blurRadius: 20,
-                            spreadRadius: 3,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'A',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Boldonse',
-                    fontWeight: FontWeight.w700,
-                    fontSize: size * 1.4,
-                    color: fg,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: bg,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: scheme.primary,
+            width: selected ? 0 : 2.5,
           ),
-        ],
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: scheme.primary.withOpacity(0.25),
+                    blurRadius: 20,
+                    spreadRadius: 3,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'Aroosi',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Boldonse',
+            fontWeight: FontWeight.w700,
+            fontSize: size * 0.9,
+            color: fg,
+            height: 1,
+          ),
+        ),
       ),
     );
   }

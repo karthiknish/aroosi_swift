@@ -5,6 +5,7 @@ class UserProfile {
   final bool? emailVerified;
   final String? plan;
   final String? avatarUrl;
+  final List<String>? profileImageUrls;
   final DateTime? subscriptionExpiresAt;
 
   // Extended demographic & preference fields (parity with aroosi-mobile subset)
@@ -41,6 +42,7 @@ class UserProfile {
     this.emailVerified,
     this.plan,
     this.avatarUrl,
+    this.profileImageUrls,
     this.subscriptionExpiresAt,
     this.aboutMe,
     this.city,
@@ -137,6 +139,7 @@ class UserProfile {
       emailVerified: parseEmailVerified(json),
       plan: json['subscriptionPlan'] as String? ?? json['plan'] as String?,
       avatarUrl: json['avatarUrl'] as String? ?? json['photoUrl'] as String?,
+      profileImageUrls: parseStringList(json['profileImageUrls']),
       subscriptionExpiresAt: json['subscriptionExpiresAt'] != null
           ? DateTime.tryParse(json['subscriptionExpiresAt'].toString())
           : null,
@@ -195,6 +198,7 @@ class UserProfile {
     bool? emailVerified,
     String? plan,
     String? avatarUrl,
+    List<String>? profileImageUrls,
     DateTime? subscriptionExpiresAt,
     String? aboutMe,
     String? city,
@@ -229,6 +233,7 @@ class UserProfile {
       emailVerified: emailVerified ?? this.emailVerified,
       plan: plan ?? this.plan,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      profileImageUrls: profileImageUrls ?? this.profileImageUrls,
       subscriptionExpiresAt:
           subscriptionExpiresAt ?? this.subscriptionExpiresAt,
       aboutMe: aboutMe ?? this.aboutMe,
@@ -270,6 +275,7 @@ class UserProfile {
       if (emailVerified != null) 'emailVerified': emailVerified,
       if (plan != null) 'subscriptionPlan': plan,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      if (profileImageUrls != null) 'profileImageUrls': profileImageUrls,
       if (subscriptionExpiresAt != null)
         'subscriptionExpiresAt': subscriptionExpiresAt!.toIso8601String(),
       if (aboutMe != null) 'aboutMe': aboutMe,

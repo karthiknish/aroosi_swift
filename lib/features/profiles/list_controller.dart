@@ -281,28 +281,16 @@ class SearchController extends Notifier<ProfilesListState> {
         error: null,
         items: page.items,
         page: page.page,
-        pageSize: page.pageSize,
-        total: page.total,
         nextPage: page.nextPage,
         nextCursor: page.nextCursor,
         hasMore: page.hasMore,
       );
-    } catch (e) {
-      logDebug('SearchController: Search failed', error: e);
+    } catch (e, stackTrace) {
+      logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
 
       state = state.copyWith(
         loading: false,
         error: e.toString(),
-      );
-    }
-  } catch (e, stackTrace) {
-    logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
-    state = state.copyWith(
-      loading: false,
-      setError: true,
-      error: 'Search failed',
-      nextPage: null,
-        nextCursor: null,
       );
     }
   }

@@ -275,17 +275,15 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
                             },
                             onHorizontalDragStart: (_) {},
                             onHorizontalDragUpdate: (d) {
-                              if (d.delta.dx.abs() > d.delta.dy.abs()) {
-                                setState(() {
-                                  final newOffset = _offset + Offset(d.delta.dx, 0);
-                                  final maxDrag = constraints.maxWidth * 0.8;
-                                  _offset = Offset(
-                                    newOffset.dx.clamp(-maxDrag, maxDrag),
-                                    0,
-                                  );
-                                  _rotation = (_offset.dx / constraints.maxWidth) * widget.maxRotation;
-                                });
-                              }
+                              setState(() {
+                                final newOffset = _offset + Offset(d.delta.dx, 0);
+                                final maxDrag = constraints.maxWidth * 0.8;
+                                _offset = Offset(
+                                  newOffset.dx.clamp(-maxDrag, maxDrag),
+                                  0,
+                                );
+                                _rotation = (_offset.dx / constraints.maxWidth) * widget.maxRotation;
+                              });
                             },
                             onHorizontalDragEnd: (d) {
                               final threshold = constraints.maxWidth * 0.25;
