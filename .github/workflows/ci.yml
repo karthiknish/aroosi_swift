@@ -17,17 +17,28 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.27.1'
+          flutter-version: '3.29.0'
 
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.27.1-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+       - name: Clear Flutter cache
+         run: |
+           flutter doctor
+           rm -rf ~/.pub-cache
+           rm -rf /opt/hostedtoolcache/flutter
+
+       - name: Clear Flutter cache
+         run: |
+           rm -rf ~/.pub-cache
+           rm -rf /opt/hostedtoolcache/flutter
+
+       - name: Cache Flutter dependencies
+         uses: actions/cache@v3
+         with:
+           path: |
+             ~/.pub-cache
+             /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
+           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+           restore-keys: |
+             ${{ runner.os }}-flutter-
 
       - name: Install dependencies
         run: flutter pub get
@@ -57,17 +68,28 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.27.1'
+          flutter-version: '3.29.0'
 
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.27.1-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+       - name: Clear Flutter cache
+         run: |
+           flutter doctor
+           rm -rf ~/.pub-cache
+           rm -rf /opt/hostedtoolcache/flutter
+
+       - name: Clear Flutter cache
+         run: |
+           rm -rf ~/.pub-cache
+           rm -rf /opt/hostedtoolcache/flutter
+
+       - name: Cache Flutter dependencies
+         uses: actions/cache@v3
+         with:
+           path: |
+             ~/.pub-cache
+             /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
+           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+           restore-keys: |
+             ${{ runner.os }}-flutter-
 
       - name: Install dependencies
         run: flutter pub get
@@ -81,27 +103,33 @@ jobs:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
 
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+   build-ios:
+     runs-on: macos-latest
+     steps:
+       - name: Checkout code
+         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          flutter-version: '3.27.1'
+       - name: Setup Flutter
+         uses: subosito/flutter-action@v2
+         with:
+           channel: 'stable'
+           flutter-version: '3.29.0'
 
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.27.1-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+       - name: Clear Flutter cache
+         run: |
+           flutter doctor
+           rm -rf ~/.pub-cache
+           rm -rf /opt/hostedtoolcache/flutter
+
+       - name: Cache Flutter dependencies
+         uses: actions/cache@v3
+         with:
+           path: |
+             ~/.pub-cache
+             /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
+           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+           restore-keys: |
+             ${{ runner.os }}-flutter-
 
       - name: Install dependencies
         run: flutter pub get
