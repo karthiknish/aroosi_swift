@@ -22,7 +22,6 @@ import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
 import 'package:aroosi_flutter/widgets/swipe_deck.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
-import 'package:aroosi_flutter/utils/globalkey_error_handler.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -109,13 +108,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: _buildErrorBanner(context, state.error!),
           ),
         ),
-      SliverToBoxAdapter(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height - 200, // Approximate height for card view
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: _buildCardDeck(context, state),
-          ),
+      SliverFillRemaining(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _buildCardDeck(context, state),
         ),
       ),
     ];
@@ -320,104 +316,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       'widgetType': 'SwipeDeck',
       'timestamp': DateTime.now().toIso8601String(),
     });
-    return Column(
-      children: [
-        // Card deck with flexible height
-        Expanded(
-          child: SwipeDeck<ProfileSummary>(
-            key: _swipeDeckKey.key,
-            items: deckItems,
-            overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
-            itemBuilder: (ctx, profile) => _ProfileCard(
-              key: ValueKey('profile_card_${profile.id}'),
-              profile: profile,
-            ),
-            onSwipe: (profile, direction) async {
-              if (direction == SwipeDirection.right) {
-                if (!_requestUsage(UsageMetric.interestSent)) return;
-                final ok = await ref
-                    .read(matchesControllerProvider.notifier)
-                    .sendInterest(profile.id);
-                if (ok['success'] == true) {
-                  _toast.success(
-                    'Liked ${profile.displayName}',
-                  );
-                } else {
-                  _toast.error('Failed to like');
-                }
-              } else {
-                // Left swipe (pass)
-                _toast.info('Passed on ${profile.displayName}');
-              }
-              // Update current index after swipe
-              setState(() {
-                _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
-              });
-            },
-            onEnd: () {
-              _toast.info("That's all for now");
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Bottom action bar
-        SizedBox(
-          width: double.infinity,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    // Swipe left (pass)
-                    if (_swipeDeckKey.currentState?.hasCards == true) {
-                      _swipeDeckKey.currentState?.swipeLeft();
-                    } else {
-                      _toast.info('No more cards to swipe');
-                    }
-                  },
-                  child: const Icon(Icons.close),
-                ),
-              ),
-              FilledButton.tonal(
-                onPressed: () {
-                  // Show more info - get current profile and navigate to details
-                  final state = ref.read(searchControllerProvider);
-                  if (state.items.isNotEmpty && _currentCardIndex < state.items.length) {
-                    final profile = state.items[_currentCardIndex];
-                    ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
-                    context.push('/details/${profile.id}');
-                  }
-                },
-                child: const Text('View Profile'),
-              ),
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: FilledButton(
-                  onPressed: () {
-                    // Swipe right (like)
-                    if (_swipeDeckKey.currentState?.hasCards == true) {
-                      _swipeDeckKey.currentState?.swipeRight();
-                    } else {
-                      _toast.info('No more cards to swipe');
-                    }
-                  },
-                  child: const Icon(Icons.favorite),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Remaining counter
-        Text(
-          '$remaining left',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-      ],
+    return SwipeDeck<ProfileSummary>(
+      key: _swipeDeckKey.key,
+      items: deckItems,
+      overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
+      itemBuilder: (ctx, profile) => _ProfileCard(
+        key: ValueKey('profile_card_${profile.id}'),
+        profile: profile,
+      ),
+      onSwipe: (profile, direction) async {
+        if (direction == SwipeDirection.right) {
+          if (!_requestUsage(UsageMetric.interestSent)) return;
+          final ok = await ref
+              .read(matchesControllerProvider.notifier)
+              .sendInterest(profile.id);
+          if (ok['success'] == true) {
+            _toast.success(
+              'Liked ${profile.displayName}',
+            );
+          } else {
+            _toast.error('Failed to like');
+          }
+        } else {
+          // Left swipe (pass)
+          _toast.info('Passed on ${profile.displayName}');
+        }
+        // Update current index after swipe
+        setState(() {
+          _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
+        });
+      },
+      onEnd: () {
+        _toast.info("That's all for now");
+      },
     );
   }
 
@@ -729,6 +660,7 @@ class _ProfileCardState extends State<_ProfileCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final p = widget.profile;
+
     final ageCity = <String>[];
     if (p.age != null) ageCity.add(p.age!.toString());
     if (p.city?.trim().isNotEmpty == true) {
@@ -862,9 +794,9 @@ class _ShimmerPainter extends CustomPainter {
         begin: Alignment(-1 + progress * 2, -1),
         end: Alignment(1 + progress * 2, 1),
         colors: [
-          base.withOpacity(0.35),
-          highlight.withOpacity(0.55),
-          base.withOpacity(0.35),
+          base.withValues(alpha: 0.35),
+          highlight.withValues(alpha: 0.55),
+          base.withValues(alpha: 0.35),
         ],
         stops: const [0.15, 0.5, 0.85],
       ).createShader(Offset.zero & size);
@@ -971,7 +903,7 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: theme.dividerColor.withOpacity(0.4),
+                    color: theme.dividerColor.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

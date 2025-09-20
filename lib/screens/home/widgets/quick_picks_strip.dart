@@ -59,7 +59,7 @@ class QuickPicksStrip extends StatelessWidget {
           const SizedBox(height: 16),
           if (loading)
             SizedBox(
-              height: 160,
+              height: 180,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (_, i) => const QuickPickSkeleton(),
@@ -108,7 +108,7 @@ class QuickPicksStrip extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 160,
+              height: 180,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: items.length,
