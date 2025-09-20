@@ -250,7 +250,8 @@ class SearchController extends Notifier<ProfilesListState> {
         'error': state.error,
       }
     });
-    
+
+    // Set loading state immediately to prevent duplicate requests
     state = state.copyWith(
       loading: true,
       setError: true,
@@ -260,38 +261,47 @@ class SearchController extends Notifier<ProfilesListState> {
       nextPage: null,
       nextCursor: null,
     );
-    
+
     try {
       final page = await _repo.search(
         filters: filters,
         page: 1,
         pageSize: filters.pageSize ?? 20,
       );
-      
+
       logDebug('SearchController: Search completed successfully', data: {
         'returnedItems': page.items.length,
         'page': page.page,
         'hasMore': page.hasMore,
-        'nextPage': page.nextPage,
-        'nextCursor': page.nextCursor,
         'total': page.total,
       });
-      
+
       state = state.copyWith(
+        loading: false,
+        error: null,
         items: page.items,
         page: page.page,
-        hasMore: page.hasMore,
-        loading: false,
+        pageSize: page.pageSize,
+        total: page.total,
         nextPage: page.nextPage,
         nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
       );
-    } catch (e, stackTrace) {
-      logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
+    } catch (e) {
+      logDebug('SearchController: Search failed', error: e);
+
       state = state.copyWith(
         loading: false,
-        setError: true,
-        error: 'Search failed',
-        nextPage: null,
+        error: e.toString(),
+      );
+    }
+  } catch (e, stackTrace) {
+    logDebug('SearchController: Search failed', error: e, stackTrace: stackTrace);
+    state = state.copyWith(
+      loading: false,
+      setError: true,
+      error: 'Search failed',
+      nextPage: null,
         nextCursor: null,
       );
     }

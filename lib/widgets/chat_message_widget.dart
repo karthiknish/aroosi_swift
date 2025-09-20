@@ -116,10 +116,7 @@ class ChatMessageWidget extends StatelessWidget {
         return _buildImageMessage(context);
       case 'voice':
         return VoiceMessageBubble(
-          audioUrl: message.audioUrl ?? '',
-          duration: message.duration ?? 0,
-          isMe: message.isMine,
-          onTap: onVoiceTap,
+          message: message,
         );
       default:
         return _buildTextMessage(context);

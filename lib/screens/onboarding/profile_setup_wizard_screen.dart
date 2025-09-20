@@ -453,7 +453,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     return tokens.length >= words;
   }
 
-  InputDecoration _decoration(context,BuildContext context, String label, {String? hint}) =>
+  InputDecoration _decoration(BuildContext buildContext, String label, {String? hint}) =>
       InputDecoration(
         labelText: label,
         hintText: hint,
@@ -600,7 +600,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       children: [
         TextFormField(
           controller: _fullNameCtrl,
-          decoration: _decoration(context,context, 'Full name'),
+          decoration: _decoration(context, 'Full name'),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please enter your full name';
@@ -622,7 +622,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,context, 'Gender'),
+                decoration: _decoration(context, 'Gender'),
                 initialValue: (_data['gender'] as String?),
                 items: _genderOptions
                     .map(
@@ -642,7 +642,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
-                decoration: _decoration(context,context, 'Looking for'),
+                decoration: _decoration(context, 'Looking for'),
                 initialValue: (_data['preferredGender'] as String?),
                 items: _preferredGenderOptions
                     .map(
@@ -667,7 +667,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: TextFormField(
                 readOnly: true,
-                decoration: _decoration(context,context,
+                decoration: _decoration(context,
                   'Date of birth',
                   hint: 'Select date',
                 ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),

@@ -67,7 +67,7 @@ class ConversationListController extends Notifier<ConversationListState> {
               (c.partnerId != null && c.partnerId!.isNotEmpty),
         )
         .toList();
-    if (missing.isEmpty) return items;
+    if (missing.isEmpty) return Future.value(items);
     final ids = missing.map((e) => e.partnerId!).toSet().toList();
     try {
       final mapping = await _repo.getBatchProfileImages(ids);
@@ -83,7 +83,8 @@ class ConversationListController extends Notifier<ConversationListState> {
           partnerName: c.partnerName,
           partnerAvatarUrl: url,
           unreadCount: c.unreadCount,
-          lastMessage: c.lastMessage,
+          lastMessageText: c.lastMessageText,
+          lastMessageAt: c.lastMessageAt,
         );
       }).toList();
     } catch (_) {

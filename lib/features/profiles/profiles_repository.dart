@@ -68,18 +68,18 @@ class ProfilesRepository {
     Response res;
     String? lastError;
     
-    // Try canonical generic /api/search first to match React app
+    // Try canonical generic /search first (Next.js API route)
     try {
-      logDebug('Trying primary search endpoint: /api/search');
-      res = await _dio.get('/api/search', queryParameters: qp);
-      logDebug('Search success: /api/search', data: {
+      logDebug('Trying primary search endpoint: /search');
+      res = await _dio.get('/search', queryParameters: qp);
+      logDebug('Search success: /search', data: {
         'status': res.statusCode,
         'dataKeys': res.data is Map ? (res.data as Map).keys.toList() : 'not_a_map',
       });
       return _parsePaged(res);
     } catch (e, stackTrace) {
-      lastError = 'Failed /api/search: ${e.toString()}';
-      logDebug('Search failed: /api/search', error: e, stackTrace: stackTrace);
+      lastError = 'Failed /search: ${e.toString()}';
+      logDebug('Search failed: /search', error: e, stackTrace: stackTrace);
     }
     
     // Fallback: profiles search

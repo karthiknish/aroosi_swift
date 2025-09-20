@@ -29,11 +29,32 @@ android {
         versionName = "1.0.3"
     }
 
+    signingConfigs {
+        create("release") {
+            // You can define signing config here or in a separate config file
+            // For CI/CD, these values should be provided via environment variables
+            val keystorePath = System.getenv("ANDROID_SIGNING_KEYSTORE_PATH") ?: "upload-keystore.jks"
+            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            val keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            val keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+
+            if (keystorePassword.isNotEmpty() && keyAlias.isNotEmpty() && keyPassword.isNotEmpty()) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                keyAlias = keyAlias
+                keyPassword = keyPassword
+            } else {
+                // Fallback to debug signing for local development
+                initWith(signingConfigs.getByName("debug"))
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

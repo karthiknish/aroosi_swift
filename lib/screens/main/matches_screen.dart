@@ -15,6 +15,7 @@ import 'package:aroosi_flutter/widgets/paged_list_footer.dart';
 import 'package:aroosi_flutter/widgets/inline_upgrade_banner.dart';
 import 'package:aroosi_flutter/widgets/empty_states.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';
+import 'package:aroosi_flutter/widgets/offline_states.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/core/toast_helpers.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
@@ -67,7 +68,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
     // Handle matches controller errors
     ref.listen(matchesControllerProvider, (prev, next) {
-      if (next.hasError && prev?.error != next.error) {
+      if (next.error != null && prev?.error != next.error) {
         final error = next.error.toString();
         final isOfflineError = error.toLowerCase().contains('network') ||
                               error.toLowerCase().contains('connection') ||
@@ -236,7 +237,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             ),
           ),
         if (state.items.isEmpty && !state.loading)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: EmptyMatchesState(
               onExplore: () => context.push('/home/search'),
               onImproveProfile: () => context.push('/main/edit-profile'),

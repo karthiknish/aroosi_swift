@@ -1,0 +1,227 @@
+name: Release to Stores
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      deploy_android:
+        description: 'Deploy to Play Store'
+        required: true
+        default: true
+        type: boolean
+      deploy_ios:
+        description: 'Deploy to App Store'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build-number: ${{ steps.version.outputs.build-number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Bump version
+        id: version
+        run: |
+          node scripts/bump-version.js ${{ github.event.inputs.version_type }}
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD_NUMBER=$(grep 'version:' pubspec.yaml | sed 's/.*+//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Commit version changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Bump version to ${{ steps.version.outputs.version }} (${{ github.event.inputs.version_type }})"
+          git push
+
+  build-and-deploy-android:
+    needs: version-bump
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.deploy_android == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.16.0'
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            /opt/hostedtoolcache/flutter/stable-3.16.0-*/.pub-cache
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode signing key
+        run: |
+          echo "${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Build AAB
+        env:
+          KEYSTORE_PATH: android/app/upload-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build appbundle --release
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install fastlane
+        run: gem install fastlane -NV
+
+      - name: Deploy to Play Store
+        working-directory: android
+        env:
+          ANDROID_PACKAGE_NAME: ${{ secrets.ANDROID_PACKAGE_NAME }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          fastlane supply \
+            --package_name $ANDROID_PACKAGE_NAME \
+            --json_key_data "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" \
+            --aab build/app/outputs/bundle/release/app-release.aab \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true
+
+  build-and-deploy-ios:
+    needs: version-bump
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.deploy_ios == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.16.0'
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            /opt/hostedtoolcache/flutter/stable-3.16.0-*/.pub-cache
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup iOS build
+        run: |
+          echo "Setting up iOS build environment..."
+          # Install CocoaPods dependencies
+          cd ios
+          pod install
+
+      - name: Build and archive iOS
+        run: |
+          flutter build ios --release
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            archive
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install fastlane
+        run: gem install fastlane -NV
+
+      - name: Prepare API key
+        working-directory: ios/fastlane
+        run: |
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > asc_api_key.p8
+        env:
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+
+      - name: Deploy to App Store
+        working-directory: ios
+        env:
+          IOS_APP_IDENTIFIER: ${{ secrets.IOS_APP_IDENTIFIER }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPSTORE_TEAM_ID: ${{ secrets.APPSTORE_TEAM_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          fastlane deliver \
+            --app_identifier $IOS_APP_IDENTIFIER \
+            --api_key_id $APPSTORE_API_KEY_ID \
+            --api_key_issuer_id $APPSTORE_API_ISSUER_ID \
+            --api_key_filepath fastlane/asc_api_key.p8 \
+            --ipa build/ios/iphoneos/Runner.app \
+            --skip_metadata true \
+            --skip_screenshots true \
+            --submit_for_review false
+
+  tag-release:
+    needs: [version-bump, build-and-deploy-android, build-and-deploy-ios]
+    runs-on: ubuntu-latest
+    if: ${{ always() && needs.version-bump.result == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Tag release
+        run: |
+          node scripts/post-submit-version.js --push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

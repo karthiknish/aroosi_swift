@@ -168,6 +168,8 @@ class EmptySearchState extends StatelessWidget {
   final String? subtitle;
   final String? description;
   final VoidCallback? onClearSearch;
+  final VoidCallback? onAction;
+  final String? actionLabel;
 
   const EmptySearchState({
     super.key,
@@ -176,6 +178,8 @@ class EmptySearchState extends StatelessWidget {
     this.subtitle,
     this.description,
     this.onClearSearch,
+    this.onAction,
+    this.actionLabel,
   });
 
   @override
@@ -191,9 +195,9 @@ class EmptySearchState extends StatelessWidget {
         size: 64,
         color: AppColors.muted,
       ),
-      showAction: onClearSearch != null,
-      onActionPressed: onClearSearch,
-      actionLabel: 'Clear Search',
+      showAction: onAction != null,
+      onActionPressed: onAction,
+      actionLabel: actionLabel ?? 'Clear Search',
     );
   }
 }

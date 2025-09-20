@@ -99,13 +99,18 @@ class AuthRepository {
   /// Check current session; returns true if authenticated
   Future<bool> me() async {
     try {
-      // RN uses /api/auth/me with bearer; support both
+      // Next.js API uses /user/me with bearer token
       Response res;
       try {
-        res = await _dio.get('/api/auth/me');
+        res = await _dio.get('/user/me');
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
-          res = await _dio.get('/auth/me');
+          // Fallback to legacy endpoints
+          try {
+            res = await _dio.get('/api/auth/me');
+          } catch (e2) {
+            res = await _dio.get('/auth/me');
+          }
         } else {
           rethrow;
         }

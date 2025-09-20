@@ -83,7 +83,7 @@ class ChatController extends Notifier<ChatState> {
     state = state.copyWith(loading: true);
     try {
       final before = state.messages.isNotEmpty
-          ? state.messages.first.createdAt
+          ? state.messages.first.createdAt.millisecondsSinceEpoch
           : null;
       final more = await _repo.getMessages(
         conversationId: conv,

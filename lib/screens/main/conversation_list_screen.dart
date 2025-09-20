@@ -5,6 +5,7 @@ import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
 import 'package:aroosi_flutter/widgets/empty_states.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';
+import 'package:aroosi_flutter/widgets/offline_states.dart';
 import 'package:aroosi_flutter/features/chat/conversation_list_controller.dart';
 import 'package:aroosi_flutter/theme/motion.dart';
 import 'package:aroosi_flutter/widgets/animations/motion.dart';
@@ -150,7 +151,7 @@ class ConversationListScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final conv = state.items[index];
                   final title = conv.partnerName ?? 'Conversation';
-                  final subtitle = conv.lastMessage?.text ?? 'Tap to open chat';
+                  final subtitle = conv.lastMessageText ?? 'Tap to open chat';
                   return FadeSlideIn(
                     delay: Duration(milliseconds: 60 * (tileIndex++)),
                     beginOffset: const Offset(0, 0.04),

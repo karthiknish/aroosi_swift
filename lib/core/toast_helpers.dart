@@ -141,12 +141,12 @@ class ToastErrorHandler {
       if (showRetry && onRetry != null) {
         toast.retryableError(
           operationName != null ? 'Failed to $operationName' : 'Operation failed',
-          onRetry,
+          onRetry: onRetry,
         );
       } else {
         toast.errorToast(
           e,
-          operationName != null
+          fallback: operationName != null
               ? 'Failed to $operationName. Please try again.'
               : 'Something went wrong. Please try again.',
         );
@@ -169,12 +169,12 @@ class ToastErrorHandler {
       if (showRetry && onRetry != null) {
         toast.retryableError(
           operationName != null ? 'Failed to $operationName' : 'Operation failed',
-          onRetry,
+          onRetry: onRetry,
         );
       } else {
         toast.errorToast(
           e,
-          operationName != null
+          fallback: operationName != null
               ? 'Failed to $operationName. Please try again.'
               : 'Something went wrong. Please try again.',
         );

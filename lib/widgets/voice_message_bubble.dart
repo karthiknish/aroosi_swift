@@ -44,8 +44,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
 
   Future<void> _ensureLoaded() async {
     if (_resolvedUrl != null) return;
-    final storageId = widget.message.audioStorageId;
-    if (storageId == null) return;
+    final audioUrl = widget.message.audioUrl;
+    if (audioUrl == null) return;
     setState(() {
       _loading = true;
       _error = false;
@@ -54,12 +54,12 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
     try {
       String? url;
       try {
-        final res = await dio.get('/voice-messages/$storageId/url');
+        final res = await dio.get('/voice-messages/$audioUrl/url');
         if (res.data is Map && res.data['url'] is String) {
           url = res.data['url'] as String;
         }
       } catch (_) {}
-      url ??= '${dio.options.baseUrl}/voice-messages/$storageId';
+      url ??= '${dio.options.baseUrl}/voice-messages/$audioUrl';
       await _player.setUrl(url);
       _resolvedUrl = url;
     } catch (_) {

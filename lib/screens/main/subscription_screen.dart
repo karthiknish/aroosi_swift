@@ -292,6 +292,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       case ToastType.info:
         ToastService.instance.info(message);
         return;
+      case ToastType.primary:
+        ToastService.instance.info(message); // Use info for primary as fallback
+        return;
     }
   }
 

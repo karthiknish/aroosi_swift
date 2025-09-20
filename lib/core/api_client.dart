@@ -19,7 +19,10 @@ class ApiClient {
       baseUrl: Env.apiBaseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-flutter-client': 'true', // Identify as Flutter client
+      },
     ),
   )..interceptors.add(CookieManager(_cookieJar))
    ..interceptors.add(_ApiLoggingInterceptor());

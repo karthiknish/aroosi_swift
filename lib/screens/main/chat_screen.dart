@@ -256,7 +256,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     // Handle chat controller errors
     ref.listen(chatControllerProvider, (prev, next) {
-      if (next.hasError && prev?.error != next.error) {
+      if (next.error != null && prev?.error != next.error) {
         final error = next.error.toString();
         final isOfflineError = error.toLowerCase().contains('network') ||
                               error.toLowerCase().contains('connection') ||
