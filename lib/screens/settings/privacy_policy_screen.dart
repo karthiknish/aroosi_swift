@@ -142,7 +142,7 @@ Our app may contain links to third-party websites or integrate with third-party 
           ),
 
           _buildSection(
-            title: 'Children's Privacy',
+            title: 'Children\'s Privacy',
             content: '''
 Our services are not intended for children under 18 years of age. We do not knowingly collect personal information from children under 18. If we become aware that we have collected personal information from a child under 18, we will take steps to delete such information.
 ''',
