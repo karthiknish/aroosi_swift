@@ -2,38 +2,39 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
+
+env:
+  FLUTTER_CHANNEL: stable
+  FLUTTER_VERSION: '3.29.0'
 
 jobs:
   test:
+    name: Test, Analyze, Format
     runs-on: ubuntu-latest
     steps:
-- name: Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          flutter-version: '3.29.0'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Clear Flutter cache
-        run: |
-          flutter doctor
-          rm -rf ~/.pub-cache
-          rm -rf /opt/hostedtoolcache/flutter
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+      - name: Cache pub cache
+        uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-
+            ${{ runner.os }}-pub-
 
       - name: Install dependencies
         run: flutter pub get
@@ -47,53 +48,49 @@ jobs:
       - name: Format check
         run: dart format --set-exit-if-changed .
 
-build-android:
+  build-android:
+    name: Build Android APK
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          flutter-version: '3.29.0'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Clear Flutter cache
-        run: |
-          flutter doctor
-          rm -rf ~/.pub-cache
-          rm -rf /opt/hostedtoolcache/flutter
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+      - name: Cache pub cache
+        uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-
+            ${{ runner.os }}-pub-
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build debug APK
         run: flutter build apk --debug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
 
   build-ios:
+    name: Build iOS IPA
+    needs: test
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -102,36 +99,25 @@ build-android:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          flutter-version: '3.29.0'
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Clear Flutter cache
-        run: |
-          flutter doctor
-          rm -rf ~/.pub-cache
-          rm -rf /opt/hostedtoolcache/flutter
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+      - name: Cache pub cache
+        uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            /opt/hostedtoolcache/flutter/stable-3.29.0-*/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-
+            ${{ runner.os }}-pub-
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS
-        run: |
-          flutter build ios --no-codesign
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -archivePath build/ios/archive/Runner.xcarchive archive
-          xcodebuild -exportArchive -archivePath build/ios/archive/Runner.xcarchive -exportPath build/ios/ipa -exportOptionsPlist ios/ExportOptions.plist
+      - name: Build iOS (no codesign)
+        run: flutter build ipa --no-codesign
 
-      - name: Upload iOS build
-        uses: actions/upload-artifact@v3
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: build/ios/ipa/Runner.ipa
+          name: ios-ipa
+          path: build/ios/ipa/*.ipa
