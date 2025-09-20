@@ -7,9 +7,9 @@ on:
     branches: [ main, develop ]
 
 jobs:
-   test:
-     runs-on: ubuntu-latest
-     steps:
+  test:
+    runs-on: ubuntu-latest
+    steps:
        - name: Checkout code
          uses: actions/checkout@v4
 
