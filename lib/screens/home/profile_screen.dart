@@ -14,6 +14,7 @@ import 'package:aroosi_flutter/features/profiles/profiles_repository.dart';
 import 'package:aroosi_flutter/platform/adaptive_dialogs.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
+import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -214,11 +215,20 @@ class _ProfileHeader extends StatelessWidget {
           if (avatarUrl != null && avatarUrl!.isNotEmpty)
             CircleAvatar(
               radius: 42,
-              backgroundImage: NetworkImage(avatarUrl!),
-              onBackgroundImageError: (_, __) {
-                // Handle image loading error gracefully - fallback to initials
-                return;
-              },
+              child: ClipOval(
+                child: RetryableNetworkImage(
+                  url: avatarUrl!,
+                  fit: BoxFit.cover,
+                  errorWidget: Container(
+                    color: Colors.grey[200],
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.grey,
+                      size: 40,
+                    ),
+                  ),
+                ),
+              ),
             )
           else
             CircleAvatar(

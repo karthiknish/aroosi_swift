@@ -33,10 +33,10 @@ android {
         create("release") {
             // You can define signing config here or in a separate config file
             // For CI/CD, these values should be provided via environment variables
-            val keystorePath = System.getenv("ANDROID_SIGNING_KEYSTORE_PATH") ?: "upload-keystore.jks"
-            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
-            val keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
-            val keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+            var keystorePath = System.getenv("ANDROID_SIGNING_KEYSTORE_PATH") ?: "upload-keystore.jks"
+            var keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            var keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            var keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
 
             if (keystorePassword.isNotEmpty() && keyAlias.isNotEmpty() && keyPassword.isNotEmpty()) {
                 storeFile = file(keystorePath)
@@ -53,7 +53,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

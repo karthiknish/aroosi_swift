@@ -421,7 +421,7 @@ class DataStateBuilder<T> extends StatelessWidget {
       return emptyWidget ?? const NoDataEmptyState();
     }
 
-    return builder(data);
+    return builder(data!);
   }
 }
 

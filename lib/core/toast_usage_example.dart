@@ -85,29 +85,29 @@ class ToastExample2 extends ConsumerWidget {
   }
 }
 
-// Example 3: Using the ToastMixin in a StateNotifier
-class ExampleNotifier extends StateNotifier<String> with ToastMixin {
-  ExampleNotifier() : super('');
-
-  Future<void> performOperation() async {
-    try {
-      // Simulate some operation
-      await Future.delayed(const Duration(seconds: 1));
-      state = 'Operation completed';
-      showSuccessToast('Operation completed successfully!');
-    } catch (e) {
-      showOperationFailedToast('perform operation', onRetry: performOperation);
-    }
-  }
-
-  void deleteItem() {
-    showUndoToast(
-      'Item deleted',
-      () => debugPrint('Undo delete triggered'),
-      actionLabel: 'Restore',
-    );
-  }
-}
+// Example 3: Simple notifier example (commented due to StateNotifier issues)
+// class ExampleNotifier extends StateNotifier<String> {
+//   ExampleNotifier() : super('');
+// 
+//   Future<void> performOperation() async {
+//     try {
+//       // Simulate some operation
+//       await Future.delayed(const Duration(seconds: 1));
+//       state = 'Operation completed';
+//       showSuccessToast('Operation completed successfully!');
+//     } catch (e) {
+//       showErrorToast('Failed to perform operation');
+//     }
+//   }
+// 
+//   void deleteItem() {
+//     showUndoToast(
+//       'Item deleted',
+//       () => debugPrint('Undo delete triggered'),
+//       actionLabel: 'Restore',
+//     );
+//   }
+// }
 
 // Example 4: Using AppToastUtils for common patterns
 class ToastExample4 extends ConsumerWidget {

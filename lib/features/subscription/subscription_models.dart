@@ -430,12 +430,12 @@ class FeatureLimits {
       interestsSent: json['interestsSent'] as int? ?? json['maxInterests'] as int? ?? 0,
       searchesPerformed: json['searchesPerformed'] as int? ?? json['maxSearches'] as int? ?? 0,
       profileBoosts: json['profileBoosts'] as int? ?? json['maxProfileBoosts'] as int? ?? 0,
-      profileViews: json['profileViews'] as int? ?? json['maxProfileViews'] as int? ?? 0,
+      profileViews: json['profileViews'] as int? ?? json['profile_view'] as int? ?? json['maxProfileViews'] as int? ?? 0,
       dailyLikes: json['dailyLikes'] as int? ?? 0,
       // Legacy names for backward compatibility
       maxMessages: json['maxMessages'] as int? ?? 0,
       maxInterests: json['maxInterests'] as int? ?? 0,
-      maxProfileViews: json['maxProfileViews'] as int? ?? 0,
+      maxProfileViews: json['maxProfileViews'] as int? ?? json['profile_view'] as int? ?? 0,
       maxSearches: json['maxSearches'] as int? ?? 0,
       maxProfileBoosts: json['maxProfileBoosts'] as int? ?? 0,
       // Feature access limits
@@ -502,7 +502,7 @@ class FeatureUsage {
       limits: FeatureLimits.fromJson(json['limits'] as Map<String, dynamic>),
       // Legacy format for backward compatibility
       messaging: MessagingUsage.fromJson(json['messaging'] as Map<String, dynamic>? ?? {}),
-      profileViews: ProfileViewsUsage.fromJson(json['profileViews'] as Map<String, dynamic>? ?? {}),
+      profileViews: ProfileViewsUsage.fromJson(json['profileViews'] as Map<String, dynamic>? ?? json['profile_view'] as Map<String, dynamic>? ?? {}),
       searches: SearchesUsage.fromJson(json['searches'] as Map<String, dynamic>? ?? {}),
       boosts: BoostsUsage.fromJson(json['boosts'] as Map<String, dynamic>? ?? {}),
     );

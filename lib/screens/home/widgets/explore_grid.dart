@@ -58,16 +58,16 @@ class ExploreGrid extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: tiles.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.3,
-            ),
+           GridView.builder(
+             shrinkWrap: true,
+             physics: const NeverScrollableScrollPhysics(),
+             itemCount: tiles.length,
+             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+               crossAxisCount: 2,
+               crossAxisSpacing: 12,
+               mainAxisSpacing: 12,
+               childAspectRatio: 1.4,
+             ),
             itemBuilder: (context, index) {
               final t = tiles[index];
               return ExploreTile(
@@ -134,71 +134,76 @@ class ExploreTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Expanded(
-                        child: Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+           child: Padding(
+             padding: const EdgeInsets.all(14),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Container(
+                   padding: const EdgeInsets.all(8),
+                   decoration: BoxDecoration(
+                     color: color.withOpacity(0.1),
+                     borderRadius: BorderRadius.circular(10),
+                   ),
+                   child: Icon(
+                     icon,
+                     color: color,
+                     size: 22,
+                   ),
+                 ),
+                 const SizedBox(height: 10),
+                 Flexible(
+                   child: Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       Text(
+                         label,
+                         style: TextStyle(
+                           fontSize: 13,
+                           fontWeight: FontWeight.bold,
+                           color: color,
+                           height: 1.2,
+                         ),
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
+                       ),
+                       const SizedBox(height: 3),
+                       Flexible(
+                         child: Text(
+                           description,
+                           style: TextStyle(
+                             fontSize: 10,
+                             color: Colors.grey.shade600,
+                             height: 1.2,
+                           ),
+                           maxLines: 2,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      'Explore',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: color,
-                      size: 14,
-                    ),
-                  ],
-                ),
+                 Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text(
+                       'Explore',
+                       style: TextStyle(
+                         fontSize: 10,
+                         fontWeight: FontWeight.bold,
+                         color: color,
+                       ),
+                     ),
+                     const SizedBox(width: 3),
+                     Icon(
+                       Icons.arrow_forward,
+                       color: color,
+                       size: 12,
+                     ),
+                   ],
+                 ),
               ],
             ),
           ),

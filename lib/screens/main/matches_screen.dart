@@ -14,6 +14,7 @@ import 'package:aroosi_flutter/widgets/shimmer.dart';
 import 'package:aroosi_flutter/widgets/paged_list_footer.dart';
 import 'package:aroosi_flutter/widgets/inline_upgrade_banner.dart';
 import 'package:aroosi_flutter/widgets/empty_states.dart';
+import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';
 import 'package:aroosi_flutter/widgets/offline_states.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
@@ -366,16 +367,39 @@ class _MatchCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 36,
-                backgroundImage: avatarUrl != null
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: avatarUrl == null
-                    ? Text(
-                        displayName.isNotEmpty
-                            ? displayName.characters.first
-                            : '?',
+                child: avatarUrl != null
+                    ? ClipOval(
+                        child: RetryableNetworkImage(
+                          url: avatarUrl,
+                          fit: BoxFit.cover,
+                          errorWidget: Container(
+                            color: Colors.grey[200],
+                            child: Text(
+                              displayName.isNotEmpty
+                                  ? displayName.characters.first
+                                  : '?',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                       )
-                    : null,
+                    : Container(
+                        color: Colors.grey[200],
+                        child: Text(
+                          displayName.isNotEmpty
+                              ? displayName.characters.first
+                              : '?',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(height: 12),
               Text(displayName, overflow: TextOverflow.ellipsis),

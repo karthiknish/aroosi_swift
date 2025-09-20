@@ -43,7 +43,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
     FeatureAvailabilityResult? availability;
     try {
-      availability = await subscriptionRepository.canUseFeature('profileViews');
+      availability = await subscriptionRepository.canUseFeature('profile_view');
     } catch (_) {}
 
     var allow = true;
@@ -108,7 +108,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
     if (!allow) return;
 
-    await subscriptionRepository.trackFeatureUsage('profileViews');
+    await subscriptionRepository.trackFeatureUsage('profile_view');
     usageNotifier.requestUsage(UsageMetric.profileView);
     await ref.read(profileDetailControllerProvider.notifier).load(widget.id);
     if (mounted) {

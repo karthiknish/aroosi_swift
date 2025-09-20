@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
 
 import 'package:aroosi_flutter/features/profiles/list_controller.dart';
 import 'package:aroosi_flutter/features/profiles/models.dart';
@@ -19,6 +18,7 @@ import 'package:aroosi_flutter/widgets/error_states.dart';
 import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/profiles/selection.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
+import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
 import 'package:aroosi_flutter/widgets/swipe_deck.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
@@ -52,6 +52,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     // Load all profiles on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAllProfiles();
+      _loadInterests();
     });
     addLoadMoreListener(
       _scrollController,
@@ -307,7 +308,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return _buildEmptyState(context, forCards: true);
     }
 
-    final deckItems = List<ProfileSummary>.from(items);
+    // Filter out profiles that already have interest sent
+    final filteredItems = items.where((profile) {
+      final interestStatus = ref.read(interestsControllerProvider);
+      final hasSentInterest = interestStatus.items.any((interest) => 
+        interest.toUserId == profile.id && 
+        (interest.status == 'pending' || interest.status == 'accepted')
+      );
+      return !hasSentInterest;
+    }).toList();
+
+    final deckItems = List<ProfileSummary>.from(filteredItems);
     int remaining = deckItems.length;
     
     // Log for debugging GlobalKey issues
@@ -316,39 +327,107 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       'widgetType': 'SwipeDeck',
       'timestamp': DateTime.now().toIso8601String(),
     });
-    return SwipeDeck<ProfileSummary>(
-      key: _swipeDeckKey.key,
-      items: deckItems,
-      overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
-      itemBuilder: (ctx, profile) => _ProfileCard(
-        key: ValueKey('profile_card_${profile.id}'),
-        profile: profile,
-      ),
-      onSwipe: (profile, direction) async {
-        if (direction == SwipeDirection.right) {
-          if (!_requestUsage(UsageMetric.interestSent)) return;
-          final ok = await ref
-              .read(matchesControllerProvider.notifier)
-              .sendInterest(profile.id);
-          if (ok['success'] == true) {
-            _toast.success(
-              'Liked ${profile.displayName}',
-            );
-          } else {
-            _toast.error('Failed to like');
-          }
-        } else {
-          // Left swipe (pass)
-          _toast.info('Passed on ${profile.displayName}');
-        }
-        // Update current index after swipe
-        setState(() {
-          _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
-        });
-      },
-      onEnd: () {
-        _toast.info("That's all for now");
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: SwipeDeck<ProfileSummary>(
+            key: _swipeDeckKey.key,
+            items: deckItems,
+            overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
+            itemBuilder: (ctx, profile) => _ProfileCard(
+              key: ValueKey('profile_card_${profile.id}'),
+              profile: profile,
+            ),
+            onSwipe: (profile, direction) async {
+              if (direction == SwipeDirection.right) {
+                if (!_requestUsage(UsageMetric.interestSent)) return;
+                final ok = await ref
+                    .read(matchesControllerProvider.notifier)
+                    .sendInterest(profile.id);
+                if (ok['success'] == true) {
+                  _toast.success(
+                    'Liked ${profile.displayName}',
+                  );
+                } else {
+                  _toast.error('Failed to like');
+                }
+              } else {
+                // Left swipe (pass)
+                _toast.info('Passed on ${profile.displayName}');
+              }
+              // Update current index after swipe
+              setState(() {
+                _currentCardIndex = _swipeDeckKey.currentState?.currentIndex ?? 0;
+              });
+            },
+            onEnd: () {
+              _toast.info("That's all for now");
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Action buttons
+        SizedBox(
+          width: double.infinity,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: FilledButton.tonal(
+                  onPressed: () {
+                    // Pass (cross button)
+                    if (_swipeDeckKey.currentState?.hasCards == true) {
+                      _swipeDeckKey.currentState?.swipeLeft();
+                    } else {
+                      _toast.info('No more cards to swipe');
+                    }
+                  },
+                  child: const Icon(Icons.close, color: Colors.red),
+                ),
+              ),
+              SizedBox(
+                width: 120,
+                height: 60,
+                child: FilledButton.tonal(
+                  onPressed: () {
+                    // Show more info - get current profile and navigate to details
+                    final state = ref.read(searchControllerProvider);
+                    if (state.items.isNotEmpty && _currentCardIndex < state.items.length) {
+                      final profile = state.items[_currentCardIndex];
+                      ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
+                      context.push('/details/${profile.id}');
+                    }
+                  },
+                  child: const Text('View Profile'),
+                ),
+              ),
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: FilledButton(
+                  onPressed: () {
+                    // Like (heart button)
+                    if (_swipeDeckKey.currentState?.hasCards == true) {
+                      _swipeDeckKey.currentState?.swipeRight();
+                    } else {
+                      _toast.info('No more cards to swipe');
+                    }
+                  },
+                  child: const Icon(Icons.favorite, color: Colors.pink),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Remaining counter
+        Text(
+          '$remaining left',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ],
     );
   }
 
@@ -643,6 +722,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     
     await ref.read(searchControllerProvider.notifier).search(filters);
   }
+
+  Future<void> _loadInterests() async {
+    logDebug('SearchScreen: Loading interests data');
+    try {
+      await ref.read(interestsControllerProvider.notifier).load(mode: 'sent');
+    } catch (e) {
+      logDebug('SearchScreen: Failed to load interests', error: e);
+    }
+  }
 }
 
 class _ProfileCard extends StatefulWidget {
@@ -678,11 +766,10 @@ class _ProfileCardState extends State<_ProfileCard> {
             // Image
             Expanded(
               child: p.avatarUrl != null && p.avatarUrl!.trim().isNotEmpty
-                  ? Image.network(
-                      p.avatarUrl!,
+                  ? RetryableNetworkImage(
+                      url: p.avatarUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Image.asset(_placeholderAsset, fit: BoxFit.cover),
+                      errorWidget: Image.asset(_placeholderAsset, fit: BoxFit.cover),
                     )
                   : Image.asset(_placeholderAsset, fit: BoxFit.cover),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:aroosi_flutter/features/profiles/models.dart';
+import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
 
 class QuickPicksStrip extends StatelessWidget {
   const QuickPicksStrip({
@@ -135,12 +136,10 @@ class QuickPickCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final img = (item.avatarUrl != null && item.avatarUrl!.trim().isNotEmpty)
-        ? FadeInImage.assetNetwork(
-            placeholder: _placeholderAsset,
-            image: item.avatarUrl!,
+        ? RetryableNetworkImage(
+            url: item.avatarUrl!,
             fit: BoxFit.cover,
-            imageErrorBuilder: (_, __, ___) =>
-                Image.asset(_placeholderAsset, fit: BoxFit.cover),
+            errorWidget: Image.asset(_placeholderAsset, fit: BoxFit.cover),
           )
         : Image.asset(_placeholderAsset, fit: BoxFit.cover);
     
@@ -200,36 +199,43 @@ class QuickPickCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (item.age != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '${item.age} years',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+               Expanded(
+                 flex: 1,
+                 child: Padding(
+                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       Flexible(
+                         child: Text(
+                           item.displayName,
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                           style: const TextStyle(
+                             fontSize: 11,
+                             fontWeight: FontWeight.bold,
+                             height: 1.2,
+                           ),
+                         ),
+                       ),
+                       if (item.age != null) ...[
+                         const SizedBox(height: 1),
+                         Flexible(
+                           child: Text(
+                             '${item.age} years',
+                             style: TextStyle(
+                               fontSize: 9,
+                               color: Colors.grey.shade600,
+                               height: 1.1,
+                             ),
+                           ),
+                         ),
+                       ],
+                     ],
+                   ),
+                 ),
+               ),
             ],
           ),
         ),
@@ -275,34 +281,35 @@ class QuickPickSkeleton extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 12,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    height: 8,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+           Expanded(
+             flex: 1,
+             child: Padding(
+               padding: const EdgeInsets.all(8),
+               child: Column(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   Container(
+                     height: 10,
+                     width: 50,
+                     decoration: BoxDecoration(
+                       color: Colors.grey.shade200,
+                       borderRadius: BorderRadius.circular(5),
+                     ),
+                   ),
+                   const SizedBox(height: 3),
+                   Container(
+                     height: 7,
+                     width: 35,
+                     decoration: BoxDecoration(
+                       color: Colors.grey.shade100,
+                       borderRadius: BorderRadius.circular(3.5),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+           ),
         ],
       ),
     );

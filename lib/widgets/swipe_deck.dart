@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 typedef SwipeDecisionBuilder =
     Widget Function(
@@ -40,147 +39,53 @@ class SwipeDeck<T> extends StatefulWidget {
 // Global key to access swipe deck state
 class SwipeDeckGlobalKey<T> {
   final GlobalKey<_SwipeDeckState<T>> _key;
-  
+
   SwipeDeckGlobalKey({String? debugLabel}) : _key = GlobalKey(debugLabel: debugLabel);
-  
+
   _SwipeDeckState<T>? get currentState => _key.currentState;
-  
+
   GlobalKey<_SwipeDeckState<T>> get key => _key;
 }
 
-class _SwipeDeckState<T> extends State<SwipeDeck<T>>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  Offset _offset = Offset.zero;
-  double _rotation = 0.0;
+class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    )..addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
-  }
-
-  void _resetCard() {
-    _controller.reset();
-    _offset = Offset.zero;
-    _rotation = 0;
-  }
-
-  void _animateReset() {
-    if (!mounted) return;
-
-    try {
-      final tween = Tween<Offset>(
-        begin: _offset,
-        end: Offset.zero,
-      );
-
-      final animation = tween.animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Curves.easeOutBack,
-        ),
-      );
-
-      animation.addListener(() {
-        if (mounted) {
-          setState(() {
-            _offset = animation.value;
-            _rotation = (_offset.dx / MediaQuery.of(context).size.width) * widget.maxRotation;
-          });
-        }
-      });
-
-      _controller.forward(from: 0);
-    } catch (e) {
-      // Handle animation errors gracefully
-      if (mounted) {
-        _resetCard();
-      }
-    }
-  }
-
-  int _currentIndex = 0;
-
-  void _animateOff(SwipeDirection direction) async {
-    if (_currentIndex >= widget.items.length || !mounted) return;
-
-    try {
-      final item = widget.items[_currentIndex];
-      final width = MediaQuery.of(context).size.width;
-      final targetX = direction == SwipeDirection.right ? width * 1.2 : -width * 1.2;
-
-      // Create animation with custom curve for more natural feel
-      final tween = Tween<Offset>(
-        begin: _offset,
-        end: Offset(targetX, _offset.dy),
-      );
-
-      final animation = tween.animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Curves.easeOutCubic,
-        ),
-      );
-
-      // Update offset and rotation during animation
-      animation.addListener(() {
-        if (mounted) {
-          setState(() {
-            _offset = animation.value;
-            _rotation = (_offset.dx / MediaQuery.of(context).size.width) * widget.maxRotation;
-          });
-        }
-      });
-
-      await _controller.forward(from: 0);
-
-      // Call callback and advance to next card
-      if (mounted) {
-        widget.onSwipe?.call(item, direction);
-        setState(() {
-          _currentIndex++;
-          _resetCard();
-          if (_currentIndex >= widget.items.length) widget.onEnd?.call();
-        });
-      }
-    } catch (e) {
-      // Handle animation errors gracefully
-      if (mounted) {
-        _resetCard();
-      }
-    }
   }
 
   // Public methods for programmatic swipes
   void swipeLeft() {
     if (_currentIndex < widget.items.length) {
-      _animateOff(SwipeDirection.left);
+      widget.onSwipe?.call(widget.items[_currentIndex], SwipeDirection.left);
+      setState(() {
+        _currentIndex++;
+        if (_currentIndex >= widget.items.length) widget.onEnd?.call();
+      });
     }
   }
 
   void swipeRight() {
     if (_currentIndex < widget.items.length) {
-      _animateOff(SwipeDirection.right);
+      widget.onSwipe?.call(widget.items[_currentIndex], SwipeDirection.right);
+      setState(() {
+        _currentIndex++;
+        if (_currentIndex >= widget.items.length) widget.onEnd?.call();
+      });
     }
   }
 
   bool get hasCards => _currentIndex < widget.items.length;
-  
-  int get currentIndex => _currentIndex;
-  
-  T? get currentCard => _currentIndex < widget.items.length ? widget.items[_currentIndex] : null;
 
-  
+  int get currentIndex => _currentIndex;
+
+  T? get currentCard => _currentIndex < widget.items.length ? widget.items[_currentIndex] : null;
 
   @override
   Widget build(BuildContext context) {
@@ -191,11 +96,6 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     if (widget.items.isEmpty || _currentIndex >= widget.items.length) {
       return const _EmptyState();
     }
-
-    final direction = _offset.dx == 0
-        ? null
-        : (_offset.dx > 0 ? SwipeDirection.right : SwipeDirection.left);
-    final progress = (_offset.dx.abs() / (MediaQuery.of(context).size.width * 0.35)).clamp(0.0, 1.0);
 
     return FocusScope(
       child: Column(
@@ -220,120 +120,23 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
                   final scale = isTop ? 1.0 : 1.0 - (i * 0.04);
                   final translateY = isTop ? 0.0 : i * 12.0;
 
-                  // Precache next two images for better performance
-                  if (i <= 2) {
-                    _precacheImage(item, context);
-                  }
-
                   final card = Transform.translate(
-                    offset: isTop ? _offset : Offset(0, translateY),
-                    child: Transform.rotate(
-                      angle: isTop ? _rotation * (math.pi / 180) : 0,
-                      child: Transform.scale(
-                        scale: scale,
-                        child: Stack(
-                          children: [
-                            _buildCard(item),
-                            if (isTop && widget.overlayBuilder != null)
-                              Positioned.fill(
-                                child: IgnorePointer(
-                                  ignoring: true,
-                                  child: widget.overlayBuilder!(
-                                    context,
-                                    direction,
-                                    progress,
-                                  ),
-                                ),
-                              ),
-                            if (isTop && widget.overlayBuilder == null)
-                              Positioned.fill(
-                                child: IgnorePointer(
-                                  ignoring: true,
-                                  child: _ProgressSwipeOverlay(
-                                    direction: direction,
-                                    progress: progress,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                    offset: Offset(0, translateY),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: _buildCard(item),
                     ),
                   );
 
                   if (isTop) {
                     cards.add(
                       Semantics(
-                        label: 'Profile card. Use arrow keys or swipe to navigate. Right arrow or swipe right to like, left arrow or swipe left to pass',
-                        child: Focus(
-                          autofocus: true,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              // TODO: Add accessibility announcement
-                              // SemanticsService.announce('Profile details', TextDirection.ltr);
-                            },
-                            onHorizontalDragStart: (_) {},
-                            onHorizontalDragUpdate: (d) {
-                              setState(() {
-                                final newOffset = _offset + Offset(d.delta.dx, 0);
-                                final maxDrag = constraints.maxWidth * 0.8;
-                                _offset = Offset(
-                                  newOffset.dx.clamp(-maxDrag, maxDrag),
-                                  0,
-                                );
-                                _rotation = (_offset.dx / constraints.maxWidth) * widget.maxRotation;
-                              });
-                            },
-                            onHorizontalDragEnd: (d) {
-                              final threshold = constraints.maxWidth * 0.25;
-                              final velocity = d.primaryVelocity ?? 0;
-                              final distance = _offset.dx.abs();
-
-                              if (velocity.abs() > 1000) {
-                                HapticFeedback.mediumImpact();
-                                if (velocity > 0) {
-                                  _animateOff(SwipeDirection.right);
-                                } else {
-                                  _animateOff(SwipeDirection.left);
-                                }
-                              } else if (distance > threshold) {
-                                HapticFeedback.lightImpact();
-                                if (_offset.dx > 0) {
-                                  _animateOff(SwipeDirection.right);
-                                } else {
-                                  _animateOff(SwipeDirection.left);
-                                }
-                              } else {
-                                _animateReset();
-                              }
-                            },
-                            child: KeyboardListener(
-                              focusNode: FocusNode(),
-                              onKeyEvent: (event) {
-                                if (event is KeyDownEvent) {
-                                  if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-                                    HapticFeedback.lightImpact();
-                                    _animateOff(SwipeDirection.right);
-                                  } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                                    HapticFeedback.lightImpact();
-                                    _animateOff(SwipeDirection.left);
-                                  }
-                                }
-                              },
-                              child: card,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  } else {
-                    cards.add(
-                      Semantics(
-                        label: 'Background profile card',
+                        label: 'Profile card. Use heart button to like, cross button to pass',
                         child: card,
                       ),
                     );
+                  } else {
+                    cards.add(card);
                   }
                 }
                 return Stack(children: cards.reversed.toList());
@@ -429,8 +232,8 @@ class _ProgressSwipeOverlay extends StatelessWidget {
                   ? LinearGradient(
                       colors: [
                         Colors.transparent,
-                        Colors.green.withOpacity(0.1 * likeOpacity),
-                        Colors.green.withOpacity(0.3 * likeOpacity),
+                        Colors.green.withValues(alpha: 0.1 * likeOpacity),
+                        Colors.green.withValues(alpha: 0.3 * likeOpacity),
                       ],
                       stops: [0.0, 0.5, 1.0],
                       begin: Alignment.centerLeft,
@@ -440,8 +243,8 @@ class _ProgressSwipeOverlay extends StatelessWidget {
                       ? LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Colors.red.withOpacity(0.1 * passOpacity),
-                            Colors.red.withOpacity(0.3 * passOpacity),
+                            Colors.red.withValues(alpha: 0.1 * passOpacity),
+                            Colors.red.withValues(alpha: 0.3 * passOpacity),
                           ],
                           stops: [0.0, 0.5, 1.0],
                           begin: Alignment.centerRight,
@@ -505,7 +308,7 @@ class _AnimatedLabel extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(color: color, width: 3),
           borderRadius: BorderRadius.circular(10),
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
         ),
         child: Text(
           text,
@@ -639,7 +442,7 @@ class _ProgressIndicator extends StatelessWidget {
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(
               Theme.of(context).colorScheme.primary,
             ),

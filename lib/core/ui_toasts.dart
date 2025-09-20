@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
 
 /// Toast helper functions that match the React app patterns
