@@ -113,6 +113,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
+      - name: Cache CocoaPods Pods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
       - name: Cache Ruby bundle
         uses: actions/cache@v4
         with:
@@ -260,23 +268,57 @@ jobs:
           echo "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_NAME" >> $GITHUB_ENV
           echo "PROVISIONING_PROFILE_UUID=$PROFILE_UUID" >> $GITHUB_ENV
 
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ios/build/DerivedData
+          key: ${{ runner.os }}-derived-${{ github.ref_name }}-${{ hashFiles('ios/Podfile.lock', 'pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-${{ github.ref_name }}-
+            ${{ runner.os }}-derived-
+
+      - name: Flutter precache (iOS)
+        run: flutter precache --ios
+
       - name: Run Fastlane (TestFlight)
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SKIP_FLUTTER_CLEAN: "1"
         working-directory: ios
         run: bundle exec fastlane ios deploy_testflight
 
       - name: Show Transporter log
         if: always()
         run: |
+          fallback_dir="$HOME/Library/Logs/Transporter"
+          fallback_alt="$HOME/Library/Logs/gimTransporter"
           if [ -f ios/build/transporter.log ]; then
             echo '--- Transporter log start ---'
             cat ios/build/transporter.log
             echo '--- Transporter log end ---'
+          elif compgen -G "$fallback_dir/Transporter_*.log" > /dev/null; then
+            latest=$(ls -t "$fallback_dir"/Transporter_*.log | head -n 1)
+            echo "Found transporter log at $latest"
+            tail -n 200 "$latest"
+          elif compgen -G "$fallback_alt/Transporter_*.log" > /dev/null; then
+            latest=$(ls -t "$fallback_alt"/Transporter_*.log | head -n 1)
+            echo "Found transporter log at $latest"
+            tail -n 200 "$latest"
           else
             echo 'No transporter log generated.'
           fi
+
+      - name: Upload Transporter logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: transporter-logs
+          path: |
+            ios/build/transporter.log
+            ~/Library/Logs/Transporter/Transporter_*.log
+            ~/Library/Logs/gimTransporter/Transporter_*.log
+          if-no-files-found: ignore
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4

@@ -128,20 +128,14 @@ platform :ios do
 
   desc "Build iOS app for release"
   lane :build do
-    # Clean previous builds
-    sh("flutter clean")
+    # Clean previous builds unless explicitly skipped (speeds up CI with caching)
+    sh("flutter clean") unless ENV['SKIP_FLUTTER_CLEAN'] == '1'
 
     # Get dependencies
     sh("flutter pub get")
 
     # Build iOS
     sh("flutter build ios --release --no-codesign")
-
-    # Setup CocoaPods if needed
-    cocoapods(
-      clean: true,
-      podfile: "./Podfile"
-    )
 
     profile_specifier = ENV['PROVISIONING_PROFILE_SPECIFIER']
     export_options = nil
@@ -163,6 +157,8 @@ platform :ios do
     xcargs = nil if xcargs.empty?
 
     # Archive the app
+    derived_data_path = File.expand_path('../build/DerivedData', __dir__)
+    FileUtils.mkdir_p(derived_data_path)
     gym(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
@@ -176,6 +172,7 @@ platform :ios do
       codesigning_identity: "Apple Distribution",
       export_team_id: ENV['APPLE_TEAM_ID'],
       export_options: export_options,
+      derived_data_path: derived_data_path,
       xcargs: xcargs
     )
 
