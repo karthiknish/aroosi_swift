@@ -9,6 +9,11 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FLUTTER_CHANNEL: stable
@@ -19,8 +24,8 @@ env:
   ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
 
 jobs:
-  test:
-    name: Test, Analyze, Format
+  quality:
+    name: Flutter Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -51,21 +56,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run tests
-        run: flutter test
-
-      - name: Analyze code
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
-
-      - name: Format check
-        run: dart format --set-exit-if-changed .
+      - name: Run tests, analyze, and format check
+        run: |
+          flutter test
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          dart format --set-exit-if-changed .
 
   build-android:
     name: Build Android APK
-    needs: test
+    needs: quality
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -102,6 +113,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
+      - name: Cache Ruby bundle
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('Gemfile', 'ios/Gemfile', 'Gemfile.lock', 'ios/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -116,7 +135,8 @@ jobs:
 
   build-ios:
     name: Build iOS IPA
-    needs: test
+    needs: quality
+    if: github.event_name == 'push'
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -163,6 +183,14 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
+
+      - name: Cache Ruby bundle
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('Gemfile', 'ios/Gemfile', 'Gemfile.lock', 'ios/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
 
       - name: Install dependencies
         run: flutter pub get
