@@ -144,10 +144,14 @@ platform :ios do
       }
     end
 
-    xcargs = nil
+    xcargs = []
     unless profile_specifier.to_s.strip.empty?
-      xcargs = "PROVISIONING_PROFILE_SPECIFIER=\"#{profile_specifier}\""
+      xcargs << "PROVISIONING_PROFILE_SPECIFIER=\"#{profile_specifier}\""
+      xcargs << "CODE_SIGN_STYLE=Manual"
     end
+
+    xcargs = xcargs.join(' ').strip
+    xcargs = nil if xcargs.empty?
 
     # Archive the app
     gym(
