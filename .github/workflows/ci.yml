@@ -239,6 +239,17 @@ jobs:
         working-directory: ios
         run: bundle exec fastlane ios deploy_testflight
 
+      - name: Show Transporter log
+        if: always()
+        run: |
+          if [ -f ios/build/transporter.log ]; then
+            echo '--- Transporter log start ---'
+            cat ios/build/transporter.log
+            echo '--- Transporter log end ---'
+          else
+            echo 'No transporter log generated.'
+          fi
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
