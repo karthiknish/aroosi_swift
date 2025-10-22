@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/colors.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';

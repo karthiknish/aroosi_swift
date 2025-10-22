@@ -12,6 +12,14 @@ class AppColors {
   // Accent (Muted Gold)
   static const Color accent = Color(0xFFD6B27C); // 500
 
+  // Aurora gradient accents for bespoke UI surfaces
+  static const Color auroraRose = Color(0xFFFF8FB7);
+  static const Color auroraIris = Color(0xFFA78BFA);
+  static const Color auroraSky = Color(0xFF7DD3FC);
+  static const Color auroraSunset = Color(0xFFFFB98B);
+  static const Color auroraBackground = Color(0xFFFFF6FB);
+  static const Color auroraOutline = Color(0x33EC4899);
+
   // Background & Surface (Clean off-white)
   static const Color background = Color(0xFFFFFFFF); // primary
   static const Color surface = Color(0xFFFFFFFF);

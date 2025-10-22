@@ -1,0 +1,346 @@
+[
+  {
+    "uid": "e10a8cc4-19a7-4309-a7d4-bf7435355fe4",
+    "email": "samplemale1@aroosi.app",
+    "displayName": "Yusuf Jamal",
+    "age": 20,
+    "gender": "male",
+    "location": "Herat",
+    "bio": "I am a 20-year-old man from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=1"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=1",
+    "isProfileComplete": true,
+    "languages": [
+      "Pashto",
+      "Urdu"
+    ],
+    "motherTongue": "Pashto",
+    "interests": [
+      "Reading",
+      "Art",
+      "Photography"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "moderately_practicing",
+      "motherTongue": "Pashto",
+      "languages": [
+        "Pashto",
+        "Urdu"
+      ],
+      "familyValues": "mixed",
+      "marriageViews": "arranged_marriage",
+      "traditionalValues": "very_important",
+      "familyApprovalImportance": "very_important",
+      "religionImportance": 9,
+      "cultureImportance": 7,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Herat",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  },
+  {
+    "uid": "282f180a-8430-4577-a156-47be82f1b6ed",
+    "email": "samplemale2@aroosi.app",
+    "displayName": "Gul Abdul",
+    "age": 27,
+    "gender": "male",
+    "location": "Paktia",
+    "bio": "I am a 27-year-old man from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=2"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=2",
+    "isProfileComplete": true,
+    "languages": [
+      "Dari",
+      "Urdu"
+    ],
+    "motherTongue": "Dari",
+    "interests": [
+      "Reading",
+      "Hiking",
+      "Family"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "very_practicing",
+      "motherTongue": "Dari",
+      "languages": [
+        "Dari",
+        "Urdu"
+      ],
+      "familyValues": "traditional",
+      "marriageViews": "arranged_marriage",
+      "traditionalValues": "not_important",
+      "familyApprovalImportance": "very_important",
+      "religionImportance": 10,
+      "cultureImportance": 7,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Paktia",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  },
+  {
+    "uid": "624aa778-cee8-49b9-a604-78539cd38026",
+    "email": "samplemale3@aroosi.app",
+    "displayName": "Naim Naim",
+    "age": 32,
+    "gender": "male",
+    "location": "Takhar",
+    "bio": "I am a 32-year-old man from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=3"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=3",
+    "isProfileComplete": true,
+    "languages": [
+      "Pashto",
+      "Urdu"
+    ],
+    "motherTongue": "Pashto",
+    "interests": [
+      "Nature",
+      "Reading",
+      "Family",
+      "Culture"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "moderately_practicing",
+      "motherTongue": "Pashto",
+      "languages": [
+        "Pashto",
+        "Urdu"
+      ],
+      "familyValues": "mixed",
+      "marriageViews": "arranged_marriage",
+      "traditionalValues": "not_important",
+      "familyApprovalImportance": "very_important",
+      "religionImportance": 10,
+      "cultureImportance": 8,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Logar",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  },
+  {
+    "uid": "324c41e1-511e-472b-a292-944ae2837a2d",
+    "email": "samplefemale4@aroosi.app",
+    "displayName": "Zahra Abdul",
+    "age": 21,
+    "gender": "female",
+    "location": "Kunduz",
+    "bio": "I am a 21-year-old woman from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=9"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=9",
+    "isProfileComplete": true,
+    "languages": [
+      "Pashto",
+      "Urdu"
+    ],
+    "motherTongue": "Pashto",
+    "interests": [
+      "Family",
+      "Culture",
+      "Nature",
+      "Hiking"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "moderately_practicing",
+      "motherTongue": "Pashto",
+      "languages": [
+        "Pashto",
+        "Urdu"
+      ],
+      "familyValues": "modern",
+      "marriageViews": "love_marriage",
+      "traditionalValues": "very_important",
+      "familyApprovalImportance": "somewhat_important",
+      "religionImportance": 7,
+      "cultureImportance": 7,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Paktia",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  },
+  {
+    "uid": "9b3144fb-4bfc-438a-a8bc-429f6491f189",
+    "email": "samplefemale5@aroosi.app",
+    "displayName": "Nadia Karim",
+    "age": 23,
+    "gender": "female",
+    "location": "Ghazni",
+    "bio": "I am a 23-year-old woman from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=10"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=10",
+    "isProfileComplete": true,
+    "languages": [
+      "Dari",
+      "Pashto"
+    ],
+    "motherTongue": "Dari",
+    "interests": [
+      "Nature",
+      "Travel"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "very_practicing",
+      "motherTongue": "Dari",
+      "languages": [
+        "Dari",
+        "Pashto"
+      ],
+      "familyValues": "mixed",
+      "marriageViews": "love_marriage",
+      "traditionalValues": "not_important",
+      "familyApprovalImportance": "somewhat_important",
+      "religionImportance": 9,
+      "cultureImportance": 10,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Herat",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  },
+  {
+    "uid": "7010e735-3ae2-45b1-83bc-e392b46deb6c",
+    "email": "samplefemale6@aroosi.app",
+    "displayName": "Nafisa Mohammad",
+    "age": 20,
+    "gender": "female",
+    "location": "Logar",
+    "bio": "I am a 20-year-old woman from Afghanistan looking for a meaningful relationship. I value family, traditions, and cultural heritage.",
+    "createdAt": "2025-10-12T13:52:28.862Z",
+    "updatedAt": "2025-10-12T13:52:28.862Z",
+    "images": [
+      "https://i.pravatar.cc/300?img=11"
+    ],
+    "profileImage": "https://i.pravatar.cc/300?img=11",
+    "isProfileComplete": true,
+    "languages": [
+      "Dari",
+      "Pashto"
+    ],
+    "motherTongue": "Dari",
+    "interests": [
+      "Nature",
+      "Art",
+      "Music",
+      "Cooking"
+    ],
+    "culturalProfile": {
+      "religion": "islam",
+      "religiousPractice": "somewhat_practicing",
+      "motherTongue": "Dari",
+      "languages": [
+        "Dari",
+        "Pashto"
+      ],
+      "familyValues": "traditional",
+      "marriageViews": "arranged_marriage",
+      "traditionalValues": "not_important",
+      "familyApprovalImportance": "somewhat_important",
+      "religionImportance": 8,
+      "cultureImportance": 8,
+      "familyBackground": "I come from a respected Afghan family with strong cultural values and traditions.",
+      "ethnicity": "afghan"
+    },
+    "preferences": {
+      "ageRange": {
+        "min": 20,
+        "max": 40
+      },
+      "location": "Kabul",
+      "religion": "islam",
+      "religiousPractice": "any",
+      "familyValues": "any",
+      "marriageViews": "any"
+    },
+    "isOnline": true,
+    "lastSeen": "2025-10-12T13:52:28.862Z",
+    "status": "active"
+  }
+]

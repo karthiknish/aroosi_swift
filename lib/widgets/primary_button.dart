@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
-import 'package:aroosi_flutter/platform/platform_utils.dart';
+import 'package:aroosi_flutter/theme/colors.dart';
+import 'package:aroosi_flutter/theme/typography.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -17,31 +17,21 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isCupertinoPlatform(context)) {
-      return CupertinoButton.filled(
-        onPressed: loading ? null : onPressed,
-        child: loading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CupertinoActivityIndicator(),
-              )
-            : Text(label),
-      );
-    }
-    final colorScheme = Theme.of(context).colorScheme;
-    return ElevatedButton(
+    return CupertinoButton.filled(
       onPressed: loading ? null : onPressed,
+      disabledColor: AppColors.muted,
       child: loading
-          ? SizedBox(
+          ? const SizedBox(
               height: 24,
               width: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colorScheme.onPrimary,
-              ),
+              child: CupertinoActivityIndicator(),
             )
-          : Text(label),
+          : Text(
+              label,
+              style: AppTypography.bodySemiBold.copyWith(
+                color: AppColors.onPrimary,
+              ),
+            ),
     );
   }
 }

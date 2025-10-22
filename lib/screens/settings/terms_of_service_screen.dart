@@ -46,7 +46,6 @@ Aroosi is a platform that connects individuals for the purpose of finding meanin
 • Profile creation and management
 • Search and discovery features
 • Communication tools
-• Premium subscription features
 • Safety and moderation tools
 
 We reserve the right to modify or discontinue our services at any time without prior notice.
@@ -106,23 +105,6 @@ You are responsible for ensuring that any content you share does not infringe on
 Your privacy is important to us. Our collection and use of personal information is governed by our Privacy Policy, which is incorporated into these Terms by reference.
 
 We implement reasonable security measures to protect your information, but we cannot guarantee absolute security. You use our services at your own risk.
-''',
-            theme: theme,
-          ),
-
-          _buildSection(
-            title: 'Subscription and Payment',
-            content: '''
-Premium features require a paid subscription. By subscribing, you agree to:
-
-• Pay all charges associated with your account
-• Provide accurate payment information
-• Automatic renewal unless cancelled
-• Our right to change pricing with notice
-
-Refunds are provided at our discretion and in accordance with applicable law. Subscription fees are non-refundable except where required by law.
-
-We reserve the right to suspend or terminate access to paid features for non-payment or other violations.
 ''',
             theme: theme,
           ),
@@ -222,7 +204,9 @@ We will respond to your inquiry within 30 days.
           Container(
             padding: const EdgeInsets.all(Spacing.md),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),

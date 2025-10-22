@@ -1,0 +1,4 @@
+#include "Base.xcconfig"
+APP_ENV=debug
+FIREBASE_PLIST=GoogleService-Info-Debug
+API_BASE_URL=https://api.dev.aroosi.com

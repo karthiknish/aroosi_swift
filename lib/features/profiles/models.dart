@@ -1,5 +1,313 @@
 import 'package:equatable/equatable.dart';
 
+/// Cultural and religious profile information for compatibility matching
+class CulturalProfile extends Equatable {
+  const CulturalProfile({
+    required this.religion,
+    required this.religiousPractice,
+    required this.motherTongue,
+    required this.languages,
+    required this.familyValues,
+    required this.marriageViews,
+    required this.traditionalValues,
+    required this.familyApprovalImportance,
+    this.religionImportance = 5,
+    this.cultureImportance = 5,
+    this.familyBackground,
+    this.ethnicity,
+  });
+
+  final String? religion; // islam, christianity, hinduism, etc.
+  final String? religiousPractice; // very_practicing, moderately_practicing, not_practicing, etc.
+  final String? motherTongue; // native language
+  final List<String> languages; // languages spoken
+  final String? familyValues; // traditional, modern, mixed
+  final String? marriageViews; // love_marriage, arranged_marriage, both
+  final String? traditionalValues; // importance of traditions
+  final String? familyApprovalImportance; // very_important, somewhat_important, not_important
+  final int religionImportance; // 1-10 scale
+  final int cultureImportance; // 1-10 scale
+  final String? familyBackground; // description of family
+  final String? ethnicity; // ethnic background
+
+  CulturalProfile copyWith({
+    String? religion,
+    String? religiousPractice,
+    String? motherTongue,
+    List<String>? languages,
+    String? familyValues,
+    String? marriageViews,
+    String? traditionalValues,
+    String? familyApprovalImportance,
+    int? religionImportance,
+    int? cultureImportance,
+    String? familyBackground,
+    String? ethnicity,
+  }) => CulturalProfile(
+    religion: religion ?? this.religion,
+    religiousPractice: religiousPractice ?? this.religiousPractice,
+    motherTongue: motherTongue ?? this.motherTongue,
+    languages: languages ?? this.languages,
+    familyValues: familyValues ?? this.familyValues,
+    marriageViews: marriageViews ?? this.marriageViews,
+    traditionalValues: traditionalValues ?? this.traditionalValues,
+    familyApprovalImportance: familyApprovalImportance ?? this.familyApprovalImportance,
+    religionImportance: religionImportance ?? this.religionImportance,
+    cultureImportance: cultureImportance ?? this.cultureImportance,
+    familyBackground: familyBackground ?? this.familyBackground,
+    ethnicity: ethnicity ?? this.ethnicity,
+  );
+
+  static CulturalProfile fromJson(Map<String, dynamic> json) => CulturalProfile(
+    religion: json['religion']?.toString(),
+    religiousPractice: json['religiousPractice']?.toString(),
+    motherTongue: json['motherTongue']?.toString(),
+    languages: (json['languages'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+    familyValues: json['familyValues']?.toString(),
+    marriageViews: json['marriageViews']?.toString(),
+    traditionalValues: json['traditionalValues']?.toString(),
+    familyApprovalImportance: json['familyApprovalImportance']?.toString(),
+    religionImportance: json['religionImportance'] is int ? json['religionImportance'] : 5,
+    cultureImportance: json['cultureImportance'] is int ? json['cultureImportance'] : 5,
+    familyBackground: json['familyBackground']?.toString(),
+    ethnicity: json['ethnicity']?.toString(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (religion != null) 'religion': religion,
+    if (religiousPractice != null) 'religiousPractice': religiousPractice,
+    if (motherTongue != null) 'motherTongue': motherTongue,
+    'languages': languages,
+    if (familyValues != null) 'familyValues': familyValues,
+    if (marriageViews != null) 'marriageViews': marriageViews,
+    if (traditionalValues != null) 'traditionalValues': traditionalValues,
+    if (familyApprovalImportance != null) 'familyApprovalImportance': familyApprovalImportance,
+    'religionImportance': religionImportance,
+    'cultureImportance': cultureImportance,
+    if (familyBackground != null) 'familyBackground': familyBackground,
+    if (ethnicity != null) 'ethnicity': ethnicity,
+  };
+
+  @override
+  List<Object?> get props => [
+    religion,
+    religiousPractice,
+    motherTongue,
+    languages,
+    familyValues,
+    marriageViews,
+    traditionalValues,
+    familyApprovalImportance,
+    religionImportance,
+    cultureImportance,
+    familyBackground,
+    ethnicity,
+  ];
+}
+
+/// Family approval workflow for traditional matchmaking
+class FamilyApprovalRequest extends Equatable {
+  const FamilyApprovalRequest({
+    required this.id,
+    required this.requesterId,
+    required this.targetUserId,
+    required this.status,
+    required this.createdAt,
+    required this.message,
+    this.familyMemberId,
+    this.familyMemberName,
+    this.familyMemberRelation,
+    this.response,
+    this.respondedAt,
+    this.approved = false,
+  });
+
+  final String id;
+  final String requesterId;
+  final String targetUserId;
+  final String status; // 'pending', 'approved', 'rejected', 'cancelled'
+  final int createdAt;
+  final String message;
+  final String? familyMemberId;
+  final String? familyMemberName;
+  final String? familyMemberRelation;
+  final String? response;
+  final int? respondedAt;
+  final bool approved;
+
+  FamilyApprovalRequest copyWith({
+    String? id,
+    String? requesterId,
+    String? targetUserId,
+    String? status,
+    int? createdAt,
+    String? message,
+    String? familyMemberId,
+    String? familyMemberName,
+    String? familyMemberRelation,
+    String? response,
+    int? respondedAt,
+    bool? approved,
+  }) => FamilyApprovalRequest(
+    id: id ?? this.id,
+    requesterId: requesterId ?? this.requesterId,
+    targetUserId: targetUserId ?? this.targetUserId,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    message: message ?? this.message,
+    familyMemberId: familyMemberId ?? this.familyMemberId,
+    familyMemberName: familyMemberName ?? this.familyMemberName,
+    familyMemberRelation: familyMemberRelation ?? this.familyMemberRelation,
+    response: response ?? this.response,
+    respondedAt: respondedAt ?? this.respondedAt,
+    approved: approved ?? this.approved,
+  );
+
+  static FamilyApprovalRequest fromJson(Map<String, dynamic> json) => FamilyApprovalRequest(
+    id: json['id']?.toString() ?? '',
+    requesterId: json['requesterId']?.toString() ?? '',
+    targetUserId: json['targetUserId']?.toString() ?? '',
+    status: json['status']?.toString() ?? 'pending',
+    createdAt: json['createdAt'] is int ? json['createdAt'] : DateTime.now().millisecondsSinceEpoch,
+    message: json['message']?.toString() ?? '',
+    familyMemberId: json['familyMemberId']?.toString(),
+    familyMemberName: json['familyMemberName']?.toString(),
+    familyMemberRelation: json['familyMemberRelation']?.toString(),
+    response: json['response']?.toString(),
+    respondedAt: json['respondedAt'] is int ? json['respondedAt'] : null,
+    approved: json['approved'] == true,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'requesterId': requesterId,
+    'targetUserId': targetUserId,
+    'status': status,
+    'createdAt': createdAt,
+    'message': message,
+    if (familyMemberId != null) 'familyMemberId': familyMemberId,
+    if (familyMemberName != null) 'familyMemberName': familyMemberName,
+    if (familyMemberRelation != null) 'familyMemberRelation': familyMemberRelation,
+    if (response != null) 'response': response,
+    if (respondedAt != null) 'respondedAt': respondedAt,
+    'approved': approved,
+  };
+
+  @override
+  List<Object?> get props => [
+    id,
+    requesterId,
+    targetUserId,
+    status,
+    createdAt,
+    message,
+    familyMemberId,
+    familyMemberName,
+    familyMemberRelation,
+    response,
+    respondedAt,
+    approved,
+  ];
+}
+
+/// Supervised communication for traditional courtship
+class SupervisedConversation extends Equatable {
+  const SupervisedConversation({
+    required this.id,
+    required this.participant1Id,
+    required this.participant2Id,
+    required this.supervisorId,
+    required this.status,
+    required this.createdAt,
+    this.conversationId,
+    this.rules,
+    this.timeLimit,
+    this.topicRestrictions,
+    this.lastActivity,
+  });
+
+  final String id;
+  final String participant1Id;
+  final String participant2Id;
+  final String supervisorId;
+  final String status; // 'active', 'paused', 'completed', 'terminated'
+  final int createdAt;
+  final String? conversationId;
+  final List<String>? rules; // communication rules
+  final int? timeLimit; // minutes per day
+  final List<String>? topicRestrictions; // forbidden topics
+  final int? lastActivity;
+
+  SupervisedConversation copyWith({
+    String? id,
+    String? participant1Id,
+    String? participant2Id,
+    String? supervisorId,
+    String? status,
+    int? createdAt,
+    String? conversationId,
+    List<String>? rules,
+    int? timeLimit,
+    List<String>? topicRestrictions,
+    int? lastActivity,
+  }) => SupervisedConversation(
+    id: id ?? this.id,
+    participant1Id: participant1Id ?? this.participant1Id,
+    participant2Id: participant2Id ?? this.participant2Id,
+    supervisorId: supervisorId ?? this.supervisorId,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    conversationId: conversationId ?? this.conversationId,
+    rules: rules ?? this.rules,
+    timeLimit: timeLimit ?? this.timeLimit,
+    topicRestrictions: topicRestrictions ?? this.topicRestrictions,
+    lastActivity: lastActivity ?? this.lastActivity,
+  );
+
+  static SupervisedConversation fromJson(Map<String, dynamic> json) => SupervisedConversation(
+    id: json['id']?.toString() ?? '',
+    participant1Id: json['participant1Id']?.toString() ?? '',
+    participant2Id: json['participant2Id']?.toString() ?? '',
+    supervisorId: json['supervisorId']?.toString() ?? '',
+    status: json['status']?.toString() ?? 'active',
+    createdAt: json['createdAt'] is int ? json['createdAt'] : DateTime.now().millisecondsSinceEpoch,
+    conversationId: json['conversationId']?.toString(),
+    rules: (json['rules'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+    timeLimit: json['timeLimit'] is int ? json['timeLimit'] : null,
+    topicRestrictions: (json['topicRestrictions'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+    lastActivity: json['lastActivity'] is int ? json['lastActivity'] : null,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'participant1Id': participant1Id,
+    'participant2Id': participant2Id,
+    'supervisorId': supervisorId,
+    'status': status,
+    'createdAt': createdAt,
+    if (conversationId != null) 'conversationId': conversationId,
+    if (rules != null) 'rules': rules,
+    if (timeLimit != null) 'timeLimit': timeLimit,
+    if (topicRestrictions != null) 'topicRestrictions': topicRestrictions,
+    if (lastActivity != null) 'lastActivity': lastActivity,
+  };
+
+  @override
+  List<Object?> get props => [
+    id,
+    participant1Id,
+    participant2Id,
+    supervisorId,
+    status,
+    createdAt,
+    conversationId,
+    rules,
+    timeLimit,
+    topicRestrictions,
+    lastActivity,
+  ];
+}
+
 class ShortlistEntry extends Equatable {
   const ShortlistEntry({
     required this.userId,
@@ -294,29 +602,29 @@ class MatchEntry extends Equatable {
   );
 
   static MatchEntry fromJson(Map<String, dynamic> json) {
+    // Handle NextJS API response format: { userId, fullName, profileImageUrls, createdAt }
+    final userId = json['userId']?.toString() ?? json['id']?.toString() ?? '';
+    final fullName = json['fullName']?.toString() ?? '';
+    final profileImageUrls = json['profileImageUrls'] as List<dynamic>? ?? [];
+    final avatarUrl = profileImageUrls.isNotEmpty ? profileImageUrls.first.toString() : null;
+    
     return MatchEntry(
-      id: json['id']?.toString() ?? '',
-      user1Id: json['user1Id']?.toString() ?? '',
-      user2Id: json['user2Id']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'matched',
+      id: userId.isNotEmpty ? 'match_$userId' : json['id']?.toString() ?? '',
+      user1Id: userId, // Assume current user is user1 for simplicity
+      user2Id: userId,
+      status: 'matched', // NextJS only returns matched profiles
       createdAt: json['createdAt'] is int
           ? json['createdAt']
           : int.tryParse(json['createdAt']?.toString() ?? '') ??
                 DateTime.now().millisecondsSinceEpoch,
-      conversationId: json['conversationId']?.toString() ?? '',
+      conversationId: '', // Would need separate API call or conversation logic
       lastMessageText: json['lastMessageText']?.toString(),
       lastMessageAt: json['lastMessageAt'] is int
           ? json['lastMessageAt']
           : int.tryParse(json['lastMessageAt']?.toString() ?? ''),
-      otherUserId:
-          json['userId']?.toString() ?? json['otherUserId']?.toString(),
-      otherUserName:
-          json['fullName']?.toString() ?? json['otherUserName']?.toString(),
-      otherUserImage: json['profileImageUrls'] is List
-          ? (json['profileImageUrls'] as List).isNotEmpty
-                ? json['profileImageUrls'][0]?.toString()
-                : null
-          : json['otherUserImage']?.toString(),
+      otherUserId: userId,
+      otherUserName: fullName,
+      otherUserImage: avatarUrl,
       unreadCount: json['unreadCount'] is int ? json['unreadCount'] : 0,
       isMutual: json['isMutual'] == true || json['mutual'] == true,
       isBlocked: json['isBlocked'] == true || json['blocked'] == true,
@@ -457,6 +765,18 @@ class SearchFilters {
     this.cursor,
     this.pageSize,
     this.preferredGender,
+    // Cultural compatibility filters
+    this.religion,
+    this.religiousPractice,
+    this.motherTongue,
+    this.languages,
+    this.familyValues,
+    this.marriageViews,
+    this.ethnicity,
+    this.minReligionImportance,
+    this.maxReligionImportance,
+    this.minCultureImportance,
+    this.maxCultureImportance,
   });
 
   static const Object _unset = Object();
@@ -470,6 +790,18 @@ class SearchFilters {
   final String? cursor;
   final int? pageSize;
   final String? preferredGender;
+  // Cultural compatibility filters
+  final String? religion;
+  final String? religiousPractice;
+  final String? motherTongue;
+  final List<String>? languages;
+  final String? familyValues;
+  final String? marriageViews;
+  final String? ethnicity;
+  final int? minReligionImportance;
+  final int? maxReligionImportance;
+  final int? minCultureImportance;
+  final int? maxCultureImportance;
 
   SearchFilters copyWith({
     Object? query = _unset,
@@ -481,6 +813,18 @@ class SearchFilters {
     Object? cursor = _unset,
     Object? pageSize = _unset,
     Object? preferredGender = _unset,
+    // Cultural compatibility filters
+    Object? religion = _unset,
+    Object? religiousPractice = _unset,
+    Object? motherTongue = _unset,
+    Object? languages = _unset,
+    Object? familyValues = _unset,
+    Object? marriageViews = _unset,
+    Object? ethnicity = _unset,
+    Object? minReligionImportance = _unset,
+    Object? maxReligionImportance = _unset,
+    Object? minCultureImportance = _unset,
+    Object? maxCultureImportance = _unset,
   }) => SearchFilters(
     query: query == _unset ? this.query : query as String?,
     minAge: minAge == _unset ? this.minAge : minAge as int?,
@@ -493,6 +837,18 @@ class SearchFilters {
     preferredGender: preferredGender == _unset
         ? this.preferredGender
         : preferredGender as String?,
+    // Cultural compatibility filters
+    religion: religion == _unset ? this.religion : religion as String?,
+    religiousPractice: religiousPractice == _unset ? this.religiousPractice : religiousPractice as String?,
+    motherTongue: motherTongue == _unset ? this.motherTongue : motherTongue as String?,
+    languages: languages == _unset ? this.languages : languages as List<String>?,
+    familyValues: familyValues == _unset ? this.familyValues : familyValues as String?,
+    marriageViews: marriageViews == _unset ? this.marriageViews : marriageViews as String?,
+    ethnicity: ethnicity == _unset ? this.ethnicity : ethnicity as String?,
+    minReligionImportance: minReligionImportance == _unset ? this.minReligionImportance : minReligionImportance as int?,
+    maxReligionImportance: maxReligionImportance == _unset ? this.maxReligionImportance : maxReligionImportance as int?,
+    minCultureImportance: minCultureImportance == _unset ? this.minCultureImportance : minCultureImportance as int?,
+    maxCultureImportance: maxCultureImportance == _unset ? this.maxCultureImportance : maxCultureImportance as int?,
   );
 
   bool get hasQuery => query?.trim().isNotEmpty ?? false;
@@ -503,7 +859,19 @@ class SearchFilters {
       (city?.trim().isNotEmpty ?? false) ||
       (country?.trim().isNotEmpty ?? false) ||
       (sort?.trim().isNotEmpty ?? false) ||
-      (preferredGender?.trim().isNotEmpty ?? false);
+      (preferredGender?.trim().isNotEmpty ?? false) ||
+      // Cultural compatibility filters
+      (religion?.trim().isNotEmpty ?? false) ||
+      (religiousPractice?.trim().isNotEmpty ?? false) ||
+      (motherTongue?.trim().isNotEmpty ?? false) ||
+      (languages?.isNotEmpty ?? false) ||
+      (familyValues?.trim().isNotEmpty ?? false) ||
+      (marriageViews?.trim().isNotEmpty ?? false) ||
+      (ethnicity?.trim().isNotEmpty ?? false) ||
+      minReligionImportance != null ||
+      maxReligionImportance != null ||
+      minCultureImportance != null ||
+      maxCultureImportance != null;
 
   bool get hasCriteria => hasQuery || hasFieldFilters;
 
@@ -516,16 +884,62 @@ class SearchFilters {
     final cur = cursor?.trim();
     final pg = preferredGender?.trim();
 
+    // Basic filters
     if (q != null && q.isNotEmpty) m['q'] = q;
     if (minAge != null) m['ageMin'] = minAge;
     if (maxAge != null) m['ageMax'] = maxAge;
     if (c != null && c.isNotEmpty) m['city'] = c;
-    if (countryValue != null && countryValue.isNotEmpty)
+    if (countryValue != null && countryValue.isNotEmpty) {
       m['country'] = countryValue;
+    }
     if (s != null && s.isNotEmpty) m['sort'] = s;
     if (cur != null && cur.isNotEmpty) m['cursor'] = cur;
     if (pg != null && pg.isNotEmpty) m['gender'] = pg;
     if (pageSize != null && pageSize! > 0) m['pageSize'] = pageSize;
+
+    // Cultural compatibility filters
+    final r = religion?.trim();
+    final rp = religiousPractice?.trim();
+    final mt = motherTongue?.trim();
+    final fv = familyValues?.trim();
+    final mv = marriageViews?.trim();
+    final eth = ethnicity?.trim();
+
+    if (r != null && r.isNotEmpty) m['religion'] = r;
+    if (rp != null && rp.isNotEmpty) m['religiousPractice'] = rp;
+    if (mt != null && mt.isNotEmpty) m['motherTongue'] = mt;
+    if (languages != null && languages!.isNotEmpty) m['languages'] = languages;
+    if (fv != null && fv.isNotEmpty) m['familyValues'] = fv;
+    if (mv != null && mv.isNotEmpty) m['marriageViews'] = mv;
+    if (eth != null && eth.isNotEmpty) m['ethnicity'] = eth;
+    if (minReligionImportance != null) m['minReligionImportance'] = minReligionImportance;
+    if (maxReligionImportance != null) m['maxReligionImportance'] = maxReligionImportance;
+    if (minCultureImportance != null) m['minCultureImportance'] = minCultureImportance;
+    if (maxCultureImportance != null) m['maxCultureImportance'] = maxCultureImportance;
+
     return m;
   }
+
+  Map<String, dynamic> toJson() => {
+    if (query != null) 'query': query,
+    if (minAge != null) 'minAge': minAge,
+    if (maxAge != null) 'maxAge': maxAge,
+    if (city != null) 'city': city,
+    if (country != null) 'country': country,
+    if (sort != null) 'sort': sort,
+    if (cursor != null) 'cursor': cursor,
+    if (pageSize != null) 'pageSize': pageSize,
+    if (preferredGender != null) 'preferredGender': preferredGender,
+    if (religion != null) 'religion': religion,
+    if (religiousPractice != null) 'religiousPractice': religiousPractice,
+    if (motherTongue != null) 'motherTongue': motherTongue,
+    if (languages != null) 'languages': languages,
+    if (familyValues != null) 'familyValues': familyValues,
+    if (marriageViews != null) 'marriageViews': marriageViews,
+    if (ethnicity != null) 'ethnicity': ethnicity,
+    if (minReligionImportance != null) 'minReligionImportance': minReligionImportance,
+    if (maxReligionImportance != null) 'maxReligionImportance': maxReligionImportance,
+    if (minCultureImportance != null) 'minCultureImportance': minCultureImportance,
+    if (maxCultureImportance != null) 'maxCultureImportance': maxCultureImportance,
+  };
 }

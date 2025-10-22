@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:aroosi_flutter/features/chat/chat_models.dart';
+import 'package:aroosi_flutter/features/chat/delivery_receipt_service.dart';
 import 'package:aroosi_flutter/theme/colors.dart';
 import 'package:aroosi_flutter/widgets/voice_message_bubble.dart';
 
@@ -13,6 +13,7 @@ class ChatMessageWidget extends StatelessWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onImageTap;
   final VoidCallback? onVoiceTap;
+  final DeliveryReceipt? deliveryReceipt;
 
   const ChatMessageWidget({
     super.key,
@@ -23,6 +24,7 @@ class ChatMessageWidget extends StatelessWidget {
     this.onLongPress,
     this.onImageTap,
     this.onVoiceTap,
+    this.deliveryReceipt,
   });
 
   @override
@@ -90,16 +92,13 @@ class ChatMessageWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Read receipt
-                  if (isMe && message.isRead)
-                    Icon(
-                      Icons.done_all,
-                      size: 14,
-                      color: theme.colorScheme.primary,
-                    ),
+                  if (isMe) ...[
+                    _buildDeliveryReceipt(context),
+                    if (message.hasReactions) const SizedBox(width: 4),
+                  ],
 
                   // Reactions
                   if (message.hasReactions) ...[
-                    const SizedBox(width: 4),
                     _buildReactionsRow(context),
                   ],
                 ],
@@ -111,7 +110,6 @@ class ChatMessageWidget extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    final theme = Theme.of(context);
 
     switch (message.type) {
       case 'image':
@@ -184,6 +182,74 @@ class ChatMessageWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildDeliveryReceipt(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    // Use delivery receipt if available, otherwise fall back to message.isRead
+    final status = deliveryReceipt?.status;
+    final isRead = status == DeliveryStatus.read || message.isRead;
+    final isDelivered = status == DeliveryStatus.delivered || status == null;
+    
+    if (isRead) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.done_all,
+            size: 14,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'Read',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
+      );
+    } else if (isDelivered) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.done,
+            size: 14,
+            color: AppColors.muted,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'Delivered',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: AppColors.muted,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.access_time,
+            size: 14,
+            color: AppColors.muted,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'Sending...',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: AppColors.muted,
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildReactionsRow(BuildContext context) {

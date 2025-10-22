@@ -33,7 +33,8 @@ const ethnicityOptions = [
   'sadat',
 ];
 
-// Interests placeholder list; in practice these should come from backend or a service.
+// Default interest suggestions for Afghan dating app
+// These can be expanded or made dynamic from backend in future versions
 const defaultInterestSuggestions = [
   'travel',
   'reading',
@@ -43,4 +44,16 @@ const defaultInterestSuggestions = [
   'art',
   'sports',
   'technology',
+  'family',
+  'photography',
+  'movies',
+  'nature',
+  'poetry',
+  'gardening',
+  'volunteering',
+  'learning',
+  'writing',
+  'dancing',
+  'culture',
+  'history',
 ];

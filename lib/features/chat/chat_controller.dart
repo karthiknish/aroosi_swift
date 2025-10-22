@@ -3,6 +3,7 @@ import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 
 import 'chat_models.dart';
 import 'chat_repository.dart';
+import 'delivery_receipt_service.dart';
 
 class ChatState {
   const ChatState({
@@ -11,6 +12,7 @@ class ChatState {
     this.error,
     this.hasMore = true,
     this.sending = false,
+    this.deliveryReceipts = const [],
   });
 
   final List<ChatMessage> messages;
@@ -18,6 +20,7 @@ class ChatState {
   final String? error;
   final bool hasMore;
   final bool sending;
+  final List<DeliveryReceipt> deliveryReceipts;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
@@ -26,18 +29,21 @@ class ChatState {
     bool setError = false,
     bool? hasMore,
     bool? sending,
+    List<DeliveryReceipt>? deliveryReceipts,
   }) => ChatState(
     messages: messages ?? this.messages,
     loading: loading ?? this.loading,
     error: setError ? error : this.error,
     hasMore: hasMore ?? this.hasMore,
     sending: sending ?? this.sending,
+    deliveryReceipts: deliveryReceipts ?? this.deliveryReceipts,
   );
 }
 
 class ChatController extends Notifier<ChatState> {
   ChatController() : _repo = ChatRepository();
   final ChatRepository _repo;
+  final DeliveryReceiptService _deliveryService = DeliveryReceiptService();
 
   String? _convId;
 
@@ -226,6 +232,45 @@ class ChatController extends Notifier<ChatState> {
   void appendIncoming(ChatMessage message) {
     if (_convId == null || message.conversationId != _convId) return;
     state = state.copyWith(messages: [...state.messages, message]);
+  }
+
+  Future<void> loadDeliveryReceipts() async {
+    final conv = _convId;
+    if (conv == null) return;
+    try {
+      final receipts = await _deliveryService.getDeliveryReceipts(conv);
+      state = state.copyWith(deliveryReceipts: receipts);
+    } catch (e) {
+      // Fail silently for delivery receipts
+    }
+  }
+
+  Future<void> markMessageRead(String messageId) async {
+    try {
+      await _deliveryService.recordDeliveryReceipt(messageId, DeliveryStatus.read);
+      await loadDeliveryReceipts(); // Refresh receipts
+    } catch (e) {
+      // Fail silently
+    }
+  }
+
+  Future<void> markMessageDelivered(String messageId) async {
+    try {
+      await _deliveryService.recordDeliveryReceipt(messageId, DeliveryStatus.delivered);
+      await loadDeliveryReceipts(); // Refresh receipts
+    } catch (e) {
+      // Fail silently
+    }
+  }
+
+  DeliveryReceipt? getDeliveryReceiptForMessage(String messageId) {
+    try {
+      return state.deliveryReceipts.firstWhere(
+        (receipt) => receipt.messageId == messageId,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 }
 

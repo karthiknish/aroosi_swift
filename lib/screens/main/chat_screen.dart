@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aroosi_flutter/features/subscription/feature_usage_controller.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_features.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
-import 'package:aroosi_flutter/core/toast_helpers.dart';
 import 'package:aroosi_flutter/features/chat/chat_controller.dart';
 import 'package:aroosi_flutter/features/chat/chat_models.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
@@ -64,6 +61,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // Load initial asynchronously after first frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifier.loadInitial();
+        notifier.loadDeliveryReceipts();
       });
       // Attach load more listener for API-backed chat
       _removeLoadMoreListener = addLoadMoreListener(
@@ -75,7 +73,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         },
       );
       _scrollController.addListener(_onScrollChange);
-      // Auto-scroll when new messages arrive
+      // Auto-scroll when new messages arrive and mark as read
       ref.listen<ChatState>(chatControllerProvider, (prev, next) {
         if (prev == null || next.messages.length > prev.messages.length) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,6 +83,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
               );
+              
+              // Mark latest message as read if it's from someone else
+              final latestMessage = next.messages.isNotEmpty ? next.messages.last : null;
+              if (latestMessage != null && !latestMessage.isMine) {
+                ref.read(chatControllerProvider.notifier).markMessageRead(latestMessage.id);
+              }
             }
           });
         }
@@ -126,81 +130,52 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _send() async {
+  Future<void> _send() async {
     final text = _textController.text.trim();
     if (text.isEmpty) {
-      ref.showInfo('Type a message');
+      ToastService.instance.info('Type a message');
       return;
     }
-    final isApiBacked =
-        widget.conversationId != null && widget.conversationId!.isNotEmpty;
+    
+    final isApiBacked = widget.conversationId != null && widget.conversationId!.isNotEmpty;
+    
     if (isApiBacked) {
-      final allowed = ref
-          .read(featureUsageControllerProvider.notifier)
-          .requestUsage(UsageMetric.messageSent);
-      if (!allowed) {
-        ref.showWarning(
-          'You\'ve reached your monthly message limit. Upgrade to Premium for unlimited messages.',
-        );
-        return;
-      }
       try {
-        await ref
-            .read(chatControllerProvider.notifier)
-            .send(text, toUserId: widget.toUserId);
+        await ref.read(chatControllerProvider.notifier).send(text, toUserId: widget.toUserId);
         _textController.clear();
-        // No need to manage emoji state here anymore
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent + 80,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
-        });
-        ref.showSuccess('Message sent');
+        ToastService.instance.success('Message sent');
       } catch (e) {
-        ref.showError(e, 'Failed to send message');
+        ToastService.instance.error('Failed to send message: ${e.toString()}');
       }
       return;
     }
+    
+    // Fallback for non-API backed chat
     setState(() => _sending = true);
-    final allowed = ref
-        .read(featureUsageControllerProvider.notifier)
-        .requestUsage(UsageMetric.messageSent);
-    if (!allowed) {
-      ref.showWarning(
-        'You\'ve reached your monthly message limit. Upgrade to Premium for unlimited messages.',
-      );
-      setState(() => _sending = false);
-      return;
-    }
     try {
-      // Simulate network send delay
       await Future.delayed(const Duration(milliseconds: 350));
       setState(() {
-        _messages.add(
-          _ChatMessage(text: text, isMe: true, timestamp: DateTime.now()),
-        );
+        _messages.add(_ChatMessage(text: text, isMe: true, timestamp: DateTime.now()));
         _textController.clear();
         _sending = false;
         _error = null;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 80,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 80,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
-      ref.showSuccess('Message sent');
+      ToastService.instance.success('Message sent');
     } catch (e) {
       setState(() {
         _sending = false;
         _error = 'Failed to send message. Please try again.';
       });
-      ref.showError(e, 'Failed to send message');
+      ToastService.instance.error('Failed to send message: ${e.toString()}');
     }
   }
 
@@ -208,18 +183,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isApiBacked =
         widget.conversationId != null && widget.conversationId!.isNotEmpty;
     if (!isApiBacked) {
-      ref.showInfo('Start a conversation to send images.');
+      ToastService.instance.info('Start a conversation to send images.');
       return;
     }
     final ok = await AppPermissions.ensurePhotoAccess();
     if (!ok) return;
-    final allowed = ref
-        .read(featureUsageControllerProvider.notifier)
-        .requestUsage(UsageMetric.messageSent);
-    if (!allowed) {
-      ref.showWarning('Upgrade to send image messages.');
-      return;
-    }
+    // All features are now free - no usage tracking needed
     try {
       final picker = ImagePicker();
       final XFile? picked = await picker.pickImage(
@@ -238,12 +207,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 'image/${picked.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg'}',
             toUserId: widget.toUserId,
           );
-      ref.showSuccess('Image sent');
+      ToastService.instance.success('Image sent');
     } catch (e) {
-      ref.showError(e, 'Failed to send image');
+      ToastService.instance.error('Failed to send image: ${e.toString()}');
     }
   }
 
+  @override
   @override
   Widget build(BuildContext context) {
     final isApiBacked =
@@ -264,12 +234,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             error.toLowerCase().contains('timeout');
 
         if (isOfflineError) {
-          ref.showNetworkError(
-            operation: 'load chat messages',
-            onRetry: () => ref.read(chatControllerProvider.notifier).refresh(),
+          ToastService.instance.error('Connection error while loading chat messages');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Connection error while loading chat messages'),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () => ref.read(chatControllerProvider.notifier).refresh(),
+              ),
+            ),
           );
         } else {
-          ref.showError(error, 'Failed to load chat messages');
+          ToastService.instance.error('Failed to load chat messages: $error');
         }
       }
     });
@@ -354,8 +330,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 msg.isMine == true ||
                                 (me != null && (msg.fromUserId == me.id));
 
+                            final deliveryReceipt = isMe 
+                                ? ref.read(chatControllerProvider.notifier).getDeliveryReceiptForMessage(msg.id)
+                                : null;
+
                             return ChatMessageWidget(
                               message: msg,
+                              deliveryReceipt: deliveryReceipt,
                               onReactionTap: () async {
                                 // Open emoji picker for reactions
                                 final reaction =

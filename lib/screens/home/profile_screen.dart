@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
-import 'package:aroosi_flutter/features/subscription/feature_access_provider.dart';
-import 'package:aroosi_flutter/features/subscription/feature_usage_controller.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_features.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_models.dart';
-import 'package:aroosi_flutter/widgets/inline_upgrade_banner.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_repository.dart';
-import 'package:aroosi_flutter/features/profiles/profiles_repository.dart';
 import 'package:aroosi_flutter/platform/adaptive_dialogs.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
+
+// Simplified feature access - all features are free
+class FeatureAccess {
+  const FeatureAccess();
+
+  bool can(String feature) => true;
+  int usageLimit(String metric) => -1;
+  bool hasUnlimited(String metric) => true;
+}
+
+class FeatureAccessController extends Notifier<FeatureAccess> {
+  @override
+  FeatureAccess build() => const FeatureAccess();
+}
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -64,9 +70,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final authCtrl = ref.read(authControllerProvider.notifier);
-    final access = ref.watch(featureAccessProvider);
-    final usage = ref.watch(featureUsageControllerProvider);
-    final usageController = ref.read(featureUsageControllerProvider.notifier);
 
     if (auth.loading || auth.profile == null) {
       return const AppScaffold(
@@ -81,12 +84,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final email = auth.profile?.email ?? '';
     final avatar = auth.profile?.profileImageUrls?.isNotEmpty ?? false
         ? auth.profile!.profileImageUrls!.first
-        : null;
-    final plan = auth.profile?.plan ?? 'free';
-    final expires = auth.profile?.subscriptionExpiresAt;
-    final formattedPlan = _formatPlan(plan);
-    final formattedExpiry = expires != null
-        ? _formatDate(expires.toLocal())
         : null;
 
     return AppScaffold(
@@ -107,49 +104,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ProfileHeader(
-                name: name,
-                email: email,
-                avatarUrl: avatar,
-                planLabel: formattedPlan,
-                planExpires: formattedExpiry,
-              ),
+              _ProfileHeader(name: name, email: email, avatarUrl: avatar),
               const SizedBox(height: 24),
               _ProfileQuickActions(
                 onEditProfile: () => context.push('/main/edit-profile'),
-                onManageSubscription: () => context.push('/main/subscription'),
                 onPrivacySettings: () => context.push('/settings/privacy'),
                 onSupport: () => context.push('/support'),
               ),
               if (email.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                _AccountDetailsCard(email: email, plan: formattedPlan),
-              ],
-              const SizedBox(height: 24),
-              _FeatureHighlights(access: access),
-              if (access.plan == SubscriptionPlan.free) ...[
-                const SizedBox(height: 16),
-                InlineUpgradeBanner(
-                  message:
-                      'Upgrade to Premium to unlock unlimited likes, full profile details, and more.',
-                  ctaLabel: 'Upgrade to Premium',
-                  onPressed: () => context.push('/main/subscription'),
-                ),
-              ] else if (access.plan == SubscriptionPlan.premium) ...[
-                const SizedBox(height: 16),
-                InlineUpgradeBanner(
-                  message:
-                      'Go Premium Plus for unlimited boosts, incognito mode, and a spotlight badge.',
-                  ctaLabel: 'Upgrade to Premium Plus',
-                  onPressed: () => context.push('/main/subscription'),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.email_outlined),
+                    title: const Text('Email'),
+                    subtitle: Text(email),
+                  ),
                 ),
               ],
-              const SizedBox(height: 24),
-              _BoostControls(
-                access: access,
-                usage: usage,
-                usageNotifier: usageController,
-              ),
               const SizedBox(height: 32),
               PrimaryButton(
                 label: 'Log out',
@@ -182,15 +153,11 @@ class _ProfileHeader extends StatelessWidget {
     required this.name,
     required this.email,
     required this.avatarUrl,
-    required this.planLabel,
-    this.planExpires,
   });
 
   final String name;
   final String email;
   final String? avatarUrl;
-  final String planLabel;
-  final String? planExpires;
 
   @override
   Widget build(BuildContext context) {
@@ -261,23 +228,6 @@ class _ProfileHeader extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Chip(
-                avatar: const Icon(Icons.workspace_premium, size: 18),
-                label: Text(planLabel),
-              ),
-              if (planExpires != null)
-                Chip(
-                  avatar: const Icon(Icons.schedule, size: 18),
-                  label: Text('Renews $planExpires'),
-                ),
-            ],
-          ),
         ],
       ),
     );
@@ -287,13 +237,11 @@ class _ProfileHeader extends StatelessWidget {
 class _ProfileQuickActions extends StatelessWidget {
   const _ProfileQuickActions({
     required this.onEditProfile,
-    required this.onManageSubscription,
     required this.onPrivacySettings,
     required this.onSupport,
   });
 
   final VoidCallback onEditProfile;
-  final VoidCallback onManageSubscription;
   final VoidCallback onPrivacySettings;
   final VoidCallback onSupport;
 
@@ -307,11 +255,6 @@ class _ProfileQuickActions extends StatelessWidget {
           icon: Icons.edit,
           label: 'Edit profile',
           onTap: onEditProfile,
-        ),
-        _ActionButton(
-          icon: Icons.workspace_premium,
-          label: 'Manage subscription',
-          onTap: onManageSubscription,
         ),
         _ActionButton(
           icon: Icons.privacy_tip,
@@ -328,39 +271,6 @@ class _ProfileQuickActions extends StatelessWidget {
   }
 }
 
-class _AccountDetailsCard extends StatelessWidget {
-  const _AccountDetailsCard({required this.email, required this.plan});
-
-  final String email;
-  final String plan;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.email_outlined),
-            title: const Text('Email'),
-            subtitle: Text(email),
-          ),
-          const Divider(height: 0),
-          ListTile(
-            leading: const Icon(Icons.workspace_premium_outlined),
-            title: const Text('Current plan'),
-            subtitle: Text(plan),
-            trailing: TextButton(
-              onPressed: () => context.push('/main/subscription'),
-              child: const Text('View options'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon,
@@ -370,7 +280,7 @@ class _ActionButton extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -383,305 +293,5 @@ class _ActionButton extends StatelessWidget {
       label: Text(label),
       onPressed: onTap,
     );
-  }
-}
-
-String _formatPlan(String plan) {
-  if (plan.isEmpty || plan.toLowerCase() == 'free') return 'Free';
-  final normalized = plan
-      .replaceAll('_', ' ')
-      .replaceAll('-', ' ')
-      .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
-      .trim();
-  if (normalized.isEmpty) return 'Free';
-  return normalized
-      .split(' ')
-      .map((word) {
-        if (word.isEmpty) return word;
-        return word[0].toUpperCase() + word.substring(1).toLowerCase();
-      })
-      .join(' ');
-}
-
-String _formatDate(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  final month = months[(date.month - 1).clamp(0, months.length - 1)];
-  final day = date.day.toString().padLeft(2, '0');
-  return '$month $day, ${date.year}';
-}
-
-class _FeatureHighlights extends StatelessWidget {
-  const _FeatureHighlights({required this.access});
-
-  final FeatureAccess access;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Plan benefits',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            _FeatureRow(
-              icon: Icons.tune,
-              title: 'Advanced filters',
-              enabled: access.can(
-                SubscriptionFeatureFlag.canUseAdvancedFilters,
-              ),
-            ),
-            _FeatureRow(
-              icon: Icons.remove_red_eye,
-              title: 'See who viewed you',
-              enabled: access.can(
-                SubscriptionFeatureFlag.canViewProfileViewers,
-              ),
-            ),
-            _FeatureRow(
-              icon: Icons.bolt,
-              title: 'Profile boosts',
-              enabled: access.can(SubscriptionFeatureFlag.canBoostProfile),
-              detail: access.hasUnlimited(UsageMetric.profileBoostUsed)
-                  ? 'Unlimited'
-                  : '${access.usageLimit(UsageMetric.profileBoostUsed)} / month',
-            ),
-            _FeatureRow(
-              icon: Icons.local_fire_department_outlined,
-              title: 'Incognito mode',
-              enabled: access.can(SubscriptionFeatureFlag.canUseIncognitoMode),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.icon,
-    required this.title,
-    required this.enabled,
-    this.detail,
-  });
-
-  final IconData icon;
-  final String title;
-  final bool enabled;
-  final String? detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = enabled
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outline;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.bodyMedium),
-                if (detail != null)
-                  Text(detail!, style: theme.textTheme.bodySmall),
-              ],
-            ),
-          ),
-          Icon(
-            enabled ? Icons.check_circle : Icons.lock,
-            color: color,
-            size: 18,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BoostControls extends ConsumerStatefulWidget {
-  const _BoostControls({
-    required this.access,
-    required this.usage,
-    required this.usageNotifier,
-  });
-
-  final FeatureAccess access;
-  final FeatureUsageState usage;
-  final FeatureUsageController usageNotifier;
-
-  @override
-  ConsumerState<_BoostControls> createState() => _BoostControlsState();
-}
-
-class _BoostControlsState extends ConsumerState<_BoostControls> {
-  bool _submitting = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final access = widget.access;
-    final usage = widget.usage;
-
-    final canBoost = access.can(SubscriptionFeatureFlag.canBoostProfile);
-    final limit = access.usageLimit(UsageMetric.profileBoostUsed);
-    final used = usage.count(UsageMetric.profileBoostUsed);
-    final unlimited = access.hasUnlimited(UsageMetric.profileBoostUsed);
-    final remaining = !unlimited && limit > 0
-        ? (limit - used).clamp(0, limit)
-        : null;
-    final limitReached = !unlimited && limit > 0 && remaining == 0;
-
-    final availabilityLabel = unlimited
-        ? 'Unlimited boosts included'
-        : limit <= 0
-        ? 'No boosts available on your plan'
-        : '$remaining of $limit boosts remaining this month';
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Profile boost', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Move to the top of discovery and get more attention for a short time.',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(availabilityLabel, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _submitting
-                  ? null
-                  : () => _handleBoost(context, canBoost, limitReached),
-              child: _submitting
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.onPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Boosting...'),
-                      ],
-                    )
-                  : Text(
-                      !canBoost
-                          ? 'Upgrade to boost'
-                          : limitReached
-                          ? 'Boost limit reached'
-                          : 'Boost now',
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleBoost(
-    BuildContext context,
-    bool canBoost,
-    bool limitReached,
-  ) async {
-    final access = widget.access;
-    final subscriptionRepository = ref.read(subscriptionRepositoryProvider);
-    final profilesRepository = ref.read(profilesRepositoryProvider);
-    final usageNotifier = widget.usageNotifier;
-
-    if (!canBoost) {
-      final planLabel = access.requiredPlanLabel(
-        SubscriptionFeatureFlag.canBoostProfile,
-      );
-      ToastService.instance.warning(
-        'Upgrade to $planLabel to unlock profile boosts.',
-      );
-      context.push('/main/subscription');
-      return;
-    }
-
-    if (limitReached) {
-      final planLabel = access.requiredPlanLabel(
-        SubscriptionFeatureFlag.canBoostProfile,
-      );
-      ToastService.instance.warning(
-        "You've used all available boosts this month. Upgrade to $planLabel for more.",
-      );
-      return;
-    }
-
-    setState(() {
-      _submitting = true;
-    });
-
-    try {
-      final availability = await subscriptionRepository.canUseFeature(
-        'profileBoosts',
-      );
-      if (availability != null && !availability.canUse) {
-        final planLabel = availability.requiredPlan != null
-            ? planDisplayName(availability.requiredPlan!)
-            : access.requiredPlanLabel(SubscriptionFeatureFlag.canBoostProfile);
-        final reason =
-            availability.reason ??
-            'Profile boost is not available on your current plan.';
-        ToastService.instance.warning(reason);
-        if (availability.requiredPlan != null) {
-          ToastService.instance.info('Upgrade to $planLabel for more boosts.');
-        }
-        return;
-      }
-
-      final success = await profilesRepository.boostProfile();
-      if (!success) {
-        ToastService.instance.error(
-          'Failed to boost profile. Please try again.',
-        );
-        return;
-      }
-
-      usageNotifier.requestUsage(UsageMetric.profileBoostUsed);
-      await subscriptionRepository.trackFeatureUsage('profileBoosts');
-      ToastService.instance.success(
-        'Profile boost activated! Your profile is being highlighted to more members.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _submitting = false;
-        });
-      }
-    }
   }
 }

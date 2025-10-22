@@ -14,18 +14,18 @@ class ApiClient {
     storage: FileStorage(_cookiesDirPath()),
   );
 
-  static final Dio dio =
-      Dio(
-          BaseOptions(
-            baseUrl: Env.apiBaseUrl,
-            connectTimeout: const Duration(seconds: 20),
-            receiveTimeout: const Duration(seconds: 20),
-            headers: {
-              'Content-Type': 'application/json',
-              'x-flutter-client': 'true', // Identify as Flutter client
-            },
-          ),
-        )
+  static final Dio dio = Dio(
+        BaseOptions(
+          baseUrl: Env.apiBaseUrl,
+          connectTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 20),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-flutter-client': 'true', // Identify as Flutter client
+            'Accept': 'application/json',
+          },
+        ),
+      )
         ..interceptors.add(CookieManager(_cookieJar))
         ..interceptors.add(_ApiLoggingInterceptor());
 
@@ -47,6 +47,7 @@ class ApiClient {
 /// Provide an implementation of [AuthTokenProvider] at app start if needed.
 abstract class AuthTokenProvider {
   Future<String?> getToken({bool forceRefresh});
+  Future<fb.User?> getCurrentUser();
 }
 
 class _BearerTokenInterceptor extends Interceptor {
@@ -61,7 +62,18 @@ class _BearerTokenInterceptor extends Interceptor {
     try {
       final token = await provider.getToken(forceRefresh: false);
       if (token != null && token.isNotEmpty) {
+        // Set Authorization header for Next.js compatibility
         options.headers['Authorization'] = 'Bearer $token';
+
+        // Set additional headers that Next.js APIs expect
+        final user = await provider.getCurrentUser();
+        if (user != null) {
+          options.headers['x-user-id'] = user.uid;
+          options.headers['x-user-email'] = user.email ?? '';
+
+          // Set user role if available (default to 'user')
+          options.headers['x-user-role'] = 'user'; // This would be determined from user document
+        }
       }
     } catch (_) {}
     handler.next(options);
@@ -79,6 +91,15 @@ class _BearerTokenInterceptor extends Interceptor {
         final fresh = await provider.getToken(forceRefresh: true);
         if (fresh != null && fresh.isNotEmpty) {
           original.headers['Authorization'] = 'Bearer $fresh';
+
+          // Update additional headers on retry
+          final user = await provider.getCurrentUser();
+          if (user != null) {
+            original.headers['x-user-id'] = user.uid;
+            original.headers['x-user-email'] = user.email ?? '';
+            original.headers['x-user-role'] = 'user';
+          }
+
           final clone = await ApiClient.dio.fetch(original);
           return handler.resolve(clone);
         }
@@ -178,7 +199,7 @@ class _ApiLoggingInterceptor extends Interceptor {
   }
 }
 
-/// FirebaseAuth-backed token provider to mirror RN bearer token approach
+/// FirebaseAuth-backed token provider to match Next.js auth requirements
 class FirebaseAuthTokenProvider implements AuthTokenProvider {
   final fb.FirebaseAuth _auth;
   FirebaseAuthTokenProvider([fb.FirebaseAuth? auth])
@@ -188,10 +209,23 @@ class FirebaseAuthTokenProvider implements AuthTokenProvider {
   Future<String?> getToken({bool forceRefresh = false}) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return null;
-      return await user.getIdToken(forceRefresh);
-    } catch (_) {
-      return null;
+      if (user == null) {
+            return null;
+      }
+
+      final idToken = await user.getIdToken(forceRefresh);
+        return idToken;
+    } catch (e) {
+          return null;
+    }
+  }
+
+  @override
+  Future<fb.User?> getCurrentUser() async {
+    try {
+      return _auth.currentUser;
+    } catch (e) {
+          return null;
     }
   }
 }

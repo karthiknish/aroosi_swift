@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:aroosi_flutter/core/responsive.dart';
 
 class ExploreGrid extends StatelessWidget {
   const ExploreGrid({super.key, required this.onNavigate});
@@ -7,6 +9,13 @@ class ExploreGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = <ExploreTileData>[
+      ExploreTileData(
+        'Sacred Circle',
+        Icons.family_restroom_rounded,
+        'mainSacredCircle',
+        Colors.pink,
+        'Find sacred matches',
+      ),
       ExploreTileData(
         'Search Profiles',
         Icons.search,
@@ -19,21 +28,21 @@ class ExploreGrid extends StatelessWidget {
         Icons.favorite_outline,
         'favorites',
         Colors.red,
-        'View your liked profiles',
+        'View liked profiles',
       ),
       ExploreTileData(
         'Shortlists',
         Icons.bookmark_outline,
         'mainShortlists',
         Colors.green,
-        'Manage your saved lists',
+        'Manage saved lists',
       ),
       ExploreTileData(
         'Icebreakers',
         Icons.lightbulb_outline,
         'mainIcebreakers',
         Colors.orange,
-        'Get conversation starters',
+        'Conversation starters',
       ),
       ExploreTileData(
         'Edit Profile',
@@ -43,16 +52,15 @@ class ExploreGrid extends StatelessWidget {
         'Update your information',
       ),
       ExploreTileData(
-        'Subscription',
-        Icons.workspace_premium,
-        'mainSubscription',
-        Colors.indigo,
-        'Manage your plan',
+        'Privacy Settings',
+        Icons.privacy_tip_outlined,
+        'settingsPrivacy',
+        Colors.green,
+        'Manage privacy settings',
       ),
     ];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+    return AdaptiveContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,7 +69,7 @@ class ExploreGrid extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.1),
+                  color: Colors.indigo.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -71,37 +79,31 @@ class ExploreGrid extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Continue exploring',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+              Expanded(
+                child: Text(
+                  'Continue exploring',
+                  style: TextStyle(fontSize: 18, color: Colors.indigo),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: tiles.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.4,
-            ),
-            itemBuilder: (context, index) {
-              final t = tiles[index];
-              return ExploreTile(
-                label: t.label,
-                icon: t.icon,
-                color: t.color,
-                description: t.description,
-                onTap: () => onNavigate(t.routeName),
-              );
-            },
+          ResponsiveGrid(
+            spacing: 12,
+            runSpacing: 12,
+            children: tiles
+                .map(
+                  (t) => ExploreTile(
+                    label: t.label,
+                    icon: t.icon,
+                    color: t.color,
+                    description: t.description,
+                    onTap: () => onNavigate(t.routeName),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -144,87 +146,71 @@ class ExploreTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
+      child: CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 10),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                          height: 1.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Flexible(
-                        child: Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
-                            height: 1.2,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
+                child: Icon(icon, color: color, size: 16),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Explore',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+                      label,
+                      style: TextStyle(fontSize: 12, color: color, height: 1.1),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 3),
-                    Icon(Icons.arrow_forward, color: color, size: 12),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Explore', style: TextStyle(fontSize: 10, color: color)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, color: color, size: 12),
+                ],
+              ),
+            ],
           ),
         ),
       ),

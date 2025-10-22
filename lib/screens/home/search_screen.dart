@@ -1,17 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:aroosi_flutter/features/profiles/list_controller.dart';
 import 'package:aroosi_flutter/features/profiles/models.dart';
-import 'package:aroosi_flutter/features/subscription/feature_access_provider.dart';
-import 'package:aroosi_flutter/features/subscription/feature_usage_controller.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_features.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
-import 'package:aroosi_flutter/widgets/profile_list_item.dart';
-import 'package:aroosi_flutter/widgets/paged_list_footer.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
 import 'package:aroosi_flutter/widgets/empty_states.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';
@@ -19,9 +16,10 @@ import 'package:aroosi_flutter/utils/pagination.dart';
 import 'package:aroosi_flutter/features/profiles/selection.dart';
 import 'package:aroosi_flutter/widgets/adaptive_refresh.dart';
 import 'package:aroosi_flutter/widgets/retryable_network_image.dart';
-import 'package:aroosi_flutter/widgets/swipe_deck.dart';
+
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
+import 'package:aroosi_flutter/theme/colors.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -34,17 +32,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   static const int _defaultPageSize = 12;
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  final _swipeDeckKey = SwipeDeckGlobalKey<ProfileSummary>();
-  SearchFilters _filters = const SearchFilters(pageSize: _defaultPageSize);
   Timer? _debounce;
-  bool _cardsView = true;
-  int _currentCardIndex = 0;
 
   // Get toast service from provider
   ToastService get _toast => ref.read(toastServiceProvider);
-
-  bool get _hasSearchCriteria => _filters.hasCriteria;
-  bool get _hasActiveFilters => _filters.hasFieldFilters;
 
   @override
   void initState() {
@@ -77,6 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(searchControllerProvider);
     final auth = ref.watch(authControllerProvider);
+
     // Redirect to welcome if not authenticated
     if (!auth.isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -87,6 +79,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       });
       return const SizedBox.shrink();
     }
+
     // Show loader if auth is loading or profile is missing
     if (auth.loading || auth.profile == null) {
       return const AppScaffold(
@@ -95,13 +88,46 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    final slivers = <Widget>[
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: _buildSearchControls(context),
+    // Show loading state when performing search or initial load
+    if (state.loading && state.items.isEmpty) {
+      return AppScaffold(
+        title: 'Search',
+        child: AdaptiveRefresh(
+          onRefresh: _refresh,
+          controller: _scrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildSearchControls(context),
+              ),
+            ),
+            SliverFillRemaining(
+              child: Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Loading profiles...',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
+      );
+    }
+
+    final slivers = <Widget>[
       if (state.error != null)
         SliverToBoxAdapter(
           child: Padding(
@@ -119,18 +145,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return AppScaffold(
       title: 'Search',
-      actions: [
-        IconButton(
-          tooltip: 'Filters',
-          onPressed: _onFiltersPressed,
-          icon: Icon(
-            Icons.filter_alt_outlined,
-            color: _hasActiveFilters
-                ? Theme.of(context).colorScheme.primary
-                : null,
-          ),
-        ),
-      ],
       child: AdaptiveRefresh(
         onRefresh: _refresh,
         controller: _scrollController,
@@ -139,145 +153,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildSearchControls(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFilterButtons(context),
-        if (_hasActiveFilters) ...[
-          const SizedBox(height: 12),
-          _buildActiveFiltersChips(context),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildFilterButtons(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 140,
-            child: OutlinedButton.icon(
-              onPressed: _onFiltersPressed,
-              icon: const Icon(Icons.tune),
-              label: const Text('Filters'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          if (_hasActiveFilters)
-            TextButton(
-              onPressed: _clearNonQueryFilters,
-              child: const Text('Clear filters'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveFiltersChips(BuildContext context) {
-    final chips = <Widget>[];
-
-    if (_filters.city != null && _filters.city!.trim().isNotEmpty) {
-      chips.add(
-        InputChip(
-          label: Text('City: ${_filters.city}'),
-          onDeleted: () =>
-              _handleFilterRemoval((current) => current.copyWith(city: null)),
-        ),
-      );
-    }
-
-    if (_filters.minAge != null || _filters.maxAge != null) {
-      final min = _filters.minAge?.toString() ?? 'Any';
-      final max = _filters.maxAge?.toString() ?? 'Any';
-      chips.add(
-        InputChip(
-          label: Text('Age $min - $max'),
-          onDeleted: () => _handleFilterRemoval(
-            (current) => current.copyWith(minAge: null, maxAge: null),
-          ),
-        ),
-      );
-    }
-
-    if (_filters.sort != null && _filters.sort!.trim().isNotEmpty) {
-      chips.add(
-        InputChip(
-          label: Text(_sortLabelForValue(_filters.sort!)),
-          onDeleted: () =>
-              _handleFilterRemoval((current) => current.copyWith(sort: null)),
-        ),
-      );
-    }
-
-    if (_filters.preferredGender != null &&
-        _filters.preferredGender!.trim().isNotEmpty) {
-      chips.add(
-        InputChip(
-          label: Text('Gender: ${_filters.preferredGender}'),
-          onDeleted: () => _handleFilterRemoval(
-            (current) => current.copyWith(preferredGender: null),
-          ),
-        ),
-      );
-    }
-
-    if (chips.isEmpty) return const SizedBox.shrink();
-
-    return Wrap(spacing: 8, runSpacing: 8, children: chips);
-  }
-
-  String _sortLabelForValue(String value) {
-    switch (value) {
-      case 'newest':
-        return 'Newest profiles';
-      case 'distance':
-        return 'Closest to you';
-      case 'recent':
-      default:
-        return 'Recently active';
-    }
-  }
-
-  SliverList _buildResultsSliver(ProfilesListState state) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (state.items.isEmpty && state.loading) {
-            return const ProfileListSkeleton();
-          }
-          if (index >= state.items.length) {
-            return PagedListFooter(
-              hasMore: state.hasMore,
-              isLoading: state.loading,
-            );
-          }
-          final profile = state.items[index];
-          return ProfileListItem(
-            key: ValueKey('profile_list_${profile.id}'),
-            profile: profile,
-            onTap: () {
-              ref.read(lastSelectedProfileIdProvider.notifier).set(profile.id);
-              context.push('/details/${profile.id}');
-            },
-          );
-        },
-        childCount: state.items.isEmpty && state.loading
-            ? 6
-            : state.items.length + (state.hasMore ? 1 : 0),
-      ),
-    );
-  }
-
   Widget _buildErrorBanner(BuildContext context, String message) {
-    final isOfflineError =
-        message.toLowerCase().contains('network') ||
-        message.toLowerCase().contains('connection') ||
-        message.toLowerCase().contains('timeout');
-
     return InlineError(
       error: message,
       onRetry: _hasSearchCriteria
@@ -288,6 +164,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, {required bool forCards}) {
+    final state = ref.watch(searchControllerProvider);
+    final isLoading = state.loading;
+
+    if (isLoading) {
+      return Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: forCards ? 24 : 32,
+        ),
+        child: Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading profiles...',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: 16,
@@ -298,18 +204,72 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         onClearSearch: _controller.text.isNotEmpty
             ? () {
                 _controller.clear();
-                _scheduleSearch(immediate: true);
+                _loadAllProfiles();
               }
             : null,
-        onAction: () => _onFiltersPressed(),
-        actionLabel: 'Open Filters',
       ),
+    );
+  }
+
+  Widget _buildSearchControls(BuildContext context) {
+    return Column(
+      children: [
+        // Search Text Field
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: 'Search by name, city, or interests...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _controller.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _controller.clear();
+                        _loadAllProfiles();
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+            ),
+            onChanged: (value) {
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 500), () {
+                _scheduleSearch();
+              });
+            },
+          ),
+        ),
+        // Filter Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showFiltersSheet(context),
+              icon: const Icon(Icons.filter_list),
+              label: const Text('Filters'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCardDeck(BuildContext context, ProfilesListState state) {
     final items = state.items;
-    if (items.isEmpty) {
+    if (items.isEmpty && !state.loading) {
       return _buildEmptyState(context, forCards: true);
     }
 
@@ -324,405 +284,69 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return !hasSentInterest;
     }).toList();
 
-    final deckItems = List<ProfileSummary>.from(filteredItems);
-    int remaining = deckItems.length;
-
-    // Log for debugging GlobalKey issues
     logDebug(
-      'Building card deck',
+      'Building profile list',
       data: {
-        'itemCount': deckItems.length,
-        'widgetType': 'SwipeDeck',
+        'itemCount': filteredItems.length,
+        'widgetType': 'ListView',
         'timestamp': DateTime.now().toIso8601String(),
       },
     );
+
     return Column(
       children: [
         Expanded(
-          child: SwipeDeck<ProfileSummary>(
-            key: _swipeDeckKey.key,
-            items: deckItems,
-            overlayBuilder: (_, __, ___) => const DefaultSwipeOverlay(),
-            itemBuilder: (ctx, profile) => _ProfileCard(
-              key: ValueKey('profile_card_${profile.id}'),
-              profile: profile,
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: filteredItems.length,
+            itemBuilder: (context, index) {
+              final profile = filteredItems[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: _ProfileListItem(
+                  profile: profile,
+                  onLike: () async {
+                    final ok = await ref
+                        .read(matchesControllerProvider.notifier)
+                        .sendInterest(profile.id);
+                    if (ok['success'] == true) {
+                      _toast.success('Liked ${profile.displayName}');
+                    } else {
+                      _toast.error('Failed to like');
+                    }
+                  },
+                  onViewProfile: () {
+                    ref
+                        .read(lastSelectedProfileIdProvider.notifier)
+                        .set(profile.id);
+                    context.push('/details/${profile.id}');
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        if (state.hasMore && !state.loading)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: ElevatedButton(
+                onPressed: () =>
+                    ref.read(searchControllerProvider.notifier).loadMore(),
+                child: const Text('Load More'),
+              ),
             ),
-            onSwipe: (profile, direction) async {
-              if (direction == SwipeDirection.right) {
-                if (!_requestUsage(UsageMetric.interestSent)) return;
-                final ok = await ref
-                    .read(matchesControllerProvider.notifier)
-                    .sendInterest(profile.id);
-                if (ok['success'] == true) {
-                  _toast.success('Liked ${profile.displayName}');
-                } else {
-                  _toast.error('Failed to like');
-                }
-              } else {
-                // Left swipe (pass)
-                _toast.info('Passed on ${profile.displayName}');
-              }
-              // Update current index after swipe
-              setState(() {
-                _currentCardIndex =
-                    _swipeDeckKey.currentState?.currentIndex ?? 0;
-              });
-            },
-            onEnd: () {
-              _toast.info("That's all for now");
-            },
           ),
-        ),
-        const SizedBox(height: 12),
-        // Action buttons
-        SizedBox(
-          width: double.infinity,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    // Pass (cross button)
-                    if (_swipeDeckKey.currentState?.hasCards == true) {
-                      _swipeDeckKey.currentState?.swipeLeft();
-                    } else {
-                      _toast.info('No more cards to swipe');
-                    }
-                  },
-                  child: const Icon(Icons.close, color: Colors.red),
-                ),
-              ),
-              SizedBox(
-                width: 120,
-                height: 60,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    // Show more info - get current profile and navigate to details
-                    final state = ref.read(searchControllerProvider);
-                    if (state.items.isNotEmpty &&
-                        _currentCardIndex < state.items.length) {
-                      final profile = state.items[_currentCardIndex];
-                      ref
-                          .read(lastSelectedProfileIdProvider.notifier)
-                          .set(profile.id);
-                      context.push('/details/${profile.id}');
-                    }
-                  },
-                  child: const Text('View Profile'),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: FilledButton(
-                  onPressed: () {
-                    // Like (heart button)
-                    if (_swipeDeckKey.currentState?.hasCards == true) {
-                      _swipeDeckKey.currentState?.swipeRight();
-                    } else {
-                      _toast.info('No more cards to swipe');
-                    }
-                  },
-                  child: const Icon(Icons.favorite, color: Colors.pink),
-                ),
-              ),
-            ],
+        if (state.loading)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: CircularProgressIndicator()),
           ),
-        ),
-        const SizedBox(height: 8),
-        // Remaining counter
-        Text('$remaining left', style: Theme.of(context).textTheme.labelMedium),
       ],
     );
   }
 
-  Widget _buildSearchField(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search),
-        hintText: 'Search by name or keyword',
-        suffixIcon: _controller.text.isNotEmpty
-            ? IconButton(
-                tooltip: 'Clear search',
-                icon: const Icon(Icons.clear),
-                onPressed: _clearQuery,
-              )
-            : null,
-      ),
-      textInputAction: TextInputAction.search,
-      onChanged: (value) {
-        final trimmed = value.trim();
-        setState(() {
-          _filters = _filters.copyWith(
-            query: trimmed.isEmpty ? null : trimmed,
-            pageSize: _filters.pageSize ?? _defaultPageSize,
-          );
-        });
-        _scheduleSearch();
-      },
-      onSubmitted: (value) async {
-        final trimmed = value.trim();
-        setState(() {
-          _filters = _filters.copyWith(
-            query: trimmed.isEmpty ? null : trimmed,
-            pageSize: _filters.pageSize ?? _defaultPageSize,
-          );
-        });
-        await _performSearch(announce: true);
-      },
-    );
-  }
-
-  void _clearQuery() {
-    if (_controller.text.isEmpty) return;
-
-    logDebug(
-      'SearchScreen: Clearing search query',
-      data: {
-        'previousQuery': _controller.text,
-        'remainingFilters': _filters.toQuery(),
-      },
-    );
-
-    _debounce?.cancel();
-    setState(() {
-      _controller.clear();
-      _filters = _filters.copyWith(
-        query: null,
-        pageSize: _filters.pageSize ?? _defaultPageSize,
-      );
-    });
-
-    if (_filters.hasCriteria) {
-      logDebug('SearchScreen: Still has criteria, performing search');
-      unawaited(_performSearch());
-    } else {
-      logDebug('SearchScreen: No criteria remaining, clearing results');
-      ref.read(searchControllerProvider.notifier).clear();
-    }
-  }
-
-  void _handleFilterRemoval(
-    SearchFilters Function(SearchFilters current) transform,
-  ) {
-    final next = transform(_filters);
-    unawaited(_setFiltersAndSearch(next));
-  }
-
-  void _clearNonQueryFilters() {
-    final cleared = _filters.copyWith(
-      city: null,
-      minAge: null,
-      maxAge: null,
-      sort: null,
-      cursor: null,
-      preferredGender: null,
-    );
-    unawaited(_setFiltersAndSearch(cleared));
-  }
-
-  Future<void> _refresh() async {
-    if (!_hasSearchCriteria) {
-      logDebug('SearchScreen: Refresh skipped - no search criteria');
-      return;
-    }
-
-    if (!_requestUsage(UsageMetric.searchPerformed)) {
-      logDebug('SearchScreen: Refresh skipped - usage limit reached');
-      return;
-    }
-
-    logDebug(
-      'SearchScreen: Refreshing search',
-      data: {'filters': _effectiveFilters.toQuery()},
-    );
-
-    await ref.read(searchControllerProvider.notifier).search(_effectiveFilters);
-    if (!mounted) return;
-    _toast.info('Search refreshed');
-  }
-
-  SearchFilters get _effectiveFilters => _filters.copyWith(
-    pageSize: _filters.pageSize ?? _defaultPageSize,
-    cursor: null,
-  );
-
-  void _scheduleSearch({bool immediate = false}) {
-    _debounce?.cancel();
-    if (!_hasSearchCriteria) {
-      logDebug('SearchScreen: No search criteria, clearing results');
-      ref.read(searchControllerProvider.notifier).clear();
-      return;
-    }
-
-    logDebug(
-      'SearchScreen: Scheduling search',
-      data: {
-        'immediate': immediate,
-        'filters': _filters.toQuery(),
-        'hasCriteria': _hasSearchCriteria,
-      },
-    );
-
-    if (immediate) {
-      unawaited(_performSearch());
-    } else {
-      _debounce = Timer(const Duration(milliseconds: 350), () {
-        unawaited(_performSearch());
-      });
-    }
-  }
-
-  Future<void> _performSearch({bool announce = false}) async {
-    if (!_hasSearchCriteria) {
-      logDebug('SearchScreen: No search criteria, clearing results');
-      ref.read(searchControllerProvider.notifier).clear();
-      return;
-    }
-
-    if (!_requestUsage(UsageMetric.searchPerformed)) {
-      logDebug('SearchScreen: Usage limit reached for search');
-      return;
-    }
-
-    final filters = _effectiveFilters;
-    logDebug(
-      'SearchScreen: Performing search',
-      data: {
-        'filters': filters.toQuery(),
-        'announce': announce,
-        'hasQuery': filters.hasQuery,
-        'query': filters.query,
-      },
-    );
-
-    await ref.read(searchControllerProvider.notifier).search(filters);
-    if (!mounted) return;
-
-    if (announce && filters.hasQuery) {
-      _toast.info('Searching "${filters.query}"');
-    }
-  }
-
-  Future<void> _setFiltersAndSearch(
-    SearchFilters update, {
-    bool announce = false,
-  }) async {
-    _debounce?.cancel();
-    final normalized = update.copyWith(
-      cursor: null,
-      pageSize: update.pageSize ?? _defaultPageSize,
-    );
-
-    logDebug(
-      'SearchScreen: Setting filters and searching',
-      data: {
-        'previousFilters': _filters.toQuery(),
-        'newFilters': normalized.toQuery(),
-        'announce': announce,
-        'hasCriteria': normalized.hasCriteria,
-      },
-    );
-
-    setState(() {
-      _filters = normalized;
-    });
-
-    if (_filters.hasCriteria) {
-      await _performSearch(announce: announce);
-    } else {
-      logDebug(
-        'SearchScreen: No criteria after filter update, clearing results',
-      );
-      ref.read(searchControllerProvider.notifier).clear();
-    }
-  }
-
-  Future<void> _onFiltersPressed() async {
-    final access = ref.read(featureAccessProvider);
-    if (!access.can(SubscriptionFeatureFlag.canUseAdvancedFilters)) {
-      _showUpgradeToast(SubscriptionFeatureFlag.canUseAdvancedFilters);
-      return;
-    }
-
-    final selection = await showModalBottomSheet<_FilterSelection>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (ctx) => _SearchFiltersSheet(initial: _filters),
-    );
-
-    if (!mounted || selection == null) return;
-
-    final updated = _filters.copyWith(
-      city: selection.city,
-      minAge: selection.minAge,
-      maxAge: selection.maxAge,
-      sort: selection.sort,
-      preferredGender: selection.preferredGender,
-    );
-
-    await _setFiltersAndSearch(updated);
-  }
-
-  bool _requestUsage(UsageMetric metric) {
-    final controller = ref.read(featureUsageControllerProvider.notifier);
-    final allowed = controller.requestUsage(metric);
-    if (!allowed) {
-      _showUsageLimitMessage(metric);
-    }
-    return allowed;
-  }
-
-  void _showUsageLimitMessage(UsageMetric metric) {
-    final usageState = ref.read(featureUsageControllerProvider);
-    final access = ref.read(featureAccessProvider);
-    final limit = access.usageLimit(metric);
-    final used = usageState.count(metric);
-    final remaining = limit > 0 ? (limit - used).clamp(0, limit) : null;
-
-    final featureMapping = {
-      UsageMetric.searchPerformed:
-          SubscriptionFeatureFlag.canUseAdvancedFilters,
-      UsageMetric.interestSent: SubscriptionFeatureFlag.canSendUnlimitedLikes,
-      UsageMetric.profileView: SubscriptionFeatureFlag.canViewFullProfiles,
-      UsageMetric.profileBoostUsed: SubscriptionFeatureFlag.canBoostProfile,
-      UsageMetric.messageSent: SubscriptionFeatureFlag.canInitiateChat,
-      UsageMetric.voiceMessageSent: SubscriptionFeatureFlag.canChatWithMatches,
-    };
-
-    final feature = featureMapping[metric];
-    final planLabel = feature != null
-        ? access.requiredPlanLabel(feature)
-        : 'Premium';
-
-    final baseMessage = remaining == 0 && limit > 0
-        ? "You've reached your ${limit == 1 ? 'limit' : 'monthly limit'} for this action."
-        : 'Upgrade to $planLabel to unlock more access.';
-
-    _toast.warning(
-      limit > 0 && remaining == 0
-          ? '$baseMessage Upgrade to $planLabel for unlimited access.'
-          : 'Upgrade to $planLabel to unlock more access.',
-    );
-  }
-
-  void _showUpgradeToast(SubscriptionFeatureFlag feature) {
-    final access = ref.read(featureAccessProvider);
-    final planLabel = access.requiredPlanLabel(feature);
-    _toast.warning('Upgrade to $planLabel to use this feature.');
-  }
-
   Future<void> _loadAllProfiles() async {
-    if (!_requestUsage(UsageMetric.searchPerformed)) {
-      logDebug('SearchScreen: Usage limit reached for loading profiles');
-      return;
-    }
-
     logDebug('SearchScreen: Loading all profiles');
 
     // Get current user's profile to access preferred gender
@@ -754,23 +378,117 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       logDebug('SearchScreen: Failed to load interests', error: e);
     }
   }
+
+  Future<void> _refresh() async {
+    final state = ref.read(searchControllerProvider);
+    if (state.filters != null) {
+      // Re-run the current search
+      await ref.read(searchControllerProvider.notifier).search(state.filters!);
+    } else {
+      // Load all profiles if no filters
+      await _loadAllProfiles();
+    }
+    if (mounted) {
+      _toast.success('Search refreshed');
+    }
+  }
+
+  Future<void> _scheduleSearch({bool immediate = false}) async {
+    final query = _controller.text.trim();
+    final state = ref.read(searchControllerProvider);
+
+    // Get current user's profile for preferred gender
+    final auth = ref.read(authControllerProvider);
+    final userProfile = auth.profile;
+
+    // Create filters with current query and existing filters
+    final filters = SearchFilters(
+      pageSize: _defaultPageSize,
+      query: query.isNotEmpty ? query : null,
+      city: state.filters?.city,
+      minAge: state.filters?.minAge,
+      maxAge: state.filters?.maxAge,
+      sort: state.filters?.sort,
+      cursor: null,
+      preferredGender:
+          state.filters?.preferredGender ??
+          (userProfile?.preferredGender?.isNotEmpty == true
+              ? userProfile!.preferredGender
+              : null),
+    );
+
+    await ref.read(searchControllerProvider.notifier).search(filters);
+  }
+
+  bool get _hasSearchCriteria {
+    final query = _controller.text.trim();
+    final state = ref.read(searchControllerProvider);
+    final filters = state.filters;
+
+    return query.isNotEmpty ||
+        (filters != null &&
+            (filters.city != null ||
+                filters.minAge != null ||
+                filters.maxAge != null ||
+                filters.sort != null ||
+                filters.preferredGender != null));
+  }
+
+  Future<void> _showFiltersSheet(BuildContext context) async {
+    final state = ref.read(searchControllerProvider);
+    final initialFilters =
+        state.filters ?? SearchFilters(pageSize: _defaultPageSize);
+
+    final result = await showModalBottomSheet<_FilterSelection>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _SearchFiltersSheet(initial: initialFilters),
+    );
+
+    if (result != null) {
+      // Apply the selected filters
+      final auth = ref.read(authControllerProvider);
+      final userProfile = auth.profile;
+
+      final filters = SearchFilters(
+        pageSize: _defaultPageSize,
+        query: _controller.text.trim().isNotEmpty
+            ? _controller.text.trim()
+            : null,
+        city: result.city,
+        minAge: result.minAge,
+        maxAge: result.maxAge,
+        sort: result.sort,
+        cursor: null,
+        preferredGender:
+            result.preferredGender ??
+            (userProfile?.preferredGender?.isNotEmpty == true
+                ? userProfile!.preferredGender
+                : null),
+      );
+
+      await ref.read(searchControllerProvider.notifier).search(filters);
+    }
+  }
 }
 
-class _ProfileCard extends StatefulWidget {
-  const _ProfileCard({super.key, required this.profile});
+class _ProfileListItem extends StatelessWidget {
+  const _ProfileListItem({
+    required this.profile,
+    required this.onLike,
+    required this.onViewProfile,
+  });
 
   final ProfileSummary profile;
+  final VoidCallback onLike;
+  final VoidCallback onViewProfile;
 
-  @override
-  State<_ProfileCard> createState() => _ProfileCardState();
-}
-
-class _ProfileCardState extends State<_ProfileCard> {
   static const String _placeholderAsset = 'assets/images/placeholder.png';
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final p = widget.profile;
+    final p = profile;
 
     final ageCity = <String>[];
     if (p.age != null) ageCity.add(p.age!.toString());
@@ -779,55 +497,77 @@ class _ProfileCardState extends State<_ProfileCard> {
     }
     final subtitle = ageCity.join(' • ');
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        color: theme.colorScheme.surface,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Image
-            Expanded(
-              child: p.avatarUrl != null && p.avatarUrl!.trim().isNotEmpty
-                  ? RetryableNetworkImage(
-                      url: p.avatarUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: Image.asset(
-                        _placeholderAsset,
-                        fit: BoxFit.cover,
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onViewProfile,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Profile Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: p.avatarUrl != null && p.avatarUrl!.trim().isNotEmpty
+                      ? RetryableNetworkImage(
+                          url: p.avatarUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: Image.asset(
+                            _placeholderAsset,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(_placeholderAsset, fit: BoxFit.cover),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Profile Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.displayName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                    )
-                  : Image.asset(_placeholderAsset, fit: BoxFit.cover),
-            ),
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (subtitle.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(subtitle, style: theme.textTheme.bodyMedium),
-                    ),
-                  if (p.isFavorite || p.isShortlisted)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color?.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    // Compatibility Score (mock data for now)
+                    if (true) ...[
+                      // This would be based on actual compatibility data
+                      const SizedBox(height: 8),
+                      _CompatibilityScoreIndicator(score: 0.75), // Mock score
+                    ],
+
+                    if (p.isFavorite || p.isShortlisted) ...[
+                      const SizedBox(height: 8),
+                      Row(
                         children: [
                           if (p.isFavorite)
                             Icon(
                               Icons.favorite,
                               color: theme.colorScheme.error,
-                              size: 18,
+                              size: 16,
                             ),
                           if (p.isShortlisted)
                             Padding(
@@ -835,91 +575,84 @@ class _ProfileCardState extends State<_ProfileCard> {
                               child: Icon(
                                 Icons.bookmark,
                                 color: theme.colorScheme.primary,
-                                size: 18,
+                                size: 16,
                               ),
                             ),
                         ],
                       ),
+                    ],
+                  ],
+                ),
+              ),
+              // Action Buttons
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton.outlined(
+                    onPressed: onViewProfile,
+                    icon: const Icon(Icons.person_outline),
+                    tooltip: 'View Profile',
+                  ),
+                  const SizedBox(height: 8),
+                  IconButton.filled(
+                    onPressed: onLike,
+                    icon: const Icon(Icons.favorite),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.pink.withValues(alpha: 0.1),
+                      foregroundColor: Colors.pink,
                     ),
+                    tooltip: 'Like',
+                  ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-    // ...existing code...
   }
-
-  // (removed unused _badge and _activePill)
 }
 
-class _Shimmer extends StatefulWidget {
-  const _Shimmer({required this.borderRadius});
-  final double borderRadius;
-  @override
-  State<_Shimmer> createState() => _ShimmerState();
-}
+class _CompatibilityScoreIndicator extends StatelessWidget {
+  final double score; // 0.0 to 1.0
 
-class _ShimmerState extends State<_Shimmer>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const _CompatibilityScoreIndicator({required this.score});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _ShimmerPainter(progress: _controller.value),
-          child: Container(),
-        );
-      },
+    final percentage = (score * 100).round();
+    final color = _getScoreColor(score);
+
+    return Row(
+      children: [
+        Icon(Icons.favorite_border, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          '$percentage% Match',
+          style: GoogleFonts.nunitoSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: LinearProgressIndicator(
+            value: score,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+            minHeight: 4,
+          ),
+        ),
+      ],
     );
   }
-}
 
-class _ShimmerPainter extends CustomPainter {
-  _ShimmerPainter({required this.progress});
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final base = Colors.grey.shade800;
-    final highlight = Colors.grey.shade600;
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment(-1 + progress * 2, -1),
-        end: Alignment(1 + progress * 2, 1),
-        colors: [
-          base.withValues(alpha: 0.35),
-          highlight.withValues(alpha: 0.55),
-          base.withValues(alpha: 0.35),
-        ],
-        stops: const [0.15, 0.5, 0.85],
-      ).createShader(Offset.zero & size);
-    final r = RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(20));
-    canvas.drawRRect(r, paint);
+  Color _getScoreColor(double score) {
+    if (score >= 0.8) return Colors.green;
+    if (score >= 0.6) return Colors.orange;
+    return Colors.red;
   }
-
-  @override
-  bool shouldRepaint(covariant _ShimmerPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }
 
 class _FilterSelection {
@@ -957,6 +690,13 @@ const List<_FilterOption> _genderOptions = [
   _FilterOption('female', 'Female'),
   _FilterOption('non-binary', 'Non-binary'),
 ];
+
+BoxDecoration cupertinoDecoration(BuildContext context) {
+  return BoxDecoration(
+    border: Border.all(color: AppColors.primary, width: 1.5),
+    borderRadius: BorderRadius.circular(8),
+  );
+}
 
 class _SearchFiltersSheet extends StatefulWidget {
   const _SearchFiltersSheet({required this.initial});
@@ -1001,6 +741,81 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
     super.dispose();
   }
 
+  void _showSortPicker() {
+    final initialIndex = _sortOptions.indexWhere(
+      (option) => option.value == _sort,
+    );
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 250,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: CupertinoPicker(
+            magnification: 1.22,
+            squeeze: 1.2,
+            useMagnifier: true,
+            itemExtent: 32.0,
+            scrollController: FixedExtentScrollController(
+              initialItem: initialIndex >= 0 ? initialIndex : 0,
+            ),
+            onSelectedItemChanged: (int selectedItem) {
+              setState(() {
+                _sort = _sortOptions[selectedItem].value;
+              });
+            },
+            children: _sortOptions
+                .map((option) => Center(child: Text(option.label)))
+                .toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showGenderPicker() {
+    final initialIndex = _genderOptions.indexWhere(
+      (option) => option.value == (_gender ?? ''),
+    );
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 250,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: CupertinoPicker(
+            magnification: 1.22,
+            squeeze: 1.2,
+            useMagnifier: true,
+            itemExtent: 32.0,
+            scrollController: FixedExtentScrollController(
+              initialItem: initialIndex >= 0 ? initialIndex : 0,
+            ),
+            onSelectedItemChanged: (int selectedItem) {
+              setState(() {
+                final value = _genderOptions[selectedItem].value;
+                _gender = value.isEmpty ? null : value;
+              });
+            },
+            children: _genderOptions
+                .map((option) => Center(child: Text(option.label)))
+                .toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1010,109 +825,188 @@ class _SearchFiltersSheetState extends State<_SearchFiltersSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: theme.dividerColor.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text('Refine search', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _cityController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'City',
-                  hintText: 'Enter city',
-                  prefixIcon: Icon(Icons.location_on_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _useAgeFilter,
-                onChanged: (value) => setState(() => _useAgeFilter = value),
-                title: const Text('Filter by age range'),
-                subtitle: Text(
-                  '${_ageRange.start.round()} - ${_ageRange.end.round()}',
-                ),
-              ),
-              IgnorePointer(
-                ignoring: !_useAgeFilter,
-                child: Opacity(
-                  opacity: _useAgeFilter ? 1 : 0.4,
-                  child: RangeSlider(
-                    values: _ageRange,
-                    min: _minAge,
-                    max: _maxAge,
-                    divisions: (_maxAge - _minAge).round(),
-                    labels: RangeLabels(
-                      '${_ageRange.start.round()}',
-                      '${_ageRange.end.round()}',
-                    ),
-                    onChanged: (value) => setState(() => _ageRange = value),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _sort,
-                decoration: const InputDecoration(
-                  labelText: 'Sort by',
-                  prefixIcon: Icon(Icons.sort),
-                ),
-                items: _sortOptions
-                    .map(
-                      (option) => DropdownMenuItem<String>(
-                        value: option.value,
-                        child: Text(option.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _sort = value ?? ''),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _gender ?? '',
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                items: _genderOptions
-                    .map(
-                      (option) => DropdownMenuItem<String>(
-                        value: option.value,
-                        child: Text(option.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(
-                  () => _gender = value?.isEmpty == true ? null : value,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextButton(onPressed: _reset, child: const Text('Reset')),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: _apply,
-                    child: const Text('Apply filters'),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: theme.dividerColor.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Text('Refine search', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _cityController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'City',
+                      hintText: 'Enter city',
+                      prefixIcon: Icon(Icons.location_on_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _useAgeFilter,
+                    onChanged: (value) => setState(() => _useAgeFilter = value),
+                    title: const Text('Filter by age range'),
+                    subtitle: Text(
+                      '${_ageRange.start.round()} - ${_ageRange.end.round()}',
+                    ),
+                  ),
+                  AnimatedOpacity(
+                    opacity: _useAgeFilter ? 1.0 : 0.4,
+                    duration: const Duration(milliseconds: 200),
+                    child: IgnorePointer(
+                      ignoring: !_useAgeFilter,
+                      child: RangeSlider(
+                        values: _ageRange,
+                        min: _minAge,
+                        max: _maxAge,
+                        divisions: (_maxAge - _minAge).round(),
+                        labels: RangeLabels(
+                          '${_ageRange.start.round()}',
+                          '${_ageRange.end.round()}',
+                        ),
+                        onChanged: _useAgeFilter
+                            ? (value) => setState(() => _ageRange = value)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Sort by',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: CupertinoColors.label,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: cupertinoDecoration(context),
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          onPressed: _showSortPicker,
+                          child: Row(
+                            children: [
+                              const Icon(CupertinoIcons.sort_down, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _sortOptions
+                                      .firstWhere(
+                                        (option) => option.value == _sort,
+                                        orElse: () => _sortOptions[0],
+                                      )
+                                      .label,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: CupertinoColors.label,
+                                  ),
+                                ),
+                              ),
+                              const Icon(CupertinoIcons.chevron_down, size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Gender',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: CupertinoColors.label,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: cupertinoDecoration(context),
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          onPressed: _showGenderPicker,
+                          child: Row(
+                            children: [
+                              const Icon(CupertinoIcons.person, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _genderOptions
+                                      .firstWhere(
+                                        (option) =>
+                                            option.value == (_gender ?? ''),
+                                        orElse: () => _genderOptions[0],
+                                      )
+                                      .label,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: CupertinoColors.label,
+                                  ),
+                                ),
+                              ),
+                              const Icon(CupertinoIcons.chevron_down, size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: _reset,
+                          child: const Text('Reset'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _apply,
+                          child: const Text('Apply filters'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

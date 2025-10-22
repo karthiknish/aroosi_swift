@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:aroosi_flutter/core/env.dart';
 
@@ -54,17 +55,14 @@ class RealTimeService {
           _handleMessage(message);
         },
         onError: (error) {
-          print('WebSocket error: $error');
-          _connectedCtrl.add(false);
+            _connectedCtrl.add(false);
         },
         onDone: () {
-          print('WebSocket connection closed');
-          _connectedCtrl.add(false);
+              _connectedCtrl.add(false);
         },
       );
     } catch (e) {
-      print('Failed to connect to WebSocket: $e');
-      _connectedCtrl.add(false);
+        _connectedCtrl.add(false);
     }
   }
 
@@ -122,11 +120,10 @@ class RealTimeService {
           break;
 
         case 'error':
-          print('WebSocket error: ${data['message']}');
-          break;
+            break;
       }
     } catch (e) {
-      print('Error handling WebSocket message: $e');
+      // Error handling WebSocket message
     }
   }
 
@@ -137,7 +134,7 @@ class RealTimeService {
       final jsonMessage = jsonEncode(message);
       _channel?.sink.add(jsonMessage);
     } catch (e) {
-      print('Error sending WebSocket message: $e');
+      // Error sending WebSocket message
     }
   }
 
@@ -231,7 +228,7 @@ class RealTimeService {
       try {
         handler(conversationId, isTyping);
       } catch (e) {
-        print('Error in typing handler: $e');
+        debugPrint('Error in typing handler: $e');
       }
     }
   }
@@ -244,7 +241,7 @@ class RealTimeService {
       try {
         handler(conversationId, message);
       } catch (e) {
-        print('Error in message handler: $e');
+        debugPrint('Error in message handler: $e');
       }
     }
   }
@@ -258,7 +255,7 @@ class RealTimeService {
       try {
         handler(conversationId, messageId, userId);
       } catch (e) {
-        print('Error in delivery receipt handler: $e');
+        debugPrint('Error in delivery receipt handler: $e');
       }
     }
   }
@@ -272,34 +269,12 @@ class RealTimeService {
       try {
         handler(conversationId, messageId, userId);
       } catch (e) {
-        print('Error in read receipt handler: $e');
+        debugPrint('Error in read receipt handler: $e');
       }
     }
   }
 
-  void _notifyPresenceHandlers(
-    String conversationId,
-    bool isPresent,
-    int? lastSeen,
-  ) {
-    for (final handler in _presenceHandlers.keys) {
-      try {
-        handler(conversationId, isPresent, lastSeen);
-      } catch (e) {
-        print('Error in presence handler: $e');
-      }
-    }
-  }
 
-  void _notifyUnreadHandlers(Map<String, dynamic> payload) {
-    for (final handler in _unreadHandlers.keys) {
-      try {
-        handler(payload);
-      } catch (e) {
-        print('Error in unread handler: $e');
-      }
-    }
-  }
 
   // Event handlers
   void onTyping(void Function(String conversationId, bool isTyping) handler) {

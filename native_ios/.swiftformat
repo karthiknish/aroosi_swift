@@ -1,0 +1,9 @@
+--allman false
+--indent 4
+--decimalgrouping 3,3
+--semicolons inline
+--stripunusedargs closure-only
+--ifdef no-indent
+--patternlet inline
+--wrapcollections before-first
+--smarttabs enabled

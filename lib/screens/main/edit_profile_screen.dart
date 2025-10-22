@@ -1,10 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/features/profiles/profiles_repository.dart';
-import 'package:aroosi_flutter/features/profiles/profile_constants.dart';
+import 'package:aroosi_flutter/theme/colors.dart';
 
 // NOTE: The current UserProfile model is minimal (fullName, email, plan, etc.).
 // Many detailed demographic fields used in aroosi-mobile are NOT yet part of
@@ -74,15 +75,580 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
   }
 
+  BoxDecoration cupertinoDecoration(
+    BuildContext context, {
+    bool hasError = false,
+  }) {
+    return BoxDecoration(
+      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      border: Border.all(
+        color: hasError ? CupertinoColors.systemRed : AppColors.primary,
+        width: hasError ? 2.0 : 1.0,
+      ),
+      borderRadius: BorderRadius.circular(10.0),
+    );
+  }
+
+  Padding cupertinoFieldPadding(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: child,
+    );
+  }
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Listen for auth state changes and refresh profile data
+  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+
+    // Trigger bootstrap when profile becomes available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (authState.profile != null && !_hasBootstrapped) {
+        _bootstrapFromProfile();
+      }
+    });
+
+    // If we haven't bootstrapped yet and profile is available, bootstrap immediately
     if (authState.profile != null && !_hasBootstrapped) {
       _bootstrapFromProfile();
-      _hasBootstrapped = true;
     }
+
+    // Show loading until we have profile data and have bootstrapped it
+    if (authState.loading && !_hasBootstrapped) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading profile data...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // If we have profile data but haven't bootstrapped yet, show loading
+    if (authState.profile != null && !_hasBootstrapped) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Preparing profile data...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Show error if there's an error loading profile
+    if (authState.error != null && authState.profile == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error loading profile: ${authState.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref
+                      .read(authControllerProvider.notifier)
+                      .refreshProfileOnly();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final saveBtn = FilledButton.icon(
+      onPressed: _saving ? null : _save,
+      icon: _saving
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.save),
+      label: Text(_saving ? 'Saving...' : 'Save'),
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profile')),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionCard('Basic', [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Full Name',
+                          style: CupertinoTheme.of(context).textTheme.textStyle
+                              .copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: cupertinoDecoration(context),
+                          child: cupertinoFieldPadding(
+                            CupertinoTextField(
+                              controller: _nameCtrl,
+                              placeholder: 'Enter your full name',
+                              placeholderStyle: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .copyWith(
+                                    color: CupertinoColors.placeholderText,
+                                  ),
+                              style: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.transparent),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date of Birth',
+                          style: CupertinoTheme.of(context).textTheme.textStyle
+                              .copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: cupertinoDecoration(context),
+                          child: cupertinoFieldPadding(
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: _pickDob,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _dobLabel(),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .textStyle
+                                        .copyWith(
+                                          color: _dob == null
+                                              ? CupertinoColors.placeholderText
+                                              : CupertinoColors.label,
+                                        ),
+                                  ),
+                                  const Icon(CupertinoIcons.calendar, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _chipSelector(
+                      label: 'Gender',
+                      options: genderOptions,
+                      value: _gender,
+                      onChanged: (v) => setState(() => _gender = v),
+                    ),
+                    _chipSelector(
+                      label: 'Preferred Gender',
+                      options: preferredGenderOptions,
+                      value: _preferredGender,
+                      onChanged: (v) => setState(() => _preferredGender = v),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'About Me',
+                          style: CupertinoTheme.of(context).textTheme.textStyle
+                              .copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: cupertinoDecoration(context),
+                          child: cupertinoFieldPadding(
+                            CupertinoTextField(
+                              controller: _aboutCtrl,
+                              placeholder: 'Tell us about yourself',
+                              placeholderStyle: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .copyWith(
+                                    color: CupertinoColors.placeholderText,
+                                  ),
+                              style: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle,
+                              maxLines: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.transparent),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ]),
+                  _sectionCard('Location', [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'City',
+                          style: CupertinoTheme.of(context).textTheme.textStyle
+                              .copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: cupertinoDecoration(context),
+                          child: cupertinoFieldPadding(
+                            CupertinoTextField(
+                              controller: _cityCtrl,
+                              placeholder: 'Enter your city',
+                              placeholderStyle: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .copyWith(
+                                    color: CupertinoColors.placeholderText,
+                                  ),
+                              style: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.transparent),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Country',
+                          style: CupertinoTheme.of(context).textTheme.textStyle
+                              .copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: cupertinoDecoration(context),
+                          child: cupertinoFieldPadding(
+                            CupertinoTextField(
+                              controller: _countryCtrl,
+                              placeholder: 'Enter your country',
+                              placeholderStyle: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .copyWith(
+                                    color: CupertinoColors.placeholderText,
+                                  ),
+                              style: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.transparent),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ]),
+                  _sectionCard('Physical', [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: cupertinoDecoration(context),
+                            child: cupertinoFieldPadding(
+                              CupertinoTextField(
+                                controller: _heightFeetCtrl,
+                                placeholder: 'Height (ft)',
+                                keyboardType: TextInputType.number,
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(color: Colors.transparent),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: cupertinoDecoration(context),
+                            child: cupertinoFieldPadding(
+                              CupertinoTextField(
+                                controller: _heightInchesCtrl,
+                                placeholder: 'Height (in)',
+                                keyboardType: TextInputType.number,
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(color: Colors.transparent),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _chipSelector(
+                      label: 'Marital Status',
+                      options: maritalStatusOptions,
+                      value: _maritalStatus,
+                      onChanged: (v) => setState(() => _maritalStatus = v),
+                    ),
+                    _chipSelector(
+                      label: 'Physical Status',
+                      options: physicalStatusOptions,
+                      value: _physicalStatus,
+                      onChanged: (v) => setState(() => _physicalStatus = v),
+                    ),
+                    _chipSelector(
+                      label: 'Diet',
+                      options: dietOptions,
+                      value: _diet,
+                      onChanged: (v) => setState(() => _diet = v),
+                    ),
+                    _chipSelector(
+                      label: 'Smoking',
+                      options: smokingOptions,
+                      value: _smoking,
+                      onChanged: (v) => setState(() => _smoking = v),
+                    ),
+                    _chipSelector(
+                      label: 'Drinking',
+                      options: drinkingOptions,
+                      value: _drinking,
+                      onChanged: (v) => setState(() => _drinking = v),
+                    ),
+                  ]),
+                  _sectionCard('Professional', [
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _educationCtrl,
+                          placeholder: 'Education',
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _occupationCtrl,
+                          placeholder: 'Occupation',
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _annualIncomeCtrl,
+                          placeholder: 'Annual Income (number)',
+                          keyboardType: TextInputType.number,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
+                  _sectionCard('Cultural', [
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _religionCtrl,
+                          placeholder: 'Religion',
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _motherTongueCtrl,
+                          placeholder: 'Mother Tongue',
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _ethnicityCtrl,
+                          placeholder: 'Ethnicity',
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    _chipSelector(
+                      label: 'Profile For',
+                      options: profileForOptions,
+                      value: _profileFor,
+                      onChanged: (v) => setState(() => _profileFor = v),
+                    ),
+                  ]),
+                  _sectionCard('Contact', [
+                    Container(
+                      decoration: cupertinoDecoration(context),
+                      child: cupertinoFieldPadding(
+                        CupertinoTextField(
+                          controller: _phoneCtrl,
+                          placeholder: 'Phone Number',
+                          keyboardType: TextInputType.phone,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
+                  _sectionCard('Partner Preferences', [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: cupertinoDecoration(context),
+                            child: cupertinoFieldPadding(
+                              CupertinoTextField(
+                                controller: _partnerAgeMinCtrl,
+                                placeholder: 'Age Min',
+                                keyboardType: TextInputType.number,
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(color: Colors.transparent),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: cupertinoDecoration(context),
+                            child: cupertinoFieldPadding(
+                              CupertinoTextField(
+                                controller: _partnerAgeMaxCtrl,
+                                placeholder: 'Age Max',
+                                keyboardType: TextInputType.number,
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(color: Colors.transparent),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _chipsEditable(
+                      label: 'Preferred Cities',
+                      values: _partnerCities,
+                      onAdd: _addPartnerCity,
+                      onRemove: _removePartnerCity,
+                      inputController: _partnerCitiesCtrl,
+                      hint: 'Add city',
+                    ),
+                  ]),
+                  _sectionCard('Interests', [
+                    _chipsEditable(
+                      label: 'Interests',
+                      values: _interests,
+                      onAdd: _addInterest,
+                      onRemove: _removeInterest,
+                      inputController: _interestInputCtrl,
+                      hint: 'Add interest',
+                      suggestions: defaultInterestSuggestions,
+                    ),
+                  ]),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Hide From Free Users'),
+                    value: _hideFromFreeUsers,
+                    onChanged: (v) => setState(() => _hideFromFreeUsers = v),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: saveBtn),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _bootstrapFromProfile() {
@@ -91,18 +657,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     if (p == null) {
       // Profile not loaded yet, try to refresh it
+      print('EditProfile: Profile is null, refreshing...');
       ref.read(authControllerProvider.notifier).refreshProfileOnly();
       return;
     }
 
-    _hasBootstrapped = true;
+    if (_hasBootstrapped) {
+      print('EditProfile: Already bootstrapped, skipping...');
+      return;
+    }
 
+    print('EditProfile: Bootstrapping profile data...');
+
+    // Set all the form values from the profile
     _nameCtrl.text = p.fullName ?? '';
     _aboutCtrl.text = p.aboutMe ?? '';
     _cityCtrl.text = p.city ?? '';
     _countryCtrl.text = p.country ?? _countryCtrl.text;
     if (p.height != null && p.height! > 0) {
-      // convert cm -> feet/inches for display
       final inchesTotal = (p.height! / 2.54);
       final feet = inchesTotal ~/ 12;
       final inches = (inchesTotal - feet * 12).round();
@@ -124,27 +696,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _drinking = p.drinking;
     _physicalStatus = p.physicalStatus;
     _profileFor = p.profileFor;
-    _hideFromFreeUsers = p.hideFromFreeUsers ?? false;
+
+    // Handle date of birth
     if (p.dateOfBirth != null) {
       _dob = p.dateOfBirth;
     }
+
+    // Handle partner preferences
     if (p.partnerPreferenceAgeMin != null) {
       _partnerAgeMinCtrl.text = p.partnerPreferenceAgeMin.toString();
     }
     if (p.partnerPreferenceAgeMax != null) {
       _partnerAgeMaxCtrl.text = p.partnerPreferenceAgeMax.toString();
     }
-    if (p.partnerPreferenceCity != null &&
-        p.partnerPreferenceCity!.isNotEmpty) {
-      _partnerCities
-        ..clear()
-        ..addAll(p.partnerPreferenceCity!);
+    if (p.partnerPreferenceCity != null && p.partnerPreferenceCity is List) {
+      _partnerCities.addAll(List<String>.from(p.partnerPreferenceCity!));
     }
-    if (p.interests != null && p.interests!.isNotEmpty) {
-      _interests
-        ..clear()
-        ..addAll(p.interests!);
-    }
+
+    print('EditProfile: Profile data loaded successfully');
+    setState(() {
+      _hasBootstrapped = true;
+    });
   }
 
   int? _toCentimeters(String feetStr, String inchesStr) {
@@ -158,22 +730,126 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
-    final initial = _dob ?? DateTime(now.year - 25, now.month, now.day);
-    final firstDate = DateTime(now.year - 80);
-    final lastDate = DateTime(now.year - 18, now.month, now.day);
-    final picked = await showDatePicker(
+    final first = DateTime(now.year - 80, now.month, now.day);
+    final last = DateTime(now.year - 18, now.month, now.day);
+
+    final picked = await showCupertinoModalPopup<DateTime>(
       context: context,
-      initialDate: initial,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      builder: (BuildContext context) {
+        return Container(
+          height: 216,
+          padding: const EdgeInsets.only(top: 6.0),
+          margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () => Navigator.pop(context, _dob),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime:
+                        _dob ?? DateTime(now.year - 25, now.month, now.day),
+                    minimumDate: first,
+                    maximumDate: last,
+                    onDateTimeChanged: (DateTime newDate) {
+                      setState(() => _dob = newDate);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
+
     if (picked != null) {
       setState(() => _dob = picked);
     }
   }
 
-  String? _required(String? v) =>
-      (v == null || v.trim().isEmpty) ? 'Required' : null;
+  void _showOptionPicker(
+    BuildContext context,
+    String title,
+    List<String> options,
+    String? currentValue,
+    void Function(String?) onChanged,
+  ) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 216,
+          padding: const EdgeInsets.only(top: 6.0),
+          margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    magnification: 1.22,
+                    squeeze: 1.2,
+                    useMagnifier: true,
+                    itemExtent: 32.0,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: currentValue != null
+                          ? options.indexOf(currentValue)
+                          : 0,
+                    ),
+                    onSelectedItemChanged: (int selectedItem) {
+                      onChanged(options[selectedItem]);
+                    },
+                    children: options.map((option) {
+                      return Center(child: Text(option));
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   List<String> _validateFormLevel() {
     final errors = <String>[];
@@ -246,9 +922,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     put('diet', _diet);
     put('smoking', _smoking);
     put('drinking', _drinking);
-    put('physicalStatus', _physicalStatus);
-    put('profileFor', _profileFor);
-    put('hideFromFreeUsers', _hideFromFreeUsers);
     if (_dob != null) {
       put('dateOfBirth', _dob!.toIso8601String());
     }
@@ -262,9 +935,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     if (_partnerCities.isNotEmpty) {
       put('partnerPreferenceCity', _partnerCities.toList());
-    }
-    if (_interests.isNotEmpty) {
-      put('interests', _interests.toList());
     }
 
     try {
@@ -283,35 +953,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _aboutCtrl.dispose();
-    _cityCtrl.dispose();
-    _countryCtrl.dispose();
-    _heightFeetCtrl.dispose();
-    _heightInchesCtrl.dispose();
-    _educationCtrl.dispose();
-    _occupationCtrl.dispose();
-    _annualIncomeCtrl.dispose();
-    _phoneCtrl.dispose();
-    _religionCtrl.dispose();
-    _motherTongueCtrl.dispose();
-    _ethnicityCtrl.dispose();
-    _partnerAgeMinCtrl.dispose();
-    _partnerAgeMaxCtrl.dispose();
-    _partnerCitiesCtrl.dispose();
-    _interestInputCtrl.dispose();
-    super.dispose();
-  }
-
-  InputDecoration _dec(String label, {String? hint}) => InputDecoration(
-    labelText: label,
-    hintText: hint,
-    border: const OutlineInputBorder(),
-    isDense: true,
-  );
-
   Widget _sectionCard(String title, List<Widget> children) {
     final theme = Theme.of(context);
     return Container(
@@ -322,7 +963,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.04),
+            color: theme.shadowColor.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -356,44 +997,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String? value,
     required void Function(String?) onChanged,
   }) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Text(label, style: theme.textTheme.bodyMedium),
+        Text(
+          label,
+          style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((o) {
-            final selected = o == value;
-            return SizedBox(
-              height: 32, // Fixed height to prevent sizing issues
-              child: ChoiceChip(
-                label: Text(o),
-                selected: selected,
-                onSelected: (_) => onChanged(selected ? null : o),
-                selectedColor: theme.colorScheme.primaryContainer,
-                labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: selected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
-                ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: cupertinoDecoration(context),
+          child: cupertinoFieldPadding(
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () =>
+                  _showOptionPicker(context, label, options, value, onChanged),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    value ?? 'Select',
+                    style: CupertinoTheme.of(context).textTheme.textStyle
+                        .copyWith(
+                          color: value == null
+                              ? CupertinoColors.placeholderText
+                              : CupertinoColors.label,
+                        ),
+                  ),
+                  const Icon(CupertinoIcons.chevron_down, size: 16),
+                ],
               ),
-            );
-          }).toList(),
+            ),
+          ),
         ),
       ],
     );
   }
-
-  // (Old dropdown helper removed; replaced by chip selector UI.)
-
-  String _dobLabel() => _dob == null
-      ? 'Select date of birth'
-      : _dob!.toIso8601String().split('T').first;
 
   void _addPartnerCity(String city) {
     final c = city.trim();
@@ -491,269 +1133,77 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authControllerProvider);
+  // (Old dropdown helper removed; replaced by chip selector UI.)
 
-    // Trigger bootstrap when profile becomes available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (authState.profile != null && !_hasBootstrapped) {
-        _bootstrapFromProfile();
-      }
-    });
-
-    // Show loading if profile is not loaded yet
-    if (authState.loading && authState.profile == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit Profile')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Show error if there's an error loading profile
-    if (authState.error != null && authState.profile == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit Profile')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Error loading profile: ${authState.error}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(authControllerProvider.notifier)
-                      .refreshProfileOnly();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final saveBtn = FilledButton.icon(
-      onPressed: _saving ? null : _save,
-      icon: _saving
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.save),
-      label: Text(_saving ? 'Saving...' : 'Save'),
-    );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit Profile')),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: Scrollbar(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _sectionCard('Basic', [
-                    TextFormField(
-                      controller: _nameCtrl,
-                      decoration: _dec('Full Name'),
-                      validator: _required,
-                    ),
-                    GestureDetector(
-                      onTap: _pickDob,
-                      child: InputDecorator(
-                        decoration: _dec('Date of Birth'),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(_dobLabel()),
-                            const Icon(Icons.calendar_today, size: 16),
-                          ],
-                        ),
-                      ),
-                    ),
-                    _chipSelector(
-                      label: 'Gender',
-                      options: genderOptions,
-                      value: _gender,
-                      onChanged: (v) => setState(() => _gender = v),
-                    ),
-                    _chipSelector(
-                      label: 'Preferred Gender',
-                      options: preferredGenderOptions,
-                      value: _preferredGender,
-                      onChanged: (v) => setState(() => _preferredGender = v),
-                    ),
-                    TextFormField(
-                      controller: _aboutCtrl,
-                      decoration: _dec('About Me'),
-                      maxLines: 4,
-                    ),
-                  ]),
-                  _sectionCard('Location', [
-                    TextFormField(
-                      controller: _cityCtrl,
-                      decoration: _dec('City'),
-                      validator: _required,
-                    ),
-                    TextFormField(
-                      controller: _countryCtrl,
-                      decoration: _dec('Country'),
-                      validator: _required,
-                    ),
-                  ]),
-                  _sectionCard('Physical', [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _heightFeetCtrl,
-                            decoration: _dec('Height (ft)'),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _heightInchesCtrl,
-                            decoration: _dec('Height (in)'),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    _chipSelector(
-                      label: 'Marital Status',
-                      options: maritalStatusOptions,
-                      value: _maritalStatus,
-                      onChanged: (v) => setState(() => _maritalStatus = v),
-                    ),
-                    _chipSelector(
-                      label: 'Physical Status',
-                      options: physicalStatusOptions,
-                      value: _physicalStatus,
-                      onChanged: (v) => setState(() => _physicalStatus = v),
-                    ),
-                    _chipSelector(
-                      label: 'Diet',
-                      options: dietOptions,
-                      value: _diet,
-                      onChanged: (v) => setState(() => _diet = v),
-                    ),
-                    _chipSelector(
-                      label: 'Smoking',
-                      options: smokingOptions,
-                      value: _smoking,
-                      onChanged: (v) => setState(() => _smoking = v),
-                    ),
-                    _chipSelector(
-                      label: 'Drinking',
-                      options: drinkingOptions,
-                      value: _drinking,
-                      onChanged: (v) => setState(() => _drinking = v),
-                    ),
-                  ]),
-                  _sectionCard('Professional', [
-                    TextFormField(
-                      controller: _educationCtrl,
-                      decoration: _dec('Education'),
-                    ),
-                    TextFormField(
-                      controller: _occupationCtrl,
-                      decoration: _dec('Occupation'),
-                    ),
-                    TextFormField(
-                      controller: _annualIncomeCtrl,
-                      decoration: _dec('Annual Income (number)'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ]),
-                  _sectionCard('Cultural', [
-                    TextFormField(
-                      controller: _religionCtrl,
-                      decoration: _dec('Religion'),
-                    ),
-                    TextFormField(
-                      controller: _motherTongueCtrl,
-                      decoration: _dec('Mother Tongue'),
-                    ),
-                    TextFormField(
-                      controller: _ethnicityCtrl,
-                      decoration: _dec('Ethnicity'),
-                    ),
-                    _chipSelector(
-                      label: 'Profile For',
-                      options: profileForOptions,
-                      value: _profileFor,
-                      onChanged: (v) => setState(() => _profileFor = v),
-                    ),
-                  ]),
-                  _sectionCard('Contact', [
-                    TextFormField(
-                      controller: _phoneCtrl,
-                      decoration: _dec('Phone Number'),
-                      keyboardType: TextInputType.phone,
-                    ),
-                  ]),
-                  _sectionCard('Partner Preferences', [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _partnerAgeMinCtrl,
-                            decoration: _dec('Age Min'),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _partnerAgeMaxCtrl,
-                            decoration: _dec('Age Max'),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    _chipsEditable(
-                      label: 'Preferred Cities',
-                      values: _partnerCities,
-                      onAdd: _addPartnerCity,
-                      onRemove: _removePartnerCity,
-                      inputController: _partnerCitiesCtrl,
-                      hint: 'Add city',
-                    ),
-                  ]),
-                  _sectionCard('Interests', [
-                    _chipsEditable(
-                      label: 'Interests',
-                      values: _interests,
-                      onAdd: _addInterest,
-                      onRemove: _removeInterest,
-                      inputController: _interestInputCtrl,
-                      hint: 'Add interest',
-                      suggestions: defaultInterestSuggestions,
-                    ),
-                  ]),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Hide From Free Users'),
-                    value: _hideFromFreeUsers,
-                    onChanged: (v) => setState(() => _hideFromFreeUsers = v),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerRight, child: saveBtn),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  String _dobLabel() => _dob == null
+      ? 'Select date of birth'
+      : _dob!.toIso8601String().split('T').first;
 }
+
+// Options for chip selectors
+const List<String> genderOptions = [
+  'male',
+  'female',
+  'non-binary',
+  'prefer-not-to-say',
+];
+
+const List<String> preferredGenderOptions = ['male', 'female', 'any'];
+
+const List<String> maritalStatusOptions = [
+  'single',
+  'divorced',
+  'widowed',
+  'separated',
+];
+
+const List<String> physicalStatusOptions = [
+  'normal',
+  'differently-abled',
+  'athletic',
+];
+
+const List<String> dietOptions = [
+  'vegetarian',
+  'non-vegetarian',
+  'vegan',
+  'halal',
+  'kosher',
+];
+
+const List<String> smokingOptions = [
+  'never',
+  'occasionally',
+  'regularly',
+  'socially',
+];
+
+const List<String> drinkingOptions = [
+  'never',
+  'occasionally',
+  'socially',
+  'regularly',
+];
+
+const List<String> profileForOptions = [
+  'self',
+  'sibling',
+  'child',
+  'friend',
+  'relative',
+];
+
+const List<String> defaultInterestSuggestions = [
+  'Music',
+  'Movies',
+  'Travel',
+  'Sports',
+  'Reading',
+  'Cooking',
+  'Photography',
+  'Art',
+  'Technology',
+  'Fitness',
+  'Dancing',
+  'Gaming',
+];

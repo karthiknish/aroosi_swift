@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:aroosi_flutter/core/toast_service.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/features/support/support_repository.dart';
+import 'package:aroosi_flutter/theme/colors.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class ContactScreen extends ConsumerStatefulWidget {
@@ -41,17 +43,122 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
     super.dispose();
   }
 
+  BoxDecoration cupertinoDecoration(
+    BuildContext context, {
+    bool hasError = false,
+  }) {
+    return BoxDecoration(
+      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      border: Border.all(
+        color: hasError ? CupertinoColors.destructiveRed : AppColors.primary,
+        width: 1.5,
+      ),
+      borderRadius: BorderRadius.circular(10.0),
+    );
+  }
+
+  Padding cupertinoFieldPadding(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: child,
+    );
+  }
+
+  Future<void> _showCategoryPicker() async {
+    String? selectedCategory = _category;
+
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 250,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const Text(
+                    'Category',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Done'),
+                    onPressed: () {
+                      setState(() => _category = selectedCategory ?? 'General');
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 32,
+                scrollController: FixedExtentScrollController(
+                  initialItem: [
+                    'General',
+                    'Billing',
+                    'Technical',
+                    'Safety',
+                  ].indexOf(_category),
+                ),
+                onSelectedItemChanged: (int index) {
+                  selectedCategory = [
+                    'General',
+                    'Billing',
+                    'Technical',
+                    'Safety',
+                  ][index];
+                },
+                children: const [
+                  Center(child: Text('General')),
+                  Center(child: Text('Billing')),
+                  Center(child: Text('Technical')),
+                  Center(child: Text('Safety')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Manual validation
+    final email = _emailCtrl.text.trim();
+    if (email.isNotEmpty) {
+      final emailValid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+      if (!emailValid) {
+        ToastService.instance.error('Please enter a valid email address');
+        return;
+      }
+    }
+
+    final message = _messageCtrl.text.trim();
+    if (message.isEmpty) {
+      ToastService.instance.error('Please describe your issue');
+      return;
+    }
+
     setState(() => _submitting = true);
     final repo = SupportRepository();
     final ok = await repo.submitContact(
-      email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+      email: email.isEmpty ? null : email,
       subject: _subjectCtrl.text.trim().isEmpty
           ? null
           : _subjectCtrl.text.trim(),
       category: _category,
-      message: _messageCtrl.text.trim(),
+      message: message,
       metadata: _includeDiagnostics ? _buildDiagnostics() : null,
     );
     setState(() => _submitting = false);
@@ -108,65 +215,119 @@ class _ContactScreenState extends ConsumerState<ContactScreen> {
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Your email (optional)',
-                prefixIcon: Icon(Icons.alternate_email),
-              ),
-              validator: (v) {
-                final s = v?.trim() ?? '';
-                if (s.isEmpty) return null;
-                final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
-                return ok ? null : 'Enter a valid email';
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _category,
-              items: const [
-                DropdownMenuItem(value: 'General', child: Text('General')),
-                DropdownMenuItem(value: 'Billing', child: Text('Billing')),
-                DropdownMenuItem(value: 'Technical', child: Text('Technical')),
-                DropdownMenuItem(value: 'Safety', child: Text('Safety')),
-              ],
-              onChanged: (v) => setState(() => _category = v ?? 'General'),
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                prefixIcon: Icon(Icons.category_outlined),
+            Container(
+              decoration: cupertinoDecoration(context),
+              child: cupertinoFieldPadding(
+                CupertinoTextField(
+                  controller: _emailCtrl,
+                  placeholder: 'Your email (optional)',
+                  keyboardType: TextInputType.emailAddress,
+                  prefix: const Padding(
+                    padding: EdgeInsets.only(left: 16, right: 8),
+                    child: Icon(CupertinoIcons.mail),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.transparent),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _subjectCtrl,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Subject (optional)',
-                prefixIcon: Icon(Icons.subject_outlined),
+            GestureDetector(
+              onTap: _showCategoryPicker,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: cupertinoDecoration(context).copyWith(
+                  border: Border.all(color: AppColors.primary, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Icon(CupertinoIcons.tag),
+                    ),
+                    Expanded(
+                      child: Text(
+                        _category,
+                        style: TextStyle(
+                          color: CupertinoTheme.of(
+                            context,
+                          ).textTheme.textStyle.color,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      CupertinoIcons.chevron_down,
+                      size: 16,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _messageCtrl,
-              maxLines: 5,
-              minLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'How can we help?',
-                alignLabelWithHint: true,
-                border: OutlineInputBorder(),
+            Container(
+              decoration: cupertinoDecoration(context),
+              child: cupertinoFieldPadding(
+                CupertinoTextField(
+                  controller: _subjectCtrl,
+                  placeholder: 'Subject (optional)',
+                  textCapitalization: TextCapitalization.sentences,
+                  prefix: const Padding(
+                    padding: EdgeInsets.only(left: 16, right: 8),
+                    child: Icon(CupertinoIcons.text_bubble),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.transparent),
+                  ),
+                ),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please describe your issue'
-                  : null,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: cupertinoDecoration(context),
+              child: cupertinoFieldPadding(
+                CupertinoTextField(
+                  controller: _messageCtrl,
+                  placeholder: 'How can we help?',
+                  maxLines: 5,
+                  minLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.transparent),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
-            SwitchListTile.adaptive(
-              value: _includeDiagnostics,
-              onChanged: (v) => setState(() => _includeDiagnostics = v),
-              title: const Text('Include basic diagnostics'),
-              subtitle: const Text('Helps us resolve your issue faster'),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Include basic diagnostics'),
+                      Text(
+                        'Helps us resolve your issue faster',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                CupertinoSwitch(
+                  value: _includeDiagnostics,
+                  onChanged: (v) => setState(() => _includeDiagnostics = v),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Row(

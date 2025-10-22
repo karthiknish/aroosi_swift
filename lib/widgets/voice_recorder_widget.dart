@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Simple voice recorder widget (long press to record) producing bytes + duration.
 /// This is a minimal MVP to enable voice message sending; can be enhanced with waveform.
@@ -29,13 +30,54 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
   int _elapsed = 0;
   String? _error;
 
+  Future<bool> _showRecordingConsentDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Microphone Permission'),
+        content: const Text(
+          'Aroosi needs access to your microphone to record voice messages. Your audio will only be used for the voice messages you send.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  void _startRecordingIndicators() {
+    // Visual feedback for recording state
+    setState(() {});
+  }
+
   Future<void> _startRecording() async {
+    // Show explicit consent dialog first
+    final consent = await _showRecordingConsentDialog();
+    if (!consent) return;
+
     setState(() => _error = null);
     final hasPerm = await _rec.hasPermission();
     if (!hasPerm) {
-      setState(() => _error = 'Microphone permission denied');
-      return;
+      try {
+        final microphoneStatus = await Permission.microphone.request();
+        if (!microphoneStatus.isGranted) {
+          setState(() => _error = 'Microphone permission required');
+          return;
+        }
+      } catch (e) {
+        setState(() => _error = 'Failed to request microphone permission');
+        return;
+      }
     }
+    
     _elapsed = 0;
     _start = DateTime.now();
     final dir = await Directory.systemTemp.createTemp('voice_rec');
@@ -49,6 +91,10 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
       ),
       path: outPath,
     );
+    
+    // Start visual indicators
+    _startRecordingIndicators();
+    
     _ticker = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (!mounted || !_recording) return;
       setState(() => _elapsed = DateTime.now().difference(_start!).inSeconds);

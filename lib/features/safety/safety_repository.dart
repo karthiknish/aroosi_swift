@@ -1,130 +1,85 @@
-import 'package:dio/dio.dart';
-
-import 'package:aroosi_flutter/core/api_client.dart';
+import 'package:aroosi_flutter/core/firebase_service.dart';
 
 class SafetyRepository {
-  SafetyRepository({Dio? dio}) : _dio = dio ?? ApiClient.dio;
-  final Dio _dio;
+  final FirebaseService _firebase = FirebaseService();
 
-  Future<bool> reportUser({
+  Future<Map<String, dynamic>> reportUser({
     required String userId,
     required String reason,
     String? details,
   }) async {
     try {
-      final res = await _dio.post(
-        '/safety/report',
-        data: {
-          'userId': userId,
-          'reason': reason,
-          if (details != null && details.isNotEmpty) 'details': details,
-        },
+      await _firebase.reportUser(
+        reportedUserId: userId,
+        reason: reason,
+        description: details,
       );
-      return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-    } on DioException catch (_) {
-      // Fallback
-      try {
-        final res = await _dio.post(
-          '/report',
-          data: {
-            'userId': userId,
-            'reason': reason,
-            if (details != null && details.isNotEmpty) 'details': details,
-          },
-        );
-        return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-      } catch (_) {
-        return false;
-      }
+      return {
+        'success': true,
+        'message': 'Report submitted successfully',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to submit report: ${e.toString()}',
+      };
     }
   }
 
-  Future<bool> blockUser(String userId) async {
+  Future<Map<String, dynamic>> blockUser(String userId) async {
     try {
-      final res = await _dio.post(
-        '/safety/block',
-        data: {'blockedUserId': userId},
-      );
-      return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-    } on DioException catch (_) {
-      try {
-        final res = await _dio.post('/block', data: {'userId': userId});
-        return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-      } catch (_) {
-        return false;
-      }
+      await _firebase.blockUser(userId);
+      return {
+        'success': true,
+        'message': 'User blocked successfully',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to block user: ${e.toString()}',
+      };
     }
   }
 
-  Future<bool> unblockUser(String userId) async {
+  Future<Map<String, dynamic>> unblockUser(String userId) async {
     try {
-      final res = await _dio.post(
-        '/safety/unblock',
-        data: {'blockedUserId': userId},
-      );
-      return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-    } on DioException catch (_) {
-      try {
-        final res = await _dio.post('/unblock', data: {'userId': userId});
-        return (res.statusCode ?? 200) >= 200 && (res.statusCode ?? 200) < 300;
-      } catch (_) {
-        return false;
-      }
+      await _firebase.unblockUser(userId);
+      return {
+        'success': true,
+        'message': 'User unblocked successfully',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to unblock user: ${e.toString()}',
+      };
     }
   }
 
   Future<List<Map<String, dynamic>>> getBlockedUsers() async {
     try {
-      final res = await _dio.get('/safety/blocked');
-      final data = res.data;
-      if (data is List) {
-        return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      }
-      if (data is Map && data['items'] is List) {
-        return (data['items'] as List)
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-      }
-    } catch (_) {
-      try {
-        final res = await _dio.get('/blocked');
-        final data = res.data;
-        if (data is List) {
-          return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        }
-      } catch (_) {}
+      return await _firebase.getBlockedUsers();
+    } catch (e) {
+      return <Map<String, dynamic>>[];
     }
-    return <Map<String, dynamic>>[];
   }
 
-  Future<bool> isBlocked(String userId) async {
+  Future<Map<String, dynamic>> isBlocked(String userId) async {
     try {
-      final res = await _dio.get(
-        '/safety/blocked/check',
-        queryParameters: {'userId': userId},
-      );
-      final data = res.data;
-      if (data is Map) {
-        final m = Map<String, dynamic>.from(data);
-        final v = m['blocked'] ?? m['isBlocked'];
-        if (v is bool) return v;
-        if (v is num) return v != 0;
-        if (v is String) return v.toLowerCase() == 'true';
-      }
+      final blockedUsers = await _firebase.getBlockedUsers();
+      final isBlocked = blockedUsers.any((block) => block['blockedUserId'] == userId);
+      
+      return {
+        'isBlocked': isBlocked,
+        'isBlockedBy': false,
+        'canInteract': !isBlocked,
+      };
     } catch (_) {
-      try {
-        final res = await _dio.get(
-          '/blocked/check',
-          queryParameters: {'userId': userId},
-        );
-        final data = res.data;
-        if (data is Map) {
-          final m = Map<String, dynamic>.from(data);
-          final v = m['blocked'] ?? m['isBlocked'];
-          if (v is bool) return v;
-        }
-      } catch (_) {}
+      return {
+        'isBlocked': false,
+        'isBlockedBy': false,
+        'canInteract': true,
+      };
     }
-    return false;
   }
 }

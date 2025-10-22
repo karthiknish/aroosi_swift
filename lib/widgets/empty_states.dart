@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/colors.dart';
-import 'package:aroosi_flutter/theme/typography.dart' as app_typo;
+import 'package:aroosi_flutter/theme/typography.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 
 /// A comprehensive empty state widget that can be customized for different scenarios
@@ -34,8 +32,6 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
 
     return Padding(
       padding:
@@ -47,7 +43,7 @@ class EmptyState extends StatelessWidget {
           if (icon != null) ...[icon!, SizedBox(height: spacing!)],
           Text(
             title,
-            style: textTheme.headlineSmall?.copyWith(
+            style: AppTypography.h3.copyWith(
               color: AppColors.text,
               fontWeight: FontWeight.w600,
             ),
@@ -57,7 +53,7 @@ class EmptyState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               subtitle!,
-              style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+              style: AppTypography.body.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -65,7 +61,7 @@ class EmptyState extends StatelessWidget {
             SizedBox(height: spacing! / 2),
             Text(
               description!,
-              style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
+              style: AppTypography.caption.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -105,7 +101,7 @@ class NoDataEmptyState extends StatelessWidget {
       title: title ?? 'No data found',
       subtitle: subtitle ?? 'There are no items to display',
       description: description,
-      icon: Icon(Icons.inbox_outlined, size: 64, color: AppColors.muted),
+      icon: Icon(CupertinoIcons.tray, size: 64, color: AppColors.muted),
       showAction: onRefresh != null,
       onActionPressed: onRefresh,
       actionLabel: refreshLabel ?? 'Refresh',
@@ -136,7 +132,7 @@ class EmptyListState extends StatelessWidget {
       title: title ?? 'No items yet',
       subtitle: subtitle ?? 'Your list is empty',
       description: description ?? 'Add some items to get started',
-      icon: Icon(Icons.list_alt_outlined, size: 64, color: AppColors.muted),
+      icon: Icon(CupertinoIcons.list_bullet, size: 64, color: AppColors.muted),
       showAction: onAction != null,
       onActionPressed: onAction,
       actionLabel: actionLabel ?? 'Add Item',
@@ -174,7 +170,7 @@ class EmptySearchState extends StatelessWidget {
           : (subtitle ?? 'Try adjusting your search'),
       description:
           description ?? 'Try different keywords or check your spelling',
-      icon: Icon(Icons.search_off_outlined, size: 64, color: AppColors.muted),
+      icon: Icon(CupertinoIcons.clear, size: 64, color: AppColors.muted),
       showAction: onAction != null,
       onActionPressed: onAction,
       actionLabel: actionLabel ?? 'Clear Search',
@@ -205,7 +201,7 @@ class EmptyFavoritesState extends StatelessWidget {
       description:
           description ?? 'Add some items to your favorites to see them here',
       icon: Icon(
-        Icons.favorite_border_outlined,
+        CupertinoIcons.heart,
         size: 64,
         color: AppColors.muted,
       ),
@@ -239,7 +235,7 @@ class EmptyShortlistState extends StatelessWidget {
       description:
           description ?? 'Add items to your shortlist to see them here',
       icon: Icon(
-        Icons.bookmark_border_outlined,
+        CupertinoIcons.bookmark,
         size: 64,
         color: AppColors.muted,
       ),
@@ -270,34 +266,46 @@ class EmptyMatchesState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyState(
-      title: title ?? 'No matches yet',
-      subtitle: subtitle ?? 'Start exploring to find your perfect match',
+      title: title ?? 'Your Journey Begins',
+      subtitle: subtitle ?? 'Find meaningful connections that honor your values',
       description:
           description ??
-          'Complete your profile and start swiping to get matches',
+          'Complete your profile and start exploring. Every great relationship begins with a single conversation.',
       icon: Icon(
-        Icons.people_outline_outlined,
+        CupertinoIcons.heart,
         size: 64,
-        color: AppColors.muted,
+        color: AppColors.primary.withAlpha(179),
       ),
       showAction: true,
       action: Column(
         children: [
           if (onExplore != null)
-            PrimaryButton(label: 'Start Exploring', onPressed: onExplore),
+            PrimaryButton(
+              label: 'Start Exploring',
+              onPressed: onExplore,
+            ),
           if (onImproveProfile != null) ...[
             const SizedBox(height: 12),
-            OutlinedButton(
+            CupertinoButton(
               onPressed: onImproveProfile,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.primary),
                   borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              child: Text(
-                'Improve Profile',
-                style: TextStyle(color: AppColors.primary),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(CupertinoIcons.pencil, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Complete Profile',
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -329,7 +337,7 @@ class EmptyChatState extends StatelessWidget {
       subtitle: subtitle ?? 'Your messages will appear here',
       description: description ?? 'Start a conversation to see your chats',
       icon: Icon(
-        Icons.chat_bubble_outline_outlined,
+        CupertinoIcons.chat_bubble_text,
         size: 64,
         color: AppColors.muted,
       ),
@@ -360,7 +368,7 @@ class EmptyNotificationsState extends StatelessWidget {
       subtitle: subtitle ?? 'You\'re all caught up',
       description: description ?? 'New notifications will appear here',
       icon: Icon(
-        Icons.notifications_none_outlined,
+        CupertinoIcons.bell,
         size: 64,
         color: AppColors.muted,
       ),

@@ -85,10 +85,10 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                                                     .notifier,
                                               )
                                               .unblock(id);
-                                          if (!mounted) return;
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 ok
@@ -97,6 +97,7 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                                               ),
                                             ),
                                           );
+                                          }
                                         },
                                   child: const Text('Unblock'),
                                 ),

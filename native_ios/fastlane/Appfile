@@ -1,0 +1,4 @@
+apple_id "ios-team@aroosi.com" # TODO: replace with real Apple ID
+itc_team_id "000000000"        # TODO: replace with App Store Connect team ID
+team_id "ABCDE12345"           # TODO: replace with Developer Portal team ID
+app_identifier "com.aroosi.swift" # TODO: adjust per environment

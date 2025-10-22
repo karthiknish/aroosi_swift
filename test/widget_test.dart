@@ -1,19 +1,11 @@
 // A minimal widget test that avoids initializing Firebase platform channels.
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aroosi_flutter/theme/theme.dart';
 import 'package:aroosi_flutter/features/auth/auth_controller.dart';
 import 'package:aroosi_flutter/features/auth/auth_state.dart';
-// Use a local scaffold messenger key in tests to avoid reusing the
-// app-level `toastMessengerKey` which can cause "Multiple widgets used
-// the same GlobalKey" errors when tests build their own MaterialApp.
 import 'package:aroosi_flutter/router.dart';
-
-// A minimal TestApp used for widget tests that avoids touching
-// FirebaseAuth.instance during widget construction.
-final GlobalKey<ScaffoldMessengerState> _testMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();
 
 class TestApp extends ConsumerWidget {
   const TestApp({super.key});
@@ -21,11 +13,10 @@ class TestApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    return MaterialApp.router(
+    return CupertinoApp.router(
       title: 'Aroosi',
-      theme: buildAppTheme(),
+      theme: buildCupertinoTheme(),
       routerConfig: router,
-      scaffoldMessengerKey: _testMessengerKey,
     );
   }
 }

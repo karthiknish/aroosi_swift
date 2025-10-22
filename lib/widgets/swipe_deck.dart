@@ -33,22 +33,22 @@ class SwipeDeck<T> extends StatefulWidget {
   final bool showProgress;
 
   @override
-  State<SwipeDeck<T>> createState() => _SwipeDeckState<T>();
+  State<SwipeDeck<T>> createState() => SwipeDeckState<T>();
 }
 
 // Global key to access swipe deck state
 class SwipeDeckGlobalKey<T> {
-  final GlobalKey<_SwipeDeckState<T>> _key;
+  final GlobalKey<SwipeDeckState<T>> _key;
 
   SwipeDeckGlobalKey({String? debugLabel})
     : _key = GlobalKey(debugLabel: debugLabel);
 
-  _SwipeDeckState<T>? get currentState => _key.currentState;
+  SwipeDeckState<T>? get currentState => _key.currentState;
 
-  GlobalKey<_SwipeDeckState<T>> get key => _key;
+  GlobalKey<SwipeDeckState<T>> get key => _key;
 }
 
-class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
+class SwipeDeckState<T> extends State<SwipeDeck<T>> {
   int _currentIndex = 0;
 
   @override
@@ -154,37 +154,10 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>> {
     );
   }
 
-  void _precacheImage(T item, BuildContext context) {
-    try {
-      // Try to extract image URL from the item
-      final dynamic itemData = item;
-      final url =
-          itemData.avatarUrl ?? itemData.imageUrl ?? itemData.profileImageUrl;
-
-      if (url is String && url.trim().isNotEmpty && _isValidUrl(url)) {
-        precacheImage(NetworkImage(url), context);
-      }
-    } catch (_) {
-      // Ignore precaching errors
-    }
-  }
-
-  bool _isValidUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      return uri.hasScheme && uri.hasAuthority;
-    } catch (_) {
-      return false;
-    }
-  }
-
   Widget _buildCard(T item) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 400, minWidth: 300),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(elevation: 3, child: widget.itemBuilder(context, item)),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Material(elevation: 3, child: widget.itemBuilder(context, item)),
     );
   }
 }
@@ -213,120 +186,6 @@ class DefaultSwipeOverlay extends StatelessWidget {
   }
 }
 
-class _ProgressSwipeOverlay extends StatelessWidget {
-  const _ProgressSwipeOverlay({
-    required this.direction,
-    required this.progress,
-  });
-  final SwipeDirection? direction;
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final likeOpacity = direction == SwipeDirection.right ? progress : 0.0;
-    final passOpacity = direction == SwipeDirection.left ? progress : 0.0;
-
-    return Stack(
-      children: [
-        // Background color overlay with gradient effect
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: direction == SwipeDirection.right
-                  ? LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.green.withValues(alpha: 0.1 * likeOpacity),
-                        Colors.green.withValues(alpha: 0.3 * likeOpacity),
-                      ],
-                      stops: [0.0, 0.5, 1.0],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
-                  : direction == SwipeDirection.left
-                  ? LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.red.withValues(alpha: 0.1 * passOpacity),
-                        Colors.red.withValues(alpha: 0.3 * passOpacity),
-                      ],
-                      stops: [0.0, 0.5, 1.0],
-                      begin: Alignment.centerRight,
-                      end: Alignment.centerLeft,
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.topLeft,
-          child: Opacity(
-            opacity: passOpacity.clamp(0, 1),
-            child: Transform.scale(
-              scale: 0.8 + (0.2 * passOpacity),
-              child: _AnimatedLabel(
-                text: 'PASS',
-                color: Colors.redAccent,
-                rotation: -12 * passOpacity,
-              ),
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.topRight,
-          child: Opacity(
-            opacity: likeOpacity.clamp(0, 1),
-            child: Transform.scale(
-              scale: 0.8 + (0.2 * likeOpacity),
-              child: _AnimatedLabel(
-                text: 'LIKE',
-                color: Colors.lightGreen,
-                rotation: 12 * likeOpacity,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AnimatedLabel extends StatelessWidget {
-  const _AnimatedLabel({
-    required this.text,
-    required this.color,
-    required this.rotation,
-  });
-  final String text;
-  final Color color;
-  final double rotation; // degrees
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: rotation * math.pi / 180,
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: color, width: 3),
-          borderRadius: BorderRadius.circular(10),
-          color: color.withValues(alpha: 0.08),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _Label extends StatelessWidget {
   const _Label({required this.text, required this.color});
   final String text;
@@ -342,7 +201,7 @@ class _Label extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        style: TextStyle(color: color),
       ),
     );
   }

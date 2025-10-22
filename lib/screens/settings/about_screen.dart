@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -271,34 +272,17 @@ class _LinkGroup extends StatelessWidget {
         child: Column(
           children: [
             for (int i = 0; i < items.length; i++) ...[
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: items[i].onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.lg,
-                      vertical: Spacing.md,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            items[i].label,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                      ],
-                    ),
+              CupertinoListTile(
+                onTap: items[i].onTap,
+                title: Text(
+                  items[i].label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.primary,
                   ),
+                ),
+                trailing: Icon(
+                  CupertinoIcons.chevron_right,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
                 ),
               ),
               if (i < items.length - 1)

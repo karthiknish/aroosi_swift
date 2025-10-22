@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:aroosi_flutter/features/icebreakers/icebreaker_controller.dart';
 import 'package:aroosi_flutter/features/icebreakers/icebreaker_models.dart';
@@ -36,6 +35,13 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
     final icebreakersAsync = ref.watch(icebreakerControllerProvider);
     final controller = ref.read(icebreakerControllerProvider.notifier);
 
+    // Fetch icebreakers if not already loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!icebreakersAsync.isLoading && icebreakersAsync.icebreakers.isEmpty && icebreakersAsync.error == null) {
+        controller.fetchDailyIcebreakers();
+      }
+    });
+
     Widget? progressWidget;
     if (!icebreakersAsync.isLoading && icebreakersAsync.error == null) {
       final icebreakers = icebreakersAsync.icebreakers;
@@ -55,7 +61,7 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
                 value: progress,
                 backgroundColor: Theme.of(
                   context,
-                ).colorScheme.onPrimary.withOpacity(0.3),
+                ).colorScheme.onPrimary.withValues(alpha: 0.3),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
                 ),
@@ -75,7 +81,7 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Today\'s icebreakers'),
+        title: const Text('Today\'s Icebreakers'),
         actions: [
           if (icebreakersAsync.isLoading)
             const SizedBox.shrink()
@@ -118,34 +124,20 @@ class _IcebreakersScreenState extends ConsumerState<IcebreakersScreen> {
                   final controller = _getController(icebreaker.id);
                   final focusNode = _getFocusNode(icebreaker.id);
 
-                  return AnimatedOpacity(
-                    opacity: 1.0,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: const Offset(0, 0.1),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: ModalRoute.of(context)!.animation!,
-                              curve: Curves.easeOut,
-                            ),
-                          ),
-                      child: IcebreakerCard(
-                        icebreaker: icebreaker,
-                        controller: controller,
-                        focusNode: focusNode,
-                        onSave: (answer) => _handleSave(icebreaker.id, answer),
-                        onSkip: () => _handleSkip(
-                          index,
-                          icebreakersAsync.icebreakers.length,
-                        ),
-                        onNext: () => _handleNext(
-                          index,
-                          icebreakersAsync.icebreakers.length,
-                        ),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: IcebreakerCard(
+                      icebreaker: icebreaker,
+                      controller: controller,
+                      focusNode: focusNode,
+                      onSave: (answer) => _handleSave(icebreaker.id, answer),
+                      onSkip: () => _handleSkip(
+                        index,
+                        icebreakersAsync.icebreakers.length,
+                      ),
+                      onNext: () => _handleNext(
+                        index,
+                        icebreakersAsync.icebreakers.length,
                       ),
                     ),
                   );
@@ -259,33 +251,34 @@ class IcebreakerCard extends ConsumerWidget {
           children: [
             Text(
               icebreaker.text,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                hintText: 'Type your answer',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+            SizedBox(
+              width: double.infinity,
+              child: TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: 'Type your answer',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
-                contentPadding: const EdgeInsets.all(12),
+                maxLines: 4,
+                maxLength: 280,
+                onChanged: (value) {
+                  // Trigger rebuild to update character count
+                },
+                onEditingComplete: () {
+                  // Auto-save when user finishes editing
+                  final text = controller.text.trim();
+                  if (text.length >= 10 && text != (icebreaker.answer ?? '')) {
+                    onSave(text);
+                  }
+                },
               ),
-              maxLines: 4,
-              maxLength: 280,
-              onChanged: (value) {
-                // Trigger rebuild to update character count
-              },
-              onEditingComplete: () {
-                // Auto-save when user finishes editing
-                final text = controller.text.trim();
-                if (text.length >= 10 && text != (icebreaker.answer ?? '')) {
-                  onSave(text);
-                }
-              },
             ),
             const SizedBox(height: 8),
             Row(

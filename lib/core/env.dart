@@ -41,6 +41,22 @@ class Env {
     }
   }
 
+  /// Mobile billing toggle. When false (default), subscriptions stay on the
+  /// free tier and purchase flows are disabled.
+  static bool get subscriptionsEnabled {
+    final value = _read('SUBSCRIPTIONS_ENABLED');
+    if (value.isEmpty) return false;
+    switch (value.toLowerCase()) {
+      case '1':
+      case 'true':
+      case 'yes':
+      case 'on':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   static String _read(String key) {
     try {
       final value = dotenv.env[key];

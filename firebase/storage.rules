@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile images - users can only upload to their own folder
+    match /profile_images/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Chat images - authenticated users can access (simplified for now)
+    match /chat_images/{conversationId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Voice messages - authenticated users can access (simplified for now)
+    match /voice_messages/{conversationId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Default deny for all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

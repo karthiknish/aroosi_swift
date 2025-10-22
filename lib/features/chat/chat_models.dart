@@ -168,19 +168,79 @@ class ConversationSummary extends Equatable {
   });
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
+    // Handle NextJS API conversations format
+    final id = (json['id']?.toString() ?? 
+                json['conversationId']?.toString() ?? 
+                json['_id']?.toString() ?? '').trim();
+    
+    // Extract participant info from participants array
+    String partnerId = '';
+    String partnerName = 'Unknown';
+    String? partnerAvatarUrl;
+    
+    if (json['participants'] is List && (json['participants'] as List).isNotEmpty) {
+      final participants = json['participants'] as List;
+      final currentUser = participants.firstWhere(
+        (p) {
+          final pMap = p as Map;
+          return pMap['userId']?.toString() == 'You' || (pMap['userId']?.toString().isEmpty ?? false);
+        },
+        orElse: () => participants.last,
+      );
+      final otherParticipant = participants.firstWhere(
+        (p) => p != currentUser,
+        orElse: () => participants.last,
+      );
+      
+      partnerId = otherParticipant['userId']?.toString() ?? '';
+      partnerName = otherParticipant['fullName']?.toString() ?? partnerName;
+      partnerAvatarUrl = otherParticipant['profileImageUrls'] is List && 
+          (otherParticipant['profileImageUrls'] as List).isNotEmpty
+          ? (otherParticipant['profileImageUrls'] as List).first?.toString()
+          : null;
+    } else {
+      // Fallback to direct fields if no participants array
+      partnerId = json['partnerId']?.toString() ?? '';
+      partnerName = json['partnerName']?.toString() ?? partnerName;
+      partnerAvatarUrl = json['partnerAvatarUrl']?.toString();
+    }
+    
+    // Extract last message info
+    String? lastMessageText;
+    DateTime? lastMessageAt;
+    
+    if (json['lastMessage'] is Map) {
+      final lastMessage = json['lastMessage'] as Map;
+      lastMessageText = lastMessage['text']?.toString() ?? lastMessage['content']?.toString();
+      final timestamp = lastMessage['createdAt'] ?? lastMessage['timestamp'];
+      if (timestamp != null) {
+        lastMessageAt = timestamp is num 
+            ? DateTime.fromMillisecondsSinceEpoch(timestamp.toInt())
+            : DateTime.tryParse(timestamp.toString());
+      }
+    } else {
+      // Fallback to direct fields
+      lastMessageText = json['lastMessageText']?.toString();
+      if (json['lastMessageAt'] != null) {
+        lastMessageAt = json['lastMessageAt'] is num
+            ? DateTime.fromMillisecondsSinceEpoch(json['lastMessageAt'].toInt())
+            : DateTime.tryParse(json['lastMessageAt'].toString());
+      }
+    }
+    
     return ConversationSummary(
-      id: json['id']?.toString() ?? '',
-      partnerId: json['partnerId']?.toString() ?? '',
-      partnerName: json['partnerName']?.toString() ?? '',
-      partnerAvatarUrl: json['partnerAvatarUrl']?.toString(),
-      lastMessageText: json['lastMessageText']?.toString(),
-      lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.parse(json['lastMessageAt'])
-          : null,
+      id: id,
+      partnerId: partnerId,
+      partnerName: partnerName,
+      partnerAvatarUrl: partnerAvatarUrl,
+      lastMessageText: lastMessageText,
+      lastMessageAt: lastMessageAt,
       unreadCount: json['unreadCount'] as int? ?? 0,
       isOnline: json['isOnline'] as bool? ?? false,
       lastSeen: json['lastSeen'] != null
-          ? DateTime.parse(json['lastSeen'])
+          ? json['lastSeen'] is num
+              ? DateTime.fromMillisecondsSinceEpoch(json['lastSeen'].toInt())
+              : DateTime.tryParse(json['lastSeen'].toString())
           : null,
     );
   }

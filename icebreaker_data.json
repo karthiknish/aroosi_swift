@@ -1,0 +1,184 @@
+{
+  "icebreaker_questions": {
+    "1": {
+      "id": "1",
+      "text": "What's your favorite way to spend a weekend?",
+      "active": true,
+      "category": "lifestyle",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "2": {
+      "id": "2",
+      "text": "If you could travel anywhere right now, where would you go and why?",
+      "active": true,
+      "category": "travel",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "3": {
+      "id": "3",
+      "text": "What's a skill you've always wanted to learn?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "4": {
+      "id": "4",
+      "text": "What's your go-to comfort food?",
+      "active": true,
+      "category": "food",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "5": {
+      "id": "5",
+      "text": "What's the most interesting place you've ever visited?",
+      "active": true,
+      "category": "travel",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "6": {
+      "id": "6",
+      "text": "If you could have dinner with any historical figure, who would it be?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "7": {
+      "id": "7",
+      "text": "What's your favorite book or movie and why?",
+      "active": true,
+      "category": "entertainment",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "8": {
+      "id": "8",
+      "text": "What's something that always makes you laugh?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "9": {
+      "id": "9",
+      "text": "What's your favorite season and what do you love about it?",
+      "active": true,
+      "category": "lifestyle",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "10": {
+      "id": "10",
+      "text": "If you could instantly master any instrument, what would it be?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "11": {
+      "id": "11",
+      "text": "What's the best piece of advice you've ever received?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "12": {
+      "id": "12",
+      "text": "What's your favorite way to relax after a long day?",
+      "active": true,
+      "category": "lifestyle",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "13": {
+      "id": "13",
+      "text": "If you could live in any fictional universe, which one would it be?",
+      "active": true,
+      "category": "entertainment",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "14": {
+      "id": "14",
+      "text": "What's a hobby you'd love to pick up?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "15": {
+      "id": "15",
+      "text": "What's your favorite type of music and why?",
+      "active": true,
+      "category": "entertainment",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "16": {
+      "id": "16",
+      "text": "If you could time travel to any era, when and where would you go?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "17": {
+      "id": "17",
+      "text": "What's your dream job?",
+      "active": true,
+      "category": "career",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "18": {
+      "id": "18",
+      "text": "What's the most spontaneous thing you've ever done?",
+      "active": true,
+      "category": "personal",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "19": {
+      "id": "19",
+      "text": "What's your favorite local spot in your city?",
+      "active": true,
+      "category": "local",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    },
+    "20": {
+      "id": "20",
+      "text": "If you could have any superpower, what would it be?",
+      "active": true,
+      "category": "fun",
+      "weight": 1,
+      "createdAt": {"_seconds": 1725120000, "_nanoseconds": 0},
+      "updatedAt": {"_seconds": 1725120000, "_nanoseconds": 0}
+    }
+  }
+}

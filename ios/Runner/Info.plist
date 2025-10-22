@@ -24,6 +24,17 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -32,17 +43,24 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Age Rating for 18+ Content -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app uses tracking to improve your experience and provide personalized features. You can change this in Settings.</string>
+	<!-- Photo Access for Profile Pictures -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aroosi needs access to your photo library to let you select profile pictures for your dating profile. You can choose specific photos without granting access to your entire photo library.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aroosi needs permission to save photos to your library when you take pictures using the in-app camera.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aroosi needs camera access to let you take profile pictures directly within the app. Photos are used only for your dating profile and are securely stored.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aroosi needs microphone access to record voice messages. Recording indicator will be clearly visible during recording and messages are stored securely.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -63,5 +81,64 @@
 	<!-- Microphone access for optional voice messages -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access to record voice messages.</string>
+	<!-- App Store submission requirements -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>aroosi.app</key>
+			<dict>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>www.aroosi.app</key>
+			<dict>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>staging.aroosi.app</key>
+			<dict>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<!-- Face ID support for future authentication -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Use Face ID to securely access your account.</string>
+	<!-- Location permissions for location-based matching -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses your location to find matches near you.</string>
+	<!-- Push notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<!-- App Store rating and review -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- iPad orientations -->
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>

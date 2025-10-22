@@ -1,7 +1,7 @@
 /// Country dial codes data mirrored from the React Native project
 /// Source shape: { value, label, dialCode, flag }
 /// Stored here as a const list for fast, synchronous access (no async load needed).
-/// Phone numbers should be stored in canonical E.164-like format: +<country code><national number>
+/// Phone numbers should be stored in canonical E.164-like format: +country code national number
 /// UI will allow selecting a country (flag + dialCode) and entering the national significant number only.
 library;
 

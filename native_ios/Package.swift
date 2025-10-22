@@ -1,0 +1,42 @@
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "AroosiSwift",
+    defaultLocalization: "en",
+    platforms: [
+        .iOS(.v17)
+    ],
+    products: [
+        .library(
+            name: "AroosiKit",
+            targets: ["AroosiKit"]
+        )
+    ],
+    dependencies: [
+    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", from: "10.21.0")
+    ],
+    targets: [
+        .target(
+            name: "AroosiKit",
+            dependencies: [
+                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseFirestore", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseStorage", package: "firebase-ios-sdk")
+            ],
+            path: "Sources",
+            linkerSettings: [
+                .linkedFramework("AuthenticationServices", .when(platforms: [.iOS])),
+                .linkedFramework("CryptoKit", .when(platforms: [.iOS])),
+                .linkedFramework("Security", .when(platforms: [.iOS]))
+            ]
+        ),
+        .testTarget(
+            name: "AroosiKitTests",
+            dependencies: [
+                "AroosiKit"
+            ],
+            path: "Tests"
+        )
+    ]
+)

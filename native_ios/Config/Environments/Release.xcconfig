@@ -1,0 +1,4 @@
+#include "Base.xcconfig"
+APP_ENV=production
+FIREBASE_PLIST=GoogleService-Info-Prod
+API_BASE_URL=https://api.aroosi.com

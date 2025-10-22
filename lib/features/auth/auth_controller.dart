@@ -45,58 +45,63 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _bootstrap() async {
     logAuth('_bootstrap(): begin');
-    final ok = await _repo.me();
-    logAuth('_bootstrap(): me() => $ok');
-    if (ok) {
-      // Extra safety: ensure Firebase reports a current user and that we can
-      // obtain a valid ID token. This prevents situations where the backend
-      // incorrectly reports an active session while Firebase has no user —
-      // which previously caused the router to treat the app as authenticated
-      // and redirect immediately to the dashboard.
-      try {
-        final fbUser = fb.FirebaseAuth.instance.currentUser;
-        if (fbUser == null) {
-          logAuth(
-            '_bootstrap(): Firebase currentUser is null despite me() true -> treating as unauthenticated',
-          );
-          state = const AuthState(isAuthenticated: false, loading: false);
-          return;
-        }
-        // Attempt to fetch an ID token to validate session. If this fails,
-        // treat as unauthenticated.
+    try {
+      final ok = await _repo.me();
+      logAuth('_bootstrap(): me() => $ok');
+      if (ok) {
+        // Extra safety: ensure Firebase reports a current user and that we can
+        // obtain a valid ID token. This prevents situations where the backend
+        // incorrectly reports an active session while Firebase has no user —
+        // which previously caused the router to treat the app as authenticated
+        // and redirect immediately to the dashboard.
         try {
-          await fbUser.getIdToken();
-        } catch (e) {
-          logAuth('_bootstrap(): failed to get Firebase idToken -> $e');
+          final fbUser = fb.FirebaseAuth.instance.currentUser;
+          if (fbUser == null) {
+            logAuth(
+              '_bootstrap(): Firebase currentUser is null despite me() true -> treating as unauthenticated',
+            );
+            state = const AuthState(isAuthenticated: false, loading: false);
+            return;
+          }
+          // Attempt to fetch an ID token to validate session. If this fails,
+          // treat as unauthenticated.
+          try {
+            await fbUser.getIdToken();
+          } catch (e) {
+            logAuth('_bootstrap(): failed to get Firebase idToken -> $e');
+            state = const AuthState(isAuthenticated: false, loading: false);
+            return;
+          }
+        } catch (_) {
           state = const AuthState(isAuthenticated: false, loading: false);
           return;
         }
-      } catch (_) {
+        final json = await _repo.getProfile();
+        logAuth(
+          '_bootstrap(): getProfile() => ${json == null ? 'null' : 'json'}',
+        );
+        if (json == null) {
+          // Previously we logged the user out if the profile endpoint returned null.
+          // This caused unwanted redirects to the welcome/startup screen on transient
+          // failures (e.g. race conditions, slow backend, or profile not yet created).
+          // Instead, keep the user authenticated with a null profile so the UI can
+          // guide them to complete or retry loading their profile.
+          await _handleMissingProfile();
+          return;
+        }
+        state = AuthState(
+          isAuthenticated: true,
+          loading: false,
+          profile: UserProfile.fromJson(json),
+        );
+        logAuth('_bootstrap(): state -> authenticated with profile');
+      } else {
         state = const AuthState(isAuthenticated: false, loading: false);
-        return;
+        logAuth('_bootstrap(): state -> unauthenticated');
       }
-      final json = await _repo.getProfile();
-      logAuth(
-        '_bootstrap(): getProfile() => ${json == null ? 'null' : 'json'}',
-      );
-      if (json == null) {
-        // Previously we logged the user out if the profile endpoint returned null.
-        // This caused unwanted redirects to the welcome/startup screen on transient
-        // failures (e.g. race conditions, slow backend, or profile not yet created).
-        // Instead, keep the user authenticated with a null profile so the UI can
-        // guide them to complete or retry loading their profile.
-        await _handleMissingProfile();
-        return;
-      }
-      state = AuthState(
-        isAuthenticated: true,
-        loading: false,
-        profile: UserProfile.fromJson(json),
-      );
-      logAuth('_bootstrap(): state -> authenticated with profile');
-    } else {
+    } catch (e) {
+      logAuth('_bootstrap(): error -> $e');
       state = const AuthState(isAuthenticated: false, loading: false);
-      logAuth('_bootstrap(): state -> unauthenticated');
     }
   }
 
@@ -117,19 +122,30 @@ class AuthController extends Notifier<AuthState> {
           state = const AuthState(isAuthenticated: false, loading: false);
           return;
         }
-        final json = await _repo.getProfile();
-        logAuth('login(): getProfile() => ${json == null ? 'null' : 'json'}');
-        if (json == null) {
-          // Keep authenticated; surface message so user can complete profile
+        
+        // Add timeout for profile fetching to prevent hanging
+        try {
+          final json = await _repo.getProfile().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => null,
+          );
+          logAuth('login(): getProfile() => ${json == null ? 'null' : 'json'}');
+          if (json == null) {
+            // Keep authenticated; surface message so user can complete profile
+            await _handleMissingProfile(showMessage: true);
+            return;
+          }
+          state = AuthState(
+            isAuthenticated: true,
+            loading: false,
+            profile: UserProfile.fromJson(json),
+          );
+          logAuth('login(): state -> authenticated with profile');
+        } catch (profileError) {
+          logAuth('login(): profile fetch error: ${profileError.toString()}');
+          // Keep authenticated but show error for profile completion
           await _handleMissingProfile(showMessage: true);
-          return;
         }
-        state = AuthState(
-          isAuthenticated: true,
-          loading: false,
-          profile: UserProfile.fromJson(json),
-        );
-        logAuth('login(): state -> authenticated with profile');
       } else {
         state = const AuthState(isAuthenticated: false, loading: false);
         logAuth('login(): state -> unauthenticated (me() false)');
@@ -140,45 +156,62 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<void> loginWithGoogle() async {
-    logAuth('loginWithGoogle(): start');
+  Future<void> loginWithApple() async {
+    logAuth('loginWithApple(): start');
     state = state.copyWith(loading: true, error: null);
     try {
-      await _repo.signInWithGoogle();
+      final result = await _repo.signInWithApple();
+
+      // Log information about the Apple Sign In result
+      logAuth(
+        'loginWithApple(): email hidden=${result.isEmailHidden}, email=${result.email}',
+      );
+
       final ok = await _repo.me();
-      logAuth('loginWithGoogle(): me() => $ok');
+      logAuth('loginWithApple(): me() => $ok');
       if (ok) {
         // Verify Firebase user/token before trusting backend session.
         final fbUser = fb.FirebaseAuth.instance.currentUser;
         if (fbUser == null) {
           logAuth(
-            'loginWithGoogle(): backend me() true but Firebase currentUser is null -> unauthenticated',
+            'loginWithApple(): backend me() true but Firebase currentUser is null -> unauthenticated',
           );
           state = const AuthState(isAuthenticated: false, loading: false);
           return;
         }
-        final json = await _repo.getProfile();
-        logAuth(
-          'loginWithGoogle(): getProfile() => ${json == null ? 'null' : 'json'}',
-        );
-        if (json == null) {
-          // Keep authenticated; allow profile completion flow
+        
+        // Add timeout for profile fetching to prevent hanging
+        try {
+          final json = await _repo.getProfile().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => null,
+          );
+          logAuth(
+            'loginWithApple(): getProfile() => ${json == null ? 'null' : 'json'}',
+          );
+          if (json == null) {
+            // Keep authenticated; allow profile completion flow
+            await _handleMissingProfile(showMessage: true);
+            return;
+          }
+          state = AuthState(
+            isAuthenticated: true,
+            loading: false,
+            profile: UserProfile.fromJson(json),
+          );
+          logAuth('loginWithApple(): state -> authenticated with profile');
+        } catch (profileError) {
+          logAuth('loginWithApple(): profile fetch error: ${profileError.toString()}');
+          // Keep authenticated but show error for profile completion
           await _handleMissingProfile(showMessage: true);
-          return;
         }
-        state = AuthState(
-          isAuthenticated: true,
-          loading: false,
-          profile: UserProfile.fromJson(json),
-        );
-        logAuth('loginWithGoogle(): state -> authenticated with profile');
       } else {
         state = const AuthState(isAuthenticated: false, loading: false);
-        logAuth('loginWithGoogle(): state -> unauthenticated (me() false)');
+        logAuth('loginWithApple(): state -> unauthenticated (me() false)');
       }
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
-      logAuth('loginWithGoogle(): error ${e.toString()}');
+      logAuth('loginWithApple(): error ${e.toString()}');
     }
   }
 
@@ -191,16 +224,30 @@ class AuthController extends Notifier<AuthState> {
       final ok = await _repo.me();
       logAuth('signup(): me() => $ok');
       if (ok) {
-        final json = await _repo.getProfile();
-        logAuth('signup(): getProfile() => ${json == null ? 'null' : 'json'}');
-        state = AuthState(
-          isAuthenticated: true,
-          loading: false,
-          profile: json == null ? null : UserProfile.fromJson(json),
-        );
-        logAuth(
-          'signup(): state -> authenticated (profile ${json == null ? 'null' : 'present'})',
-        );
+        // Add timeout for profile fetching to prevent hanging
+        try {
+          final json = await _repo.getProfile().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => null,
+          );
+          logAuth('signup(): getProfile() => ${json == null ? 'null' : 'json'}');
+          state = AuthState(
+            isAuthenticated: true,
+            loading: false,
+            profile: json == null ? null : UserProfile.fromJson(json),
+          );
+          logAuth(
+            'signup(): state -> authenticated (profile ${json == null ? 'null' : 'present'})',
+          );
+        } catch (profileError) {
+          logAuth('signup(): profile fetch error: ${profileError.toString()}');
+          // Keep authenticated but without profile to trigger onboarding
+          state = const AuthState(
+            isAuthenticated: true,
+            loading: false,
+            profile: null,
+          );
+        }
       } else {
         state = const AuthState(isAuthenticated: false, loading: false);
         logAuth('signup(): state -> unauthenticated (me() false)');
@@ -307,6 +354,58 @@ class AuthController extends Notifier<AuthState> {
     logAuth('refresh(): start');
     state = state.copyWith(loading: true, error: null);
     await _bootstrap();
+  }
+
+  /// Get the current user's email privacy status (whether email is hidden)
+  bool isCurrentUserEmailHidden() {
+    final fbUser = fb.FirebaseAuth.instance.currentUser;
+    if (fbUser == null || fbUser.email == null) return false;
+
+    // Check if it's a proxy email from Apple's Hide My Email feature
+    return fbUser.email!.endsWith('@privaterelay.appleid.com');
+  }
+
+  /// Get display email for UI (shows "Hidden" for proxy emails)
+  String getDisplayEmail() {
+    final fbUser = fb.FirebaseAuth.instance.currentUser;
+    if (fbUser == null || fbUser.email == null) return '';
+
+    final email = fbUser.email!;
+    if (email.endsWith('@privaterelay.appleid.com')) {
+      return 'Hidden';
+    }
+    return email;
+  }
+
+  /// Request to share the real email address for users who hid their email during Apple Sign In
+  Future<bool> requestEmailSharing() async {
+    logAuth('requestEmailSharing(): start');
+    try {
+      final success = await _repo.requestEmailSharing();
+      logAuth('requestEmailSharing(): success=$success');
+      return success;
+    } catch (e) {
+      logAuth('requestEmailSharing(): error ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Delete user account and all associated data
+  Future<void> deleteAccount({required String password, String? reason}) async {
+    logAuth('deleteAccount(): start');
+    state = state.copyWith(loading: true, error: null);
+    try {
+      await _repo.deleteAccount(password: password, reason: reason);
+      logAuth('deleteAccount(): success');
+      // Firebase auth listener will handle the state change automatically
+    } catch (e) {
+      logAuth('deleteAccount(): error ${e.toString()}');
+      state = state.copyWith(
+        loading: false,
+        error: e.toString(),
+      );
+      rethrow;
+    }
   }
 }
 

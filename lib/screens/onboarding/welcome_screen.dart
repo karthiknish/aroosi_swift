@@ -13,6 +13,16 @@ class WelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
+    
+    // If authenticated and has profile, redirect to search
+    if (auth.isAuthenticated && auth.profile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/search');
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       body: Stack(
@@ -85,26 +95,38 @@ class WelcomeScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     FadeScaleIn(
                       delay: AppMotionDurations.fast,
-                      child: FilledButton(
-                        onPressed: () => context.push('/signup'),
-                        child: const Text('Create Account'),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.apple, color: Colors.white, size: 20),
+                          label: const Text(
+                            'Sign in with Apple',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          onPressed: () {
+                            ref.read(authControllerProvider.notifier).loginWithApple();
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     FadeIn(
                       delay: const Duration(milliseconds: 200),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black87,
-                          side: const BorderSide(color: Colors.transparent),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Text(
+                        'Apple Sign In includes "Hide My Email" for privacy',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        onPressed: () => context.push('/login'),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     const SizedBox(height: 24),

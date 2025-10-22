@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
-import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/theme.dart';
+import 'package:aroosi_flutter/theme/typography.dart';
 import 'package:aroosi_flutter/widgets/email_verification_banner.dart';
+import 'package:aroosi_flutter/widgets/brand/aurora_background.dart';
 
 class AppScaffold extends StatelessWidget {
   final String title;
@@ -23,51 +23,82 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isCupertinoPlatform(context)) {
-      final content = SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.md),
-          child: Material(type: MaterialType.transparency, child: child),
-        ),
-      );
-      return CupertinoPageScaffold(
+    final content = SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.md),
+        child: child,
+      ),
+    );
+    
+    return AuroraBackground(
+      enableTexture: true,
+      child: CupertinoPageScaffold(
+        backgroundColor: AppColors.background,
         navigationBar: CupertinoNavigationBar(
-          middle: Text(title),
+          backgroundColor: AppColors.background.withValues(alpha: 0.9),
+          border: null,
+          middle: _CupertinoAppBarTitle(title: title),
           leading: leading,
           trailing: actions != null && actions!.isNotEmpty
               ? Row(mainAxisSize: MainAxisSize.min, children: actions!)
               : null,
         ),
-        child: floatingActionButton == null
-            ? content
-            : Stack(
-                children: [
-                  content,
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: floatingActionButton!,
-                  ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.lg + 8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const EmailVerificationBanner(),
+                const SizedBox(height: Spacing.lg),
+                child,
+                if (floatingActionButton != null) ...[
+                  const SizedBox(height: 80),
                 ],
-              ),
-      );
-    }
-    return Scaffold(
-      appBar: AppBar(title: Text(title), leading: leading, actions: actions),
-      body: Padding(
-        padding: const EdgeInsets.all(Spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const EmailVerificationBanner(),
-            const SizedBox(height: Spacing.md),
-            // Remove Expanded to allow sliver-based children to layout correctly
-            child,
-          ],
+              ],
+            ),
+          ),
         ),
       ),
-      floatingActionButton: floatingActionButton,
+    );
+  }
+}
+
+class _CupertinoAppBarTitle extends StatelessWidget {
+  const _CupertinoAppBarTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTypography.h3.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Curated by Aroosi',
+          style: AppTypography.caption.copyWith(
+            color: AppColors.muted,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
     );
   }
 }

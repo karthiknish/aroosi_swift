@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'debug_logger.dart';
 
 /// Global error handler specifically for GlobalKey conflicts

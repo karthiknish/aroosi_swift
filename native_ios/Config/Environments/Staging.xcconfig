@@ -1,0 +1,4 @@
+#include "Base.xcconfig"
+APP_ENV=staging
+FIREBASE_PLIST=GoogleService-Info-Staging
+API_BASE_URL=https://api.staging.aroosi.com

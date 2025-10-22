@@ -46,25 +46,33 @@ class SafetyController extends Notifier<SafetyState> {
     }
   }
 
-  Future<bool> isBlocked(String userId) => _repo.isBlocked(userId);
+  Future<bool> isBlocked(String userId) async {
+    final result = await _repo.isBlocked(userId);
+    return result['isBlocked'] == true;
+  }
 
   Future<bool> block(String userId) async {
-    final ok = await _repo.blockUser(userId);
-    if (ok) await refreshBlocked();
-    return ok;
+    final result = await _repo.blockUser(userId);
+    final success = result['success'] == true;
+    if (success) await refreshBlocked();
+    return success;
   }
 
   Future<bool> unblock(String userId) async {
-    final ok = await _repo.unblockUser(userId);
-    if (ok) await refreshBlocked();
-    return ok;
+    final result = await _repo.unblockUser(userId);
+    final success = result['success'] == true;
+    if (success) await refreshBlocked();
+    return success;
   }
 
   Future<bool> report(
     String userId, {
     required String reason,
     String? details,
-  }) => _repo.reportUser(userId: userId, reason: reason, details: details);
+  }) async {
+    final result = await _repo.reportUser(userId: userId, reason: reason, details: details);
+    return result['success'] == true;
+  }
 }
 
 final safetyControllerProvider =

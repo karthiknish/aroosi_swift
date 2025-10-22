@@ -21,7 +21,6 @@ class ShortlistsScreen extends ConsumerStatefulWidget {
 
 class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
   final _scrollController = ScrollController();
-  String? _editingUserId;
   String _draftNote = '';
 
   @override
@@ -113,7 +112,6 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
               ),
               onPressed: () async {
                 _draftNote = entry.note ?? '';
-                _editingUserId = entry.userId;
 
                 if (!mounted) return;
 
@@ -140,9 +138,9 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
                           final success = await ref
                               .read(shortlistControllerProvider.notifier)
                               .setNote(entry.userId, _draftNote.trim());
-                          if (!mounted) return;
-
-                          Navigator.of(context).pop();
+                          if (mounted) {
+                            Navigator.of(context).pop();
+                          }
 
                           if (success) {
                             ToastService.instance.success('Note saved');
@@ -182,15 +180,17 @@ class _ShortlistsScreenState extends ConsumerState<ShortlistsScreen> {
 
                     if (isPlanLimit) {
                       // Show upgrade dialog for plan limits
+                      if (!mounted) return;
+
                       final shouldUpgrade = await showAdaptiveConfirm(
                         context,
-                        title: 'Upgrade Required',
+                        title: 'Limit Reached',
                         message: error,
-                        confirmText: 'Upgrade Now',
-                        cancelText: 'Maybe Later',
+                        confirmText: 'OK',
+                        cancelText: 'Cancel',
                       );
-                      if (shouldUpgrade) {
-                        context.push('/subscription');
+                      if (shouldUpgrade && mounted) {
+                        // Limit reached - no action needed
                       }
                     } else {
                       ToastService.instance.error(error);

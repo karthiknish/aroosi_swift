@@ -338,8 +338,9 @@ class ToastService {
     ).firstMatch(m);
     if (exceptionMatch != null && exceptionMatch.groupCount >= 1) {
       final candidate = exceptionMatch.group(1)!.trim();
-      if (candidate.isNotEmpty && candidate.length < 200)
+      if (candidate.isNotEmpty && candidate.length < 200) {
         return _capitalizeFirst(candidate);
+      }
     }
 
     // Strip bracketed error codes like [ERR_SOMETHING] and common "code:" patterns

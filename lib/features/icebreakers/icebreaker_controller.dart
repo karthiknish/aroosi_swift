@@ -35,15 +35,15 @@ class IcebreakerState {
 
 // Simple controller for icebreakers
 class IcebreakerController extends Notifier<IcebreakerState> {
-  IcebreakerController() {
-    _repository = ref.read(icebreakerRepositoryProvider);
-    fetchDailyIcebreakers();
-  }
 
   late final IcebreakerRepository _repository;
 
   @override
-  IcebreakerState build() => const IcebreakerState();
+  IcebreakerState build() {
+    _repository = ref.read(icebreakerRepositoryProvider);
+    // Don't auto-fetch here to avoid putting provider in error state during initialization
+    return const IcebreakerState();
+  }
 
   // Fetch daily icebreakers
   Future<void> fetchDailyIcebreakers() async {
@@ -95,7 +95,7 @@ class IcebreakerController extends Notifier<IcebreakerState> {
       } else {
         return false;
       }
-    } on DioException catch (e) {
+    } on DioException {
       return false;
     } catch (e) {
       return false;

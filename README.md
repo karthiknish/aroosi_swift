@@ -14,7 +14,6 @@ Environment variables are loaded from `.env` (see `lib/core/env.dart`).
 
 ## Releases
 
-- Android package id: `com.aroosi.mobile`
 - iOS bundle id: `com.aroosi.mobile`
 - Versioning, build numbers, and fastlane metadata live alongside the Flutter
   project. See [docs/release.md](docs/release.md) for the full workflow, required

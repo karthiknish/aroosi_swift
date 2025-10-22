@@ -1,0 +1,150 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isPublicProfile(userId);
+    }
+    
+    // Profiles collection - public profiles can be read by authenticated users
+    match /profiles/{profileId} {
+      allow read: if request.auth != null && isValidUser();
+      allow write: if request.auth != null && request.auth.uid == profileId;
+      allow create: if request.auth != null && request.auth.uid == profileId && isValidProfileData();
+    }
+    
+    // Conversations collection - only participants can access
+    match /conversations/{conversationId} {
+      allow read, write: if request.auth != null && 
+        isParticipantInConversation(request.auth.uid, conversationId);
+      allow create: if request.auth != null && 
+        isValidConversationCreate(request.auth.uid, request.resource.data);
+    }
+    
+    // Messages subcollection - only participants can access their conversation's messages
+    match /conversations/{conversationId}/messages/{messageId} {
+      allow read, write: if request.auth != null && 
+        isParticipantInConversation(request.auth.uid, conversationId);
+      allow create: if request.auth != null && 
+        isParticipantInConversation(request.auth.uid, conversationId) &&
+        isValidMessageCreate(request.resource.data);
+    }
+    
+    // Matches collection - only users involved can read/write
+    match /matches/{matchId} {
+      allow read, write: if request.auth != null && 
+        (request.resource.data.userId == request.auth.uid || 
+         request.resource.data.matchedUserId == request.auth.uid);
+    }
+    
+    // Interests collection - senders/receivers can access their interests
+    match /interests/{interestId} {
+      allow read: if request.auth != null && 
+        (request.resource.data.fromUserId == request.auth.uid || 
+         request.resource.data.toUserId == request.auth.uid);
+      allow create: if request.auth != null && 
+        request.resource.data.fromUserId == request.auth.uid &&
+        isValidInterestCreate(request.resource.data);
+      allow update: if request.auth != null && 
+        request.resource.data.toUserId == request.auth.uid;
+    }
+    
+    // Reports collection - users can create reports, admins can read
+    match /reports/{reportId} {
+      allow create: if request.auth != null && 
+        request.resource.data.reporterId == request.auth.uid &&
+        isValidReportCreate(request.resource.data);
+      allow read: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // Blocks collection - users can manage their own blocks
+    match /blocks/{blockId} {
+      allow read: if request.auth != null && 
+        request.resource.data.blockerId == request.auth.uid;
+      allow create: if request.auth != null && 
+        request.resource.data.blockerId == request.auth.uid;
+    }
+    
+    // Shortlist subcollection - users can manage their own shortlist
+    match /users/{userId}/shortlist/{shortlistedUserId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Icebreaker questions - read-only for all authenticated users
+    match /icebreaker_questions/{questionId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Server only - questions uploaded via admin script
+    }
+
+    // Icebreaker answers - users can read/write their own answers
+    match /icebreaker_answers/{answerId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+    
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Helper functions
+
+function isValidUser() {
+  return request.auth != null && request.auth.token.email_verified == true;
+}
+
+function isPublicProfile(userId) {
+  return exists(/databases/(default)/documents/users/$(userId)) &&
+    get(/databases/(default)/documents/users/$(userId)).data.isPublic == true;
+}
+
+function isParticipantInConversation(userId, conversationId) {
+  return exists(/databases/(default)/documents/conversations/$(conversationId)) &&
+    userId in get(/databases/(default)/documents/conversations/$(conversationId)).data.participants;
+}
+
+function isValidConversationCreate(userId, data) {
+  return userId in data.participants && 
+    data.participants.size() >= 2 &&
+    data.participants.size() <= 2;
+}
+
+function isValidMessageCreate(data) {
+  return data.text is string && 
+    data.text.size() > 0 &&
+    data.text.size() <= 1000 &&
+    data.fromUserId == request.auth.uid;
+}
+
+function isValidProfileData() {
+  return request.resource.data.keys().hasAll(['name', 'age', 'gender']) &&
+    request.resource.data.name is string &&
+    request.resource.data.name.size() > 0 &&
+    request.resource.data.age is int &&
+    request.resource.data.age >= 18 &&
+    request.resource.data.age <= 100;
+}
+
+function isValidInterestCreate(data) {
+  return data.fromUserId == request.auth.uid &&
+    data.fromUserId != data.toUserId &&
+    data.status in ['pending', 'accepted', 'rejected'];
+}
+
+function isValidReportCreate(data) {
+  return data.reporterId == request.auth.uid &&
+    data.reporterId != data.reportedUserId &&
+    data.reason is string &&
+    data.reason.size() > 0;
+}
+
+function isAdmin(userId) {
+  return exists(/databases/(default)/documents/users/$(userId)) &&
+    get(/databases/(default)/documents/users/$(userId)).data.role == 'admin';
+}

@@ -11,6 +11,7 @@ import 'package:aroosi_flutter/screens/auth/reset_password_screen.dart';
 import 'package:aroosi_flutter/screens/auth/signup_screen.dart';
 import 'package:aroosi_flutter/screens/details_screen.dart';
 import 'package:aroosi_flutter/screens/home/dashboard_screen.dart';
+import 'package:aroosi_flutter/screens/home/favorites_screen.dart';
 
 import 'package:aroosi_flutter/screens/home/home_shell.dart';
 import 'package:aroosi_flutter/screens/home/profile_screen.dart';
@@ -20,10 +21,18 @@ import 'package:aroosi_flutter/screens/main/conversation_list_screen.dart';
 import 'package:aroosi_flutter/screens/main/edit_profile_screen.dart';
 import 'package:aroosi_flutter/screens/main/icebreakers_screen.dart';
 import 'package:aroosi_flutter/screens/main/interests_screen.dart';
-import 'package:aroosi_flutter/screens/main/matches_screen.dart';
+import 'package:aroosi_flutter/screens/main/sacred_circle_screen.dart';
 import 'package:aroosi_flutter/screens/main/quick_picks_screen.dart';
 import 'package:aroosi_flutter/screens/main/shortlists_screen.dart';
-import 'package:aroosi_flutter/screens/main/subscription_screen.dart';
+import 'package:aroosi_flutter/screens/main/language_screen.dart';
+import 'package:aroosi_flutter/screens/main/cultural_assessment_screen.dart';
+import 'package:aroosi_flutter/screens/main/family_approval_screen.dart';
+import 'package:aroosi_flutter/screens/main/cultural_matching_dashboard.dart';
+import 'package:aroosi_flutter/screens/main/afghan_cultural_features_screen.dart';
+import 'package:aroosi_flutter/screens/main/matches_screen.dart';
+
+import 'package:aroosi_flutter/screens/cultural/cultural_compatibility_screen.dart'
+    as cultural;
 import 'package:aroosi_flutter/screens/onboarding/onboarding_checklist_screen.dart';
 import 'package:aroosi_flutter/screens/onboarding/onboarding_complete_screen.dart';
 import 'package:aroosi_flutter/screens/onboarding/profile_setup_wizard_screen.dart';
@@ -38,6 +47,9 @@ import 'package:aroosi_flutter/screens/settings/settings_screen.dart';
 import 'package:aroosi_flutter/screens/settings/terms_of_service_screen.dart';
 import 'package:aroosi_flutter/screens/support/ai_chatbot_screen.dart';
 import 'package:aroosi_flutter/screens/support/contact_screen.dart';
+import 'package:aroosi_flutter/screens/cultural/cultural_profile_setup_screen.dart';
+import 'package:aroosi_flutter/screens/cultural/compatibility_details_screen.dart';
+import 'package:aroosi_flutter/screens/settings/language_settings_screen.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
 import 'features/auth/auth_state.dart';
 
@@ -58,11 +70,6 @@ class GoRouterRefresh extends ChangeNotifier {
   AuthState? _prevAuth;
   AuthState get auth => _auth;
   AuthState? get prevAuth => _prevAuth;
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 final goRouterRefreshProvider = Provider<GoRouterRefresh>((ref) {
@@ -147,6 +154,47 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: '/cultural-profile',
+        name: 'culturalProfile',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const CulturalProfileSetupScreen()),
+      ),
+      GoRoute(
+        path: '/family-approval',
+        name: 'familyApproval',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const FamilyApprovalScreen()),
+      ),
+      GoRoute(
+        path: '/cultural-compatibility/:userId1/:userId2',
+        name: 'culturalCompatibility',
+        pageBuilder: (context, state) {
+          final userId1 = state.pathParameters['userId1']!;
+          final userId2 = state.pathParameters['userId2']!;
+          final userName2 = state.uri.queryParameters['name'];
+          return _adaptivePage(
+            state,
+            cultural.CulturalCompatibilityScreen(
+              userId1: userId1,
+              userId2: userId2,
+              userName2: userName2,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/compatibility-details/:userId1/:userId2',
+        name: 'compatibilityDetails',
+        pageBuilder: (context, state) {
+          final userId1 = state.pathParameters['userId1']!;
+          final userId2 = state.pathParameters['userId2']!;
+          return _adaptivePage(
+            state,
+            CompatibilityDetailsScreen(userId1: userId1, userId2: userId2),
+          );
+        },
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             HomeShell(shell: navigationShell),
@@ -217,10 +265,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 _adaptivePage(state, const InterestsScreen()),
           ),
           GoRoute(
-            path: 'matches',
-            name: 'mainMatches',
+            path: 'sacred-circle',
+            name: 'mainSacredCircle',
             pageBuilder: (context, state) =>
-                _adaptivePage(state, const MatchesScreen()),
+                _adaptivePage(state, const SacredCircleScreen()),
           ),
           GoRoute(
             path: 'quick-picks',
@@ -235,12 +283,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 _adaptivePage(state, const ShortlistsScreen()),
           ),
           GoRoute(
-            path: 'subscription',
-            name: 'mainSubscription',
+            path: 'matches',
+            name: 'mainMatches',
             pageBuilder: (context, state) =>
-                _adaptivePage(state, const SubscriptionScreen()),
+                _adaptivePage(state, const MatchesScreen()),
+          ),
+          GoRoute(
+            path: 'language',
+            name: 'mainLanguage',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const LanguageScreen()),
+          ),
+          GoRoute(
+            path: 'cultural-assessment',
+            name: 'mainCulturalAssessment',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const CulturalAssessmentScreen()),
+          ),
+          GoRoute(
+            path: 'family-approval',
+            name: 'mainFamilyApproval',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const FamilyApprovalScreen()),
+          ),
+          GoRoute(
+            path: 'cultural-matching',
+            name: 'mainCulturalMatching',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const CulturalMatchingDashboard()),
+          ),
+          GoRoute(
+            path: 'afghan-culture',
+            name: 'mainAfghanCulture',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const AfghanCulturalFeaturesScreen()),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        pageBuilder: (context, state) =>
+            _adaptivePage(state, const FavoritesScreen()),
       ),
       GoRoute(
         path: '/details/:id',
@@ -267,6 +351,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'settingsBlockedUsers',
             pageBuilder: (context, state) =>
                 _adaptivePage(state, const BlockedUsersScreen()),
+          ),
+          GoRoute(
+            path: 'language',
+            name: 'settingsLanguage',
+            pageBuilder: (context, state) =>
+                _adaptivePage(state, const LanguageSettingsScreen()),
           ),
           GoRoute(
             path: 'notifications',
@@ -319,6 +409,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final needsProfile = auth.isAuthenticated && auth.profile == null;
 
+      // If on startup and already authenticated, redirect to appropriate page
+      if (isStartup && auth.isAuthenticated) {
+        if (needsProfile) {
+          logRouter('redirect: startup->onboarding/profile-setup');
+          return '/onboarding/profile-setup';
+        }
+        logRouter('redirect: startup->search');
+        return '/search';
+      }
+
       // Unauthenticated users should always see /startup unless navigating to a public route
       if (!auth.isAuthenticated && !isPublic) {
         logRouter('redirect: unauthenticated -> /startup (from=$location)');
@@ -333,7 +433,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/onboarding/profile-setup';
       }
 
-      // If on login and just authenticated, go to dashboard or onboarding
+      // If on login and just authenticated, go to search or onboarding
       if (isLoginRoute && auth.isAuthenticated) {
         final wasUnauth = refresh.prevAuth?.isAuthenticated == false;
         if (wasUnauth) {
@@ -341,18 +441,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             logRouter('redirect: login->onboarding/profile-setup');
             return '/onboarding/profile-setup';
           }
-          logRouter('redirect: login->dashboard');
-          return '/dashboard';
+          logRouter('redirect: login->search');
+          return '/search';
         }
       }
 
-      // If authenticated and on a public route (but not startup), go to dashboard (if profile present) or onboarding (if profile missing)
+      // If authenticated and on a public route (but not startup), go to search (if profile present) or onboarding (if profile missing)
       if (auth.isAuthenticated && isPublic && !isStartup) {
         if (auth.profile != null) {
           logRouter(
-            'redirect: authenticated+profile on public route -> /dashboard (from=$location)',
+            'redirect: authenticated+profile on public route -> /search (from=$location)',
           );
-          return '/dashboard';
+          return '/search';
         } else {
           logRouter(
             'redirect: authenticated but no profile on public route -> /onboarding/profile-setup (from=$location)',

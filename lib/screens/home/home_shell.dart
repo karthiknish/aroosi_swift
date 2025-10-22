@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:aroosi_flutter/core/responsive.dart';
 import 'package:aroosi_flutter/platform/platform_utils.dart';
+import 'package:aroosi_flutter/widgets/brand/aroosi_navigation_bar.dart';
 
 /// Custom Cupertino-style tab scaffold that avoids GlobalKey conflicts
 class _CupertinoTabScaffoldWrapper extends StatelessWidget {
@@ -33,19 +35,27 @@ class _CupertinoTabScaffoldWrapper extends StatelessWidget {
         child: SafeArea(
           child: Row(
             children: [
-              _buildTabItem(
-                context,
-                0,
-                CupertinoIcons.square_grid_2x2,
-                'Dashboard',
-              ),
-              _buildTabItem(
-                context,
-                1,
-                null,
-                'Aroosi',
-              ), // null icon for custom search icon
-              _buildTabItem(context, 2, CupertinoIcons.person, 'Profile'),
+              if (!Responsive.isLargeScreen(context)) ...[
+                _buildTabItem(
+                  context,
+                  0,
+                  CupertinoIcons.square_grid_2x2,
+                  'Dashboard',
+                ),
+                _buildTabItem(
+                  context,
+                  1,
+                  null,
+                  'Aroosi',
+                ), // null icon for custom search icon
+                _buildTabItem(context, 2, CupertinoIcons.person, 'Profile'),
+              ] else ...[
+                // iPad/Tablet layout with more space
+                Expanded(child: _buildTabItem(context, 0, CupertinoIcons.square_grid_2x2, 'Dashboard')),
+                Expanded(child: _buildTabItem(context, 1, null, 'Aroosi')),
+                Expanded(child: _buildTabItem(context, 2, CupertinoIcons.person, 'Profile')),
+                // Additional space for iPad - could add more tabs here if needed
+              ],
             ],
           ),
         ),
@@ -128,50 +138,20 @@ class HomeShell extends StatelessWidget {
       );
     }
     return Scaffold(
-      key: ValueKey('material_scaffold'),
+      key: const ValueKey('material_scaffold'),
       body: shell,
-      bottomNavigationBar: Container(
-        child: NavigationBar(
-          selectedIndex: shell.currentIndex,
-          onDestinationSelected: (index) {
-            // Direct mapping: 0->Dashboard, 1->Search, 2->Profile
-            _handleTap(context, index);
-          },
-          destinations: [
-            NavigationDestination(
-              key: const ValueKey('dashboard'),
-              icon: const Icon(Icons.dashboard_outlined),
-              selectedIcon: const Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            NavigationDestination(
-              key: const ValueKey('search'),
-              icon: _SearchCircleIcon(
-                key: const ValueKey('search_icon_normal'),
-                onTap: () => _handleTap(context, 1),
-              ),
-              selectedIcon: _SearchCircleIcon(
-                key: const ValueKey('search_icon_selected'),
-                selected: true,
-                onTap: () => _handleTap(context, 1),
-              ),
-              label: 'Aroosi',
-            ),
-            NavigationDestination(
-              key: const ValueKey('profile'),
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+      bottomNavigationBar: AroosiNavigationBar(
+        currentIndex: shell.currentIndex,
+        onTabSelected: (index) {
+          _handleTap(context, index);
+        },
       ),
     );
   }
 }
 
 class _SearchCircleIcon extends StatelessWidget {
-  const _SearchCircleIcon({super.key, this.selected = false, this.onTap});
+  const _SearchCircleIcon({this.selected = false, this.onTap});
 
   final bool selected;
   final VoidCallback? onTap;
@@ -188,29 +168,12 @@ class _SearchCircleIcon extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.translucent,
       child: Container(
-        width: size,
-        height: size,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: bg,
-          shape: BoxShape.circle,
-          border: Border.all(color: scheme.primary, width: selected ? 0 : 2.5),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: scheme.primary.withOpacity(0.25),
-                    blurRadius: 20,
-                    spreadRadius: 3,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          borderRadius: BorderRadius.circular(
+            12,
+          ), // Rounded corners instead of circle
         ),
         alignment: Alignment.center,
         child: Text(

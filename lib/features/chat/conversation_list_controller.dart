@@ -64,18 +64,18 @@ class ConversationListController extends Notifier<ConversationListState> {
         .where(
           (c) =>
               (c.partnerAvatarUrl == null || c.partnerAvatarUrl!.isEmpty) &&
-              (c.partnerId != null && c.partnerId!.isNotEmpty),
+              (c.partnerId.isNotEmpty),
         )
         .toList();
     if (missing.isEmpty) return Future.value(items);
-    final ids = missing.map((e) => e.partnerId!).toSet().toList();
+    final ids = missing.map((e) => e.partnerId).toSet().toList();
     try {
       final mapping = await _repo.getBatchProfileImages(ids);
       return items.map((c) {
         final url =
             (c.partnerAvatarUrl != null && c.partnerAvatarUrl!.isNotEmpty)
             ? c.partnerAvatarUrl
-            : (c.partnerId != null ? mapping[c.partnerId!] : null);
+            : (mapping[c.partnerId]);
         if (url == null || url.isEmpty) return c;
         return ConversationSummary(
           id: c.id,

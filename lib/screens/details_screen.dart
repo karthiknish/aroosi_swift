@@ -2,17 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aroosi_flutter/features/profiles/detail_controller.dart';
-import 'package:aroosi_flutter/features/subscription/feature_access_provider.dart';
-import 'package:aroosi_flutter/features/subscription/feature_usage_controller.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_features.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_repository.dart';
-import 'package:aroosi_flutter/features/subscription/subscription_models.dart';
 import 'package:aroosi_flutter/widgets/app_scaffold.dart';
-import 'package:aroosi_flutter/core/toast_service.dart';
-import 'package:go_router/go_router.dart';
 import 'package:aroosi_flutter/theme/motion.dart';
 import 'package:aroosi_flutter/widgets/animations/motion.dart';
 import 'package:aroosi_flutter/features/safety/safety_controller.dart';
+import 'package:aroosi_flutter/core/toast_service.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
   const DetailsScreen({super.key, required this.id});
@@ -37,79 +31,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   }
 
   Future<void> _evaluateAccessAndLoad() async {
-    final subscriptionRepository = ref.read(subscriptionRepositoryProvider);
-    final access = ref.read(featureAccessProvider);
-    final usageNotifier = ref.read(featureUsageControllerProvider.notifier);
-
-    FeatureAvailabilityResult? availability;
-    try {
-      availability = await subscriptionRepository.canUseFeature('profile_view');
-    } catch (_) {}
-
-    var allow = true;
-
-    if (availability != null) {
-      if (!availability.canUse) {
-        final planLabel = availability.requiredPlan != null
-            ? planDisplayName(availability.requiredPlan!)
-            : access.requiredPlanLabel(
-                SubscriptionFeatureFlag.canViewFullProfiles,
-              );
-        final reason =
-            availability.reason ??
-            'Viewing full profiles is available on higher plans.';
-        ToastService.instance.warning(reason);
-        if (availability.requiredPlan != null) {
-          ToastService.instance.info(
-            'Upgrade to $planLabel to unlock full profiles.',
-          );
-        }
-        if (mounted) {
-          setState(() {
-            _blocked = true;
-            _limitReached = false;
-            _blockedMessage = reason;
-          });
-        }
-        allow = false;
-      }
-    } else {
-      final usage = ref.read(featureUsageControllerProvider);
-      final limit = access.usageLimit(UsageMetric.profileView);
-      final used = usage.count(UsageMetric.profileView);
-
-      if (!access.can(SubscriptionFeatureFlag.canViewFullProfiles) ||
-          limit == 0) {
-        final message =
-            'Upgrade to ${access.requiredPlanLabel(SubscriptionFeatureFlag.canViewFullProfiles)} to view full profiles.';
-        ToastService.instance.warning(message);
-        if (mounted) {
-          setState(() {
-            _blocked = true;
-            _limitReached = false;
-            _blockedMessage = message;
-          });
-        }
-        allow = false;
-      } else if (limit > 0 && used >= limit) {
-        final message =
-            'You\'ve reached your profile view limit for this month. Upgrade to ${access.requiredPlanLabel(SubscriptionFeatureFlag.canViewFullProfiles)} for unlimited access.';
-        ToastService.instance.warning(message);
-        if (mounted) {
-          setState(() {
-            _blocked = true;
-            _limitReached = true;
-            _blockedMessage = message;
-          });
-        }
-        allow = false;
-      }
-    }
-
-    if (!allow) return;
-
-    await subscriptionRepository.trackFeatureUsage('profile_view');
-    usageNotifier.requestUsage(UsageMetric.profileView);
     await ref.read(profileDetailControllerProvider.notifier).load(widget.id);
     if (mounted) {
       setState(() {
@@ -144,20 +65,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                   _blockedMessage ??
                       (_limitReached
                           ? 'You\'ve reached your monthly profile view limit.'
-                          : 'Viewing full profiles is a premium feature.'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Upgrade your plan to keep exploring detailed profiles and increase your chances of finding a match.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: () => context.push('/main/subscription'),
-                  child: const Text('See plans'),
+                          : 'This profile is not available.'),
                 ),
               ],
             ),

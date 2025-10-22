@@ -45,11 +45,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCw-PTFXPUJPH9p-gOqm2zHjW-3vA2-WBY',
-    appId: '1:762041256503:ios:a089f0b6e6501531ac8db2',
-    messagingSenderId: '762041256503',
-    projectId: 'aroosi-project',
-    storageBucket: 'aroosi-project.firebasestorage.app',
+    apiKey: 'AIzaSyDBO0qloVCqP7su4WnBL72yUkH7KooGyzY',
+    appId: '1:320943801797:ios:9698384f0913adeaf6b7ac',
+    messagingSenderId: '320943801797',
+    projectId: 'aroosi-ios',
+    storageBucket: 'aroosi-ios.firebasestorage.app',
     iosBundleId: 'com.aroosi.mobile',
     iosClientId:
         '762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com',

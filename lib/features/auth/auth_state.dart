@@ -72,6 +72,14 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    // Handle NextJS API response format: { success: boolean, data: userProfile }
+    dynamic userData = json;
+    if (json is Map<String, dynamic>) {
+      if (json['success'] == true) {
+        userData = json['data'];
+      }
+    }
+
     // Tolerant parsing for email verification flags across backends
     bool? parseEmailVerified(Map<String, dynamic> j) {
       final v =
@@ -123,67 +131,70 @@ class UserProfile {
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       if (v is DateTime) return v;
+      if (v is num) return DateTime.fromMillisecondsSinceEpoch(v.toInt());
       return DateTime.tryParse(v.toString());
     }
 
     return UserProfile(
       // Accept multiple possible id keys returned by different backends.
       id:
-          json['id']?.toString() ??
-          json['_id']?.toString() ??
-          json['userId']?.toString() ??
-          json['uid']?.toString() ??
+          userData['id']?.toString() ??
+          userData['_id']?.toString() ??
+          userData['userId']?.toString() ??
+          userData['uid']?.toString() ??
           '',
-      fullName: json['fullName'] as String? ?? json['name'] as String?,
-      email: json['email'] as String?,
-      emailVerified: parseEmailVerified(json),
-      plan: json['subscriptionPlan'] as String? ?? json['plan'] as String?,
-      avatarUrl: json['avatarUrl'] as String? ?? json['photoUrl'] as String?,
-      profileImageUrls: parseStringList(json['profileImageUrls']),
-      subscriptionExpiresAt: json['subscriptionExpiresAt'] != null
-          ? DateTime.tryParse(json['subscriptionExpiresAt'].toString())
+      fullName: userData['fullName'] as String? ?? userData['name'] as String?,
+      email: userData['email'] as String?,
+      emailVerified: parseEmailVerified(userData),
+      plan: userData['subscriptionPlan'] as String? ?? userData['plan'] as String?,
+      avatarUrl: userData['avatarUrl'] as String? ?? userData['photoUrl'] as String?,
+      profileImageUrls: parseStringList(userData['profileImageUrls']),
+      subscriptionExpiresAt: userData['subscriptionExpiresAt'] != null
+          ? userData['subscriptionExpiresAt'] is num
+              ? DateTime.fromMillisecondsSinceEpoch(userData['subscriptionExpiresAt'].toInt())
+              : DateTime.tryParse(userData['subscriptionExpiresAt'].toString())
           : null,
-      aboutMe: json['aboutMe'] as String? ?? json['about_me'] as String?,
-      city: json['city'] as String?,
-      country: json['country'] as String?,
-      height: parseInt(json['height']),
-      gender: json['gender'] as String?,
+      aboutMe: userData['aboutMe'] as String? ?? userData['about_me'] as String?,
+      city: userData['city'] as String?,
+      country: userData['country'] as String?,
+      height: parseInt(userData['height']),
+      gender: userData['gender'] as String?,
       preferredGender:
-          json['preferredGender'] as String? ??
-          json['preferred_gender'] as String?,
+          userData['preferredGender'] as String? ??
+          userData['preferred_gender'] as String?,
       maritalStatus:
-          json['maritalStatus'] as String? ?? json['marital_status'] as String?,
+          userData['maritalStatus'] as String? ?? userData['marital_status'] as String?,
       physicalStatus:
-          json['physicalStatus'] as String? ??
-          json['physical_status'] as String?,
-      education: json['education'] as String?,
-      occupation: json['occupation'] as String?,
-      annualIncome: parseInt(json['annualIncome'] ?? json['annual_income']),
+          userData['physicalStatus'] as String? ??
+          userData['physical_status'] as String?,
+      education: userData['education'] as String?,
+      occupation: userData['occupation'] as String?,
+      annualIncome: parseInt(userData['annualIncome'] ?? userData['annual_income']),
       phoneNumber:
-          json['phoneNumber'] as String? ?? json['phone_number'] as String?,
-      religion: json['religion'] as String?,
+          userData['phoneNumber'] as String? ?? userData['phone_number'] as String?,
+      religion: userData['religion'] as String?,
       motherTongue:
-          json['motherTongue'] as String? ?? json['mother_tongue'] as String?,
-      ethnicity: json['ethnicity'] as String?,
-      diet: json['diet'] as String?,
-      smoking: json['smoking'] as String?,
-      drinking: json['drinking'] as String?,
+          userData['motherTongue'] as String? ?? userData['mother_tongue'] as String?,
+      ethnicity: userData['ethnicity'] as String?,
+      diet: userData['diet'] as String?,
+      smoking: userData['smoking'] as String?,
+      drinking: userData['drinking'] as String?,
       profileFor:
-          json['profileFor'] as String? ?? json['profile_for'] as String?,
+          userData['profileFor'] as String? ?? userData['profile_for'] as String?,
       hideFromFreeUsers:
-          json['hideFromFreeUsers'] as bool? ??
-          json['hide_from_free_users'] as bool?,
-      dateOfBirth: parseDate(json['dateOfBirth'] ?? json['date_of_birth']),
+          userData['hideFromFreeUsers'] as bool? ??
+          userData['hide_from_free_users'] as bool?,
+      dateOfBirth: parseDate(userData['dateOfBirth'] ?? userData['date_of_birth']),
       partnerPreferenceAgeMin: parseInt(
-        json['partnerPreferenceAgeMin'] ?? json['partner_preference_age_min'],
+        userData['partnerPreferenceAgeMin'] ?? userData['partner_preference_age_min'],
       ),
       partnerPreferenceAgeMax: parseInt(
-        json['partnerPreferenceAgeMax'] ?? json['partner_preference_age_max'],
+        userData['partnerPreferenceAgeMax'] ?? userData['partner_preference_age_max'],
       ),
       partnerPreferenceCity: parseStringList(
-        json['partnerPreferenceCity'] ?? json['partner_preference_city'],
+        userData['partnerPreferenceCity'] ?? userData['partner_preference_city'],
       ),
-      interests: parseStringList(json['interests']),
+      interests: parseStringList(userData['interests']),
     );
   }
 

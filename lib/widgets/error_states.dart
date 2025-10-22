@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/colors.dart';
 import 'package:aroosi_flutter/widgets/primary_button.dart';
 
@@ -411,6 +409,121 @@ class InlineError extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Enhanced error state with retry options and better styling
+class ErrorStateWithRetry extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final String? description;
+  final VoidCallback? onRetry;
+  final VoidCallback? onAction;
+  final String? retryLabel;
+  final String? actionLabel;
+  final Widget? icon;
+  final bool showRetry;
+  final bool showAction;
+
+  const ErrorStateWithRetry({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.description,
+    this.onRetry,
+    this.onAction,
+    this.retryLabel,
+    this.actionLabel,
+    this.icon,
+    this.showRetry = true,
+    this.showAction = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            icon!,
+            const SizedBox(height: 16),
+          ] else ...[
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+          ],
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              subtitle!,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (description != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              description!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 24),
+          if (showRetry && onRetry != null) ...[
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(retryLabel ?? 'Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            if (showAction && onAction != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: onAction,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: theme.colorScheme.outline),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  actionLabel ?? 'Go Back',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+              ),
+            ],
           ],
         ],
       ),

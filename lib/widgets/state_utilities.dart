@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aroosi_flutter/platform/platform_utils.dart';
 import 'package:aroosi_flutter/theme/colors.dart';
 import 'package:aroosi_flutter/widgets/empty_states.dart';
 import 'package:aroosi_flutter/widgets/error_states.dart';
 import 'package:aroosi_flutter/widgets/offline_states.dart';
-import 'package:aroosi_flutter/widgets/shimmer.dart';
 
 /// A comprehensive state management widget that handles loading, error, empty, and success states
 class StateBuilder<T> extends StatelessWidget {
@@ -414,7 +411,7 @@ class DataStateBuilder<T> extends StatelessWidget {
       return emptyWidget ?? const NoDataEmptyState();
     }
 
-    return builder(data!);
+    return builder(data as T);
   }
 }
 

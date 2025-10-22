@@ -130,7 +130,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                 LinearProgressIndicator(
                   value: progress.clamp(0.0, 1.0),
                   minHeight: 4,
-                  backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
+                  backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
                 const SizedBox(height: 4),
                 Text(_format(total), style: theme.textTheme.labelSmall),

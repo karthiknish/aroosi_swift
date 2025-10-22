@@ -1,143 +1,166 @@
-import 'package:dio/dio.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-// import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:equatable/equatable.dart';
 
-import 'package:aroosi_flutter/core/api_client.dart';
-import 'package:aroosi_flutter/core/google_signin_helper.dart';
+import 'package:aroosi_flutter/core/firebase_service.dart';
+
+/// Result from Apple Sign In operation
+class AppleSignInResult extends Equatable {
+  final bool isEmailHidden;
+  final String? email;
+  final String? givenName;
+  final String? familyName;
+
+  const AppleSignInResult({
+    required this.isEmailHidden,
+    this.email,
+    this.givenName,
+    this.familyName,
+  });
+
+  @override
+  List<Object?> get props => [isEmailHidden, email, givenName, familyName];
+}
 
 class AuthRepository {
-  final Dio _dio;
-  AuthRepository({Dio? dio}) : _dio = dio ?? ApiClient.dio {
-    // Ensure at least one usage to avoid unused warning; attach a no-op interceptor
-    _dio.interceptors.removeWhere((i) => i.runtimeType.toString() == '_Noop');
-  }
+  final FirebaseService _firebase = FirebaseService();
 
   // Helper no longer needed; keep repository minimal.
 
   // Removed legacy multi-method exchange helper; bearer-token auth is used now.
 
-  /// Sign in with Google using Firebase (mirrors RN). Backend auth uses bearer tokens via interceptor.
-  Future<void> signInWithGoogle() async {
-    final googleSignIn = buildGoogleSignIn();
-    GoogleSignInAccount? account = await googleSignIn.signIn();
-    if (account == null) {
-      throw DioException(
-        requestOptions: RequestOptions(path: '/auth/google'),
-        error: 'Google sign-in canceled',
+
+  /// Sign in with Apple using Firebase
+  /// Supports Apple's "Hide My Email" feature where users can choose to hide their real email address.
+  Future<AppleSignInResult> signInWithApple() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
       );
-    }
-    final auth = await account.authentication;
-    final idToken = auth.idToken;
-    final accessToken = auth.accessToken;
-    if (idToken == null && accessToken == null) {
-      throw DioException(
-        requestOptions: RequestOptions(path: '/auth/google'),
-        error: 'Missing Google tokens',
+
+      // Check if the credential has the required tokens
+      if (credential.identityToken == null) {
+        throw Exception('Apple Sign In failed: Missing identity token');
+      }
+
+      await _firebase.signInWithApple(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
       );
+
+      // Determine if the email is hidden (proxy email from Apple)
+      final isEmailHidden = _isProxyEmail(credential.email);
+
+      return AppleSignInResult(
+        isEmailHidden: isEmailHidden,
+        email: credential.email,
+        givenName: credential.givenName,
+        familyName: credential.familyName,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Handle Apple Sign In specific errors
+      String errorMessage = 'Apple Sign In failed';
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          errorMessage = 'Apple Sign In was canceled';
+          break;
+        case AuthorizationErrorCode.failed:
+          errorMessage = 'Apple Sign In failed';
+          break;
+        case AuthorizationErrorCode.invalidResponse:
+          errorMessage = 'Invalid response from Apple Sign In';
+          break;
+        case AuthorizationErrorCode.notHandled:
+          errorMessage = 'Apple Sign In not handled';
+          break;
+        case AuthorizationErrorCode.unknown:
+          errorMessage = 'Unknown Apple Sign In error';
+          break;
+        case AuthorizationErrorCode.notInteractive:
+          errorMessage = 'Apple Sign In not interactive';
+          break;
+      }
+      throw Exception(errorMessage);
+    } catch (e) {
+      // Handle other errors
+      throw Exception('Apple Sign In failed: ${e.toString()}');
     }
-    final credential = fb.GoogleAuthProvider.credential(
-      idToken: idToken,
-      accessToken: accessToken,
-    );
-    await fb.FirebaseAuth.instance.signInWithCredential(credential);
-    // No direct backend call here; bearer token interceptor will authenticate subsequent requests.
+  }
+
+  /// Check if an email is a proxy email from Apple's "Hide My Email" feature
+  bool _isProxyEmail(String? email) {
+    if (email == null) return false;
+    return email.endsWith('@privaterelay.appleid.com');
+  }
+
+  /// Request to share the real email address for a user who previously hid it
+  /// This would typically involve calling Apple's API to request email sharing
+  Future<bool> requestEmailSharing() async {
+    try {
+      final currentUser = _firebase.currentUser;
+      if (currentUser == null) {
+        throw Exception('No authenticated user');
+      }
+
+      // Apple email sharing requires additional OAuth setup and server-side implementation
+      // For production, this would involve:
+      // 1. Server-side Apple API integration
+      // 2. Proper OAuth token handling
+      // 3. Privacy policy compliance
+
+      // For now, return false indicating feature not available
+      return false;
+    } catch (e) {
+      throw Exception('Failed to request email sharing: ${e.toString()}');
+    }
   }
 
   /// Sign in with email/password via Firebase
   Future<void> signin({required String email, required String password}) async {
     try {
-      await fb.FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _firebase.signInWithEmailPassword(email: email, password: password);
     } on fb.FirebaseAuthException catch (e) {
       String msg = 'Sign in failed';
       if (e.code == 'user-not-found') msg = 'No account for this email';
       if (e.code == 'wrong-password') msg = 'Invalid password';
       if (e.code == 'too-many-requests') msg = 'Too many attempts. Try later';
-      throw DioException(
-        requestOptions: RequestOptions(path: '/auth/login'),
-        error: msg,
-      );
+      throw Exception(msg);
     }
   }
 
-  /// Sign up and create a profile (minimal fields for now)
+  /// Sign up and create a profile
   Future<void> signup({
     required String name,
     required String email,
     required String password,
   }) async {
     try {
-      await _dio.post(
-        '/auth/signup',
-        data: {
-          'email': email,
-          'password': password,
-          'fullName': name,
-          // Optionally: include a minimal profile payload similar to RN
-        },
-        options: Options(headers: {'Content-Type': 'application/json'}),
+      await _firebase.createEmailPasswordUser(
+        email: email,
+        password: password,
+        name: name,
       );
-      // Some backends require a subsequent reset-password to finalize password; skip unless needed.
-    } on DioException catch (e) {
-      final msg = e.response?.data is Map
-          ? ((e.response?.data as Map)['error'] ??
-                (e.response?.data as Map)['message'] ??
-                'Sign up failed')
-          : 'Sign up failed';
-      throw DioException(
-        requestOptions: e.requestOptions,
-        error: msg,
-        response: e.response,
-        type: e.type,
-      );
+    } catch (e) {
+      throw Exception('Sign up failed: ${e.toString()}');
     }
   }
 
   /// Check current session; returns true if authenticated
   Future<bool> me() async {
     try {
-      // Next.js API uses /user/me with bearer token
-      Response res;
-      try {
-        res = await _dio.get('/user/me');
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          // Fallback to legacy endpoints - remove the /api prefix since it's already in base URL
-          try {
-            res = await _dio.get('/auth/me');
-          } catch (e2) {
-            // Try other legacy endpoints
-            try {
-              res = await _dio.get('/auth/me');
-            } catch (e3) {
-              rethrow;
-            }
-          }
-        } else {
-          rethrow;
-        }
-      }
-      return res.statusCode == 200;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return false;
+      return _firebase.currentUser != null;
+    } catch (e) {
       return false;
     }
   }
 
-  /// Logout session (server clears cookies)
+  /// Logout session
   Future<void> logout() async {
     try {
-      // Best effort: clear Firebase session; backend uses bearer so no server logout needed
-      try {
-        await fb.FirebaseAuth.instance.signOut();
-      } catch (_) {}
-      // Try calling server logout if it exists (non-fatal)
-      try {
-        await _dio.post('/auth/logout');
-      } catch (_) {}
+      await _firebase.signOut();
     } catch (_) {
       // ignore
     }
@@ -146,128 +169,56 @@ class AuthRepository {
   /// Fetch the current user's profile
   Future<Map<String, dynamic>?> getProfile() async {
     try {
-      // Match React Native: /profile (primary) - same as aroosi-mobile implementation
-      Response res;
-      try {
-        res = await _dio.get('/profile');
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          // Fallback: /user/profile to match React app patterns
-          try {
-            res = await _dio.get('/user/profile');
-          } on DioException catch (e2) {
-            if (e2.response?.statusCode == 404) {
-              // Legacy fallback: /user/me
-              res = await _dio.get('/user/me');
-            } else {
-              rethrow;
-            }
-          }
-        } else {
-          rethrow;
-        }
-      }
-      if (res.statusCode == 200 && res.data is Map<String, dynamic>) {
-        return res.data as Map<String, dynamic>;
-      }
+      return await _firebase.getCurrentUserProfile();
+    } catch (e) {
       return null;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return null;
-      rethrow;
     }
   }
 
   /// Request forgot password email
   Future<void> requestPasswordReset(String email) async {
     try {
-      await _dio.post('/auth/forgot-password', data: {'email': email});
-    } on DioException catch (e) {
-      final msg = e.response?.data is Map
-          ? ((e.response?.data as Map)['error'] ??
-                (e.response?.data as Map)['message'] ??
-                'Failed to request password reset')
-          : 'Failed to request password reset';
-      throw DioException(
-        requestOptions: e.requestOptions,
-        error: msg,
-        response: e.response,
-        type: e.type,
-      );
+      await _firebase.sendPasswordResetEmail(email);
+    } catch (e) {
+      throw Exception('Failed to request password reset: ${e.toString()}');
     }
   }
 
-  /// Reset password directly
+  /// Reset password directly - Firebase handles this via email links
   Future<void> resetPassword(String email, String password) async {
-    try {
-      await _dio.post(
-        '/auth/reset-password',
-        data: {'email': email, 'password': password},
-      );
-    } on DioException catch (e) {
-      final msg = e.response?.data is Map
-          ? ((e.response?.data as Map)['error'] ??
-                (e.response?.data as Map)['message'] ??
-                'Failed to reset password')
-          : 'Failed to reset password';
-      throw DioException(
-        requestOptions: e.requestOptions,
-        error: msg,
-        response: e.response,
-        type: e.type,
-      );
-    }
+    // Firebase password reset is handled via email links
+    // This method would require custom implementation for direct password reset
+    throw Exception('Password reset must be done via email link');
   }
 
   /// Resend the email verification link. Returns true if the request appears successful.
   Future<bool> resendEmailVerification() async {
-    final paths = <String>[
-      '/auth/email/resend',
-      '/auth/resend-verification',
-      '/auth/verify-email/resend',
-      '/email/verify/resend',
-    ];
-    for (final p in paths) {
-      try {
-        final res = await _dio.post(p);
-        if (res.statusCode != null &&
-            res.statusCode! >= 200 &&
-            res.statusCode! < 300) {
-          return true;
-        }
-      } on DioException catch (e) {
-        // try next path on 404/405, otherwise rethrow on hard failures
-        final sc = e.response?.statusCode ?? 0;
-        if (sc == 404 || sc == 405) {
-          continue;
-        }
-        // some backends return 200 with error body; continue fallbacks on 4xx
-        if (sc >= 400 && sc < 500) continue;
-      }
+    try {
+      await _firebase.resendEmailVerification();
+      return true;
+    } catch (e) {
+      return false;
     }
-    return false;
   }
 
-  /// Reload the user's email verification status by refetching profile.
-  /// Returns true if the refreshed profile indicates verified.
+  /// Reload the user's email verification status
+  /// Returns true if the user's email is verified.
   Future<bool> refreshEmailVerified() async {
     try {
-      final profile = await getProfile();
-      if (profile == null) return false;
-      final v =
-          profile['emailVerified'] ??
-          profile['isEmailVerified'] ??
-          profile['verified'] ??
-          profile['isVerified'];
-      if (v is bool) return v;
-      if (v is num) return v != 0;
-      if (v is String) {
-        return v.toLowerCase() == 'true' || v.toLowerCase() == 'yes';
-      }
-      final needs = profile['needsEmailVerification'];
-      if (needs is bool) return !needs;
-      return false;
+      return await _firebase.isEmailVerified();
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Delete user account and all associated data
+  Future<void> deleteAccount({required String password, String? reason}) async {
+    try {
+      // Note: Firebase Auth requires recent authentication for account deletion
+      // Password re-authentication might be needed before deletion
+      await _firebase.deleteAccount();
+    } catch (e) {
+      throw Exception('Failed to delete account: ${e.toString()}');
     }
   }
 }

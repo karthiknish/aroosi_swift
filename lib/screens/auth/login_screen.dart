@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +10,8 @@ import 'package:aroosi_flutter/widgets/primary_button.dart';
 import 'package:aroosi_flutter/theme/motion.dart';
 import 'package:aroosi_flutter/widgets/animations/motion.dart';
 import 'package:aroosi_flutter/utils/debug_logger.dart';
+import 'package:aroosi_flutter/theme/colors.dart';
+import 'package:aroosi_flutter/theme/typography.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -54,13 +56,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authControllerProvider);
     final authCtrl = ref.read(authControllerProvider.notifier);
 
-    // If already authenticated, redirect to dashboard (prevents showing login form)
+    // If already authenticated, redirect to search (prevents showing login form)
     if (auth.isAuthenticated) {
       // Use addPostFrameCallback to avoid setState during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final currentLoc = GoRouterState.of(context).uri.toString();
-        if (currentLoc != '/dashboard') {
-          context.go('/dashboard');
+        if (currentLoc != '/search') {
+          context.go('/search');
         }
       });
       return const SizedBox.shrink();
@@ -84,8 +86,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Text(
                           auth.error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.error,
                           ),
                         ),
                       ),
@@ -109,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   FadeScaleIn(
                     delay: AppMotionDurations.fast,
                     child: PrimaryButton(
-                      label: 'Sign in',
+                      label: 'Sign in with Email',
                       loading: auth.loading,
                       onPressed: auth.loading
                           ? null
@@ -121,31 +123,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             },
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  FadeIn(
-                    delay: const Duration(milliseconds: 200),
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.login),
-                      label: const Text('Continue with Google'),
-                      onPressed: auth.loading
-                          ? null
-                          : () {
-                              logNav('login_screen: Google sign in pressed');
-                              authCtrl.loginWithGoogle();
-                            },
+                  const SizedBox(height: 12),
+                  FadeScaleIn(
+                    delay: AppMotionDurations.fast,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.text,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: CupertinoButton(
+                        onPressed: auth.loading
+                            ? null
+                            : () {
+                                logNav('login_screen: Apple sign in pressed');
+                                authCtrl.loginWithApple();
+                              },
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              CupertinoIcons.arrow_up_right_square_fill,
+                              color: AppColors.onPrimary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Sign in with Apple',
+                              style: AppTypography.bodySemiBold.copyWith(
+                                color: AppColors.onPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   FadeIn(
                     delay: const Duration(milliseconds: 220),
-                    child: TextButton(
+                    child: Text(
+                      'Apple Sign In includes "Hide My Email" for privacy',
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FadeIn(
+                    delay: const Duration(milliseconds: 220),
+                    child: CupertinoButton(
                       onPressed: () => context.go('/forgot'),
                       child: const Text('Forgot password?'),
                     ),
                   ),
                   FadeIn(
                     delay: const Duration(milliseconds: 260),
-                    child: TextButton(
+                    child: CupertinoButton(
                       onPressed: () => context.go('/signup'),
                       child: const Text('Create account'),
                     ),
@@ -157,8 +196,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (auth.loading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.4),
-                child: const Center(child: CircularProgressIndicator()),
+                color: AppColors.text.withValues(alpha: 0.4),
+                child: const Center(child: CupertinoActivityIndicator()),
               ),
             ),
         ],
