@@ -94,48 +94,16 @@ coverage/
 **/test_profiles_report.json
 **/App.env
 **/app.env
+**/App.env.backup*
+**/app.env.backup*
 **/secrets.json
 **/private_keys/
 **/certificates/
 
-# Build artifacts and temporary files
-**/build/
-**/dist/
-**/node_modules/
-**/package-lock.json
-**/.dart_tool/
-**/.flutter-plugins
-**/.flutter-plugins-dependencies
-**/.pub-cache/
-**/.pub/
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs and debugging
-*.log
-logs/
-debug/
-*.debug
-
-# Test and coverage reports
-coverage/
-*.lcov
-test/reports/
-**/test_reports/
+# iOS Configuration files (sensitive)
+**/*.xcconfig
+!**/*.xcconfig.example
+!**/flutter.env.example
 
 # Firebase and service account files
 android/app/src/main/google-services.json
