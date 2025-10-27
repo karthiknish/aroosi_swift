@@ -31,6 +31,12 @@ let package = Package(
             resources: [
                 .process("Resources")
             ],
+            cSettings: [
+                .define("DISABLE_MACOS", .when(platforms: [.iOS]))
+            ],
+            swiftSettings: [
+                .define("DISABLE_MACOS", .when(platforms: [.iOS]))
+            ],
             linkerSettings: [
                 .linkedFramework("AuthenticationServices", .when(platforms: [.iOS])),
                 .linkedFramework("CryptoKit", .when(platforms: [.iOS])),
@@ -40,12 +46,6 @@ let package = Package(
                 .linkedFramework("CoreLocation", .when(platforms: [.iOS])),
                 .linkedFramework("UserNotifications", .when(platforms: [.iOS])),
                 .linkedFramework("AppTrackingTransparency", .when(platforms: [.iOS]))
-            ],
-            cSettings: [
-                .define("DISABLE_MACOS", .when(platforms: [.iOS]))
-            ],
-            swiftSettings: [
-                .define("DISABLE_MACOS", .when(platforms: [.iOS]))
             ]
         ),
         .testTarget(

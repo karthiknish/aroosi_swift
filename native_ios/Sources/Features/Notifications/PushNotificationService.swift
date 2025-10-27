@@ -7,10 +7,11 @@ import UIKit
 import FirebaseMessaging
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseAnalytics
 #endif
 
 @available(iOS 17, *)
-class PushNotificationService: ObservableObject {
+class PushNotificationService: NSObject, ObservableObject {
     static let shared = PushNotificationService()
     
     @Published var isRegistered = false
@@ -192,7 +193,7 @@ class PushNotificationService: ObservableObject {
             options: []
         )
         
-        await notificationCenter.setNotificationCategories([
+        notificationCenter.setNotificationCategories([
             newMessageCategory,
             newMatchCategory,
             interestCategory
@@ -207,7 +208,7 @@ class PushNotificationService: ObservableObject {
     
     func updateBadgeCount(_ count: Int) async {
         await MainActor.run {
-            UIApplication.shared.applicationIconBadgeNumber = count
+            notificationCenter.setBadgeCount(count)
         }
     }
     
@@ -215,6 +216,9 @@ class PushNotificationService: ObservableObject {
     
     func handleNotificationResponse(_ response: UNNotificationResponse) async {
         let userInfo = response.notification.request.content.userInfo
+        
+        // Track notification opened
+        await trackNotificationOpened(response: response, userInfo: userInfo)
         
         // Handle deep linking
         if let deepLink = userInfo["deepLink"] as? String {
@@ -297,6 +301,62 @@ class PushNotificationService: ObservableObject {
         )
     }
     
+    // MARK: - Analytics Tracking
+    
+    #if canImport(FirebaseAnalytics)
+    private func trackNotificationOpened(response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
+        let notificationType = userInfo["type"] as? String ?? "unknown"
+        let actionIdentifier = response.actionIdentifier
+        
+        // Track notification opened event
+        Analytics.logEvent("notification_opened", parameters: [
+            "notification_type": notificationType,
+            "action_identifier": actionIdentifier,
+            "timestamp": Date().timeIntervalSince1970,
+            "platform": "ios"
+        ])
+        
+        // Track specific action events
+        switch actionIdentifier {
+        case "REPLY":
+            Analytics.logEvent("notification_reply_tapped", parameters: [
+                "notification_type": notificationType,
+                "conversation_id": userInfo["conversationID"] as? String ?? ""
+            ])
+        case "VIEW_PROFILE":
+            Analytics.logEvent("notification_view_profile_tapped", parameters: [
+                "notification_type": notificationType,
+                "user_id": userInfo["userID"] as? String ?? ""
+            ])
+        case "SEND_MESSAGE":
+            Analytics.logEvent("notification_send_message_tapped", parameters: [
+                "notification_type": notificationType,
+                "user_id": userInfo["userID"] as? String ?? ""
+            ])
+        case "ACCEPT":
+            Analytics.logEvent("notification_accept_tapped", parameters: [
+                "notification_type": notificationType,
+                "interest_id": userInfo["interestID"] as? String ?? ""
+            ])
+        case "DECLINE":
+            Analytics.logEvent("notification_decline_tapped", parameters: [
+                "notification_type": notificationType,
+                "interest_id": userInfo["interestID"] as? String ?? ""
+            ])
+        default:
+            if actionIdentifier == UNNotificationDefaultActionIdentifier {
+                Analytics.logEvent("notification_default_tapped", parameters: [
+                    "notification_type": notificationType
+                ])
+            }
+        }
+    }
+    #else
+    private func trackNotificationOpened(response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
+        // Analytics not available - no tracking
+    }
+    #endif
+    
     // MARK: - Setup
     
     private func setupNotificationDelegate() {
@@ -359,10 +419,9 @@ protocol FCMService {
 
 class DefaultFCMService: FCMService {
     private let messaging = Messaging.messaging()
-    private let logger = Logger.shared
     
     func registerDeviceToken(_ token: String) async throws {
-        logger.info("Registering FCM device token")
+        print("Registering FCM device token")
         
         do {
             // Get current user ID from your authentication service
@@ -385,16 +444,16 @@ class DefaultFCMService: FCMService {
             // Subscribe to user-specific topic
             try await subscribeToTopic("user_\(userID)")
             
-            logger.info("Successfully registered FCM token for user: \(userID)")
+            print("Successfully registered FCM token for user: \(userID)")
             
         } catch {
-            logger.error("Failed to register FCM token: \(error.localizedDescription)")
+            print("Failed to register FCM token: \(error.localizedDescription)")
             throw FCMError.registrationFailed
         }
     }
     
     func unregisterDeviceToken() async throws {
-        logger.info("Unregistering FCM device token")
+        print("Unregistering FCM device token")
         
         do {
             guard let userID = getCurrentUserID() else {
@@ -413,35 +472,35 @@ class DefaultFCMService: FCMService {
             try await unsubscribeFromTopic("ios_users")
             try await unsubscribeFromTopic("user_\(userID)")
             
-            logger.info("Successfully unregistered FCM token for user: \(userID)")
+            print("Successfully unregistered FCM token for user: \(userID)")
             
         } catch {
-            logger.error("Failed to unregister FCM token: \(error.localizedDescription)")
+            print("Failed to unregister FCM token: \(error.localizedDescription)")
             throw FCMError.unregistrationFailed
         }
     }
     
     func subscribeToTopic(_ topic: String) async throws {
-        logger.info("Subscribing to FCM topic: \(topic)")
+        print("Subscribing to FCM topic: \(topic)")
         
         do {
             try await messaging.subscribe(toTopic: topic)
-            logger.info("Successfully subscribed to topic: \(topic)")
+            print("Successfully subscribed to topic: \(topic)")
         } catch {
-            logger.error("Failed to subscribe to topic \(topic): \(error.localizedDescription)")
-            throw FCMError.subscriptionFailed
+            print("Failed to subscribe to topic \(topic): \(error.localizedDescription)")
+            throw FCMError.registrationFailed
         }
     }
     
     func unsubscribeFromTopic(_ topic: String) async throws {
-        logger.info("Unsubscribing from FCM topic: \(topic)")
+        print("Unsubscribing from FCM topic: \(topic)")
         
         do {
             try await messaging.unsubscribe(fromTopic: topic)
-            logger.info("Successfully unsubscribed from topic: \(topic)")
+            print("Successfully unsubscribed from topic: \(topic)")
         } catch {
-            logger.error("Failed to unsubscribe from topic \(topic): \(error.localizedDescription)")
-            throw FCMError.unsubscriptionFailed
+            print("Failed to unsubscribe from topic \(topic): \(error.localizedDescription)")
+            throw FCMError.registrationFailed
         }
     }
     
@@ -455,26 +514,25 @@ class DefaultFCMService: FCMService {
 
 // Fallback implementation for when Firebase Messaging is not available
 class DefaultFCMService: FCMService {
-    private let logger = Logger.shared
     
     func registerDeviceToken(_ token: String) async throws {
-        logger.info("FCM not available - using fallback token registration")
+        print("FCM not available - using fallback token registration")
         print("Registering FCM token: \(token)")
     }
     
     func unregisterDeviceToken() async throws {
-        logger.info("FCM not available - using fallback token unregistration")
+        print("FCM not available - using fallback token unregistration")
         print("Unregistering FCM token")
     }
     
     func subscribeToTopic(_ topic: String) async throws {
-        logger.info("FCM not available - using fallback topic subscription")
-        print("Subscribing to FCM topic: \(topic)")
+        print("FCM not available - using fallback topic subscription")
+        print("Subscribing to topic: \(topic)")
     }
     
     func unsubscribeFromTopic(_ topic: String) async throws {
-        logger.info("FCM not available - using fallback topic unsubscription")
-        print("Unsubscribing from FCM topic: \(topic)")
+        print("FCM not available - using fallback topic unsubscription")
+        print("Unsubscribing from topic: \(topic)")
     }
 }
 
