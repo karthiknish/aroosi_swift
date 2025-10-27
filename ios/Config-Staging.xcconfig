@@ -1,0 +1,43 @@
+// Staging Configuration
+// Inherit Flutter's debug build settings (includes Pods and generated values)
+#include "Flutter/Debug.xcconfig"
+
+// Leave the optional Pods include for resilience if Flutter templates change.
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+
+// Firebase Configuration (Staging - use same for now)
+FIREBASE_PROJECT_ID=aroosi-project
+FIREBASE_MESSAGING_SENDER_ID=762041256503
+FIREBASE_IOS_GOOGLE_APP_ID=1:762041256503:ios:a089f0b6e6501531ac8db2
+FIREBASE_IOS_CLIENT_ID=762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com
+FIREBASE_IOS_API_KEY=AIzaSyCw-PTFXPUJPH9p-gOqm2zHjW-3vA2-WBY
+FIREBASE_IOS_PROJECT_ID=aroosi-project
+FIREBASE_IOS_STORAGE_BUCKET=aroosi-project.firebasestorage.app
+FIREBASE_IOS_BUNDLE_ID=com.aroosi.mobile
+GOOGLE_IOS_CLIENT_ID=762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com
+
+// API Configuration (Staging)
+API_BASE_URL=https://staging.aroosi.app/api
+API_ENVIRONMENT=staging
+
+// Google Sign-In Configuration
+GOOGLE_WEB_CLIENT_ID=762041256503-f949ndu5cidrerbt4ng6ddv4cg7rskd8.apps.googleusercontent.com
+GOOGLE_IOS_CLIENT_ID=762041256503-uc9qopr13761ictkgj53ba4gomtkvbha.apps.googleusercontent.com
+GOOGLE_ANDROID_CLIENT_ID=762041256503-q0j72fup2iphc75m5qat17rpdcskcqof.apps.googleusercontent.com
+
+// Build Configuration
+FLUTTER_BUILD_MODE=debug
+FLUTTER_TARGET=lib/main.dart
+
+// Bundle Configuration
+PRODUCT_BUNDLE_IDENTIFIER=com.aroosi.mobile.staging
+PRODUCT_NAME=Aroosi Staging
+MARKETING_VERSION=1.0.0
+CURRENT_PROJECT_VERSION=1
+
+// Security
+ENABLE_BITCODE=YES
+VALIDATE_PRODUCT=NO
+
+// Additional Environment Variables
+ENVIRONMENT=staging

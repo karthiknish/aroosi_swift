@@ -1,0 +1,19 @@
+included:
+  - Sources
+  - AppHost
+excluded:
+  - .build
+  - Packages
+  - fastlane
+opt_in_rules:
+  - implicitly_unwrapped_optional
+  - closure_end_indentation
+  - explicit_self
+reporter: 'xcode'
+line_length:
+  warning: 120
+  error: 160
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1

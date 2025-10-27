@@ -1,0 +1,33 @@
+default_platform(:ios)
+
+platform :ios do
+  desc 'Run unit tests for AroosiSwift'
+  lane :test do
+    ensure_xcode_version(version: '15.0')
+    run_tests(
+      workspace: 'AroosiSwift.xcworkspace',
+      scheme: 'AroosiSwift',
+      clean: true,
+      result_bundle: true,
+      devices: ['iPhone 15']
+    )
+  end
+
+  desc 'Build and upload to TestFlight'
+  lane :beta do
+    ensure_xcode_version(version: '15.0')
+    build_app(
+      workspace: 'AroosiSwift.xcworkspace',
+      scheme: 'AroosiSwift',
+      export_method: 'app-store'
+    )
+    upload_to_testflight
+  end
+
+  desc 'Submit to App Store review'
+  lane :appstore do
+    capture_screenshots
+    beta
+    upload_to_app_store(submit_for_review: false)
+  end
+end

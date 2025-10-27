@@ -1,0 +1,10 @@
+PRODUCT_NAME = AroosiSwift
+ORGANIZATION_IDENTIFIER = com.aroosi
+SWIFT_VERSION = 5.9
+IPHONEOS_DEPLOYMENT_TARGET = 17.0
+CODE_SIGN_STYLE = Automatic
+CURRENT_PROJECT_VERSION = 1
+MARKETING_VERSION = 1.0
+ENABLE_TESTABILITY = YES
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+// Optimization level set per-environment (Debug.xcconfig, Release.xcconfig)

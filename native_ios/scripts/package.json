@@ -1,0 +1,28 @@
+{
+  "name": "aroosi-firebase-scripts",
+  "version": "1.0.0",
+  "description": "Firebase deployment scripts for Aroosi iOS app",
+  "main": "deploy_to_firebase.js",
+  "scripts": {
+    "deploy": "node deploy_to_firebase.js",
+    "deploy-questions": "node deploy_to_firebase.js --questions-only",
+    "verify": "node deploy_to_firebase.js --verify-only",
+    "setup-icebreakers": "node setup_icebreakers.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.10.1"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "firebase",
+    "firestore",
+    "deployment",
+    "aroosi",
+    "ios"
+  ],
+  "author": "Aroosi Development Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
