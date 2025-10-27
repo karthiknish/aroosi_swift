@@ -1,23 +1,33 @@
 #if os(iOS)
 import SwiftUI
 
-@available(iOS 17, macOS 13, *)
+@available(iOS 17, *)
 struct MatchDetailView: View {
     let currentUser: UserProfile
     let item: MatchesViewModel.MatchListItem
+    let onUnreadCountReset: () -> Void
+
+    init(currentUser: UserProfile,
+         item: MatchesViewModel.MatchListItem,
+         onUnreadCountReset: @escaping () -> Void = {}) {
+        self.currentUser = currentUser
+        self.item = item
+        self.onUnreadCountReset = onUnreadCountReset
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 header
-                destinationContent
+                conversationSection
+                profileSection
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 32)
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .background(Color(.systemGroupedBackground))
+        .background(AroosiColors.background)
     }
 
     private var title: String {
@@ -30,71 +40,90 @@ struct MatchDetailView: View {
     @ViewBuilder
     private var header: some View {
         VStack(spacing: 12) {
-            Image(systemName: "heart.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(Color.accentColor)
+            avatarView
 
             Text(title)
-                .font(.title2.weight(.semibold))
+                .font(AroosiTypography.heading(.h2))
 
             if let counterpart = item.counterpartProfile {
                 profileMetadata(for: counterpart)
             } else {
-                Text("We will add more details once this profile is available.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text("This profile will appear once connection details sync from the match.")
+                    .font(AroosiTypography.caption())
+                    .foregroundStyle(AroosiColors.muted)
                     .multilineTextAlignment(.center)
             }
         }
     }
 
-    @ViewBuilder
-    private var destinationContent: some View {
-        if let conversationID = item.match.conversationID {
-            chatPlaceholder(conversationID: conversationID)
-        } else if let profile = item.counterpartProfile {
-            profileDetail(profile)
-        } else {
-            Text("Stay tuned for more information about this match.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func chatPlaceholder(conversationID: String) -> some View {
+    private var conversationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Chat Coming Soon")
-                .font(.headline)
-
-            Text("We are wiring up conversations for \(title).")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                Label("Conversation", systemImage: "bubble.left.and.bubble.right")
+                    .font(AroosiTypography.heading(.h3))
+                Spacer()
+                Text(item.match.lastUpdatedAt.relativeDescription())
+                    .font(AroosiTypography.caption())
+                    .foregroundStyle(AroosiColors.muted)
+            }
 
             VStack(alignment: .leading, spacing: 8) {
-                Label("Conversation", systemImage: "bubble.left.and.bubble.right")
-                    .font(.subheadline.weight(.medium))
+                if let preview = item.match.lastMessagePreview, !preview.isEmpty {
+                    Text(preview)
+                        .font(AroosiTypography.body())
+                        .foregroundStyle(AroosiColors.text)
+                        .lineLimit(2)
+                } else {
+                    Text("No messages yet. Be the first to say salaam.")
+                        .font(AroosiTypography.body())
+                        .foregroundStyle(AroosiColors.muted)
+                }
 
-                Text(conversationID)
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(.secondary)
+                if let conversationID = item.match.conversationID, !conversationID.isEmpty {
+                    Text("ID: \(conversationID)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(AroosiColors.muted)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            NavigationLink {
+                ChatView(currentUser: currentUser,
+                         item: item,
+                         onUnreadCountReset: onUnreadCountReset)
+            } label: {
+                Label(item.match.conversationID == nil ? "Open Chat & Start Conversation" : "Open Chat",
+                      systemImage: "paperplane.fill")
+                    .font(.callout.weight(.semibold))
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(AroosiColors.primary)
+                    .foregroundStyle(Color.white)
+                    .clipShape(Capsule())
+            }
         }
+        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AroosiColors.surfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var profileSection: some View {
+        if let profile = item.counterpartProfile {
+            profileDetail(profile)
+        }
     }
 
     private func profileDetail(_ profile: ProfileSummary) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Profile Snapshot")
-                .font(.headline)
+                .font(AroosiTypography.heading(.h3))
 
             if let bio = profile.bio, !bio.isEmpty {
                 Text(bio)
-                    .font(.body)
+                    .font(AroosiTypography.body())
+                    .foregroundStyle(AroosiColors.text)
             }
 
             Grid(horizontalSpacing: 16, verticalSpacing: 12) {
@@ -117,14 +146,14 @@ struct MatchDetailView: View {
         VStack(spacing: 4) {
             if let location = profile.location, !location.isEmpty {
                 Label(location, systemImage: "mappin.and.ellipse")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(AroosiTypography.caption())
+                    .foregroundStyle(AroosiColors.muted)
             }
 
             if let lastActive = profile.lastActiveAt {
                 Text("Last active \(lastActive.relativeDescription())")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .font(AroosiTypography.caption())
+                    .foregroundStyle(AroosiColors.muted)
             }
         }
     }
@@ -132,10 +161,45 @@ struct MatchDetailView: View {
     private func gridRow(symbol: String, title: String, value: String) -> some View {
         GridRow {
             Label(title, systemImage: symbol)
-                .font(.subheadline.weight(.medium))
+                .font(AroosiTypography.body(weight: .semibold, size: 16))
+                .foregroundStyle(AroosiColors.text)
             Text(value)
-                .font(.body)
-                .foregroundStyle(.secondary)
+                .font(AroosiTypography.body())
+                .foregroundStyle(AroosiColors.muted)
+        }
+    }
+
+    private var avatarView: some View {
+        Group {
+            if let avatar = item.counterpartProfile?.avatarURL {
+                AsyncImage(url: avatar) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        Image(systemName: "heart.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                    @unknown default:
+                        Image(systemName: "heart.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                    }
+                }
+            } else {
+                Image(systemName: "heart.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+            }
+        }
+        .frame(width: 72, height: 72)
+        .clipShape(Circle())
+        .overlay {
+            Circle().stroke(Color(.separator), lineWidth: 1)
         }
     }
 }
@@ -155,7 +219,9 @@ struct MatchDetailView: View {
             conversationID: "conversation-1"
         )
         let item = MatchesViewModel.MatchListItem(id: match.id, match: match, counterpartProfile: summary, unreadCount: 3)
-        MatchDetailView(currentUser: UserProfile(id: "user-1", displayName: "You", email: nil, avatarURL: nil), item: item)
+        MatchDetailView(currentUser: UserProfile(id: "user-1", displayName: "You", email: nil, avatarURL: nil),
+                        item: item,
+                        onUnreadCountReset: {})
     }
 }
 #endif

@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public protocol MatchRepository {
     func fetchMatch(id: String) async throws -> Match
     func streamMatches(for userID: String) -> AsyncThrowingStream<[Match], Error>
@@ -10,7 +10,7 @@ public protocol MatchRepository {
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreMatchRepository: MatchRepository {
     private enum Constants {
         static let collection = "matches"
@@ -122,7 +122,7 @@ private func normalize(_ data: [String: Any]) -> [String: Any] {
     return normalized
 }
 #else
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreMatchRepository: MatchRepository {
     public init() {}
 

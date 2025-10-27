@@ -21,7 +21,7 @@ public enum SecureStorageError: Error, LocalizedError {
     }
 }
 
-@available(iOS 13.0, macOS 10.15, *)
+@available(iOS 13.0.15, *)
 public final class KeychainSecureStorage: SecureStoring {
     public static let shared = KeychainSecureStorage(service: Bundle.main.bundleIdentifier ?? "com.aroosi.secure")
 

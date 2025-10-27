@@ -1,0 +1,358 @@
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 56;
+    objects = {
+
+/* Begin PBXBuildFile section */
+        1D4B6B8D2B84F27100E07A20 /* AroosiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4B6B7E2B84F27100E07A20 /* AroosiApp.swift */; };
+        1D4B6B8E2B84F27100E07A20 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4B6B7F2B84F27100E07A20 /* AppDelegate.swift */; };
+        1D4B6B8F2B84F27100E07A20 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1D4B6B802B84F27100E07A20 /* Assets.xcassets */; };
+        1D4B6B902B84F27100E07A20 /* GoogleService-Info-Debug.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1D4B6B812B84F27100E07A20 /* GoogleService-Info-Debug.plist */; };
+        1D4B6B912B84F27100E07A20 /* GoogleService-Info-Staging.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1D4B6B822B84F27100E07A20 /* GoogleService-Info-Staging.plist */; };
+        1D4B6B922B84F27100E07A20 /* GoogleService-Info-Prod.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1D4B6B832B84F27100E07A20 /* GoogleService-Info-Prod.plist */; };
+        1D4B6B932B84F27100E07A20 /* AroosiKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1D4B6B942B84F27100E07A20 /* AroosiKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+        1D4B6B7E2B84F27100E07A20 /* AroosiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AroosiApp.swift; path = ../AppHost/AroosiApp.swift; sourceTree = "<group>"; };
+        1D4B6B7F2B84F27100E07A20 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ../AppHost/AppDelegate.swift; sourceTree = "<group>"; };
+        1D4B6B802B84F27100E07A20 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = ../AppHost/Assets.xcassets; sourceTree = "<group>"; };
+        1D4B6B812B84F27100E07A20 /* GoogleService-Info-Debug.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info-Debug.plist"; path = "../AppHost/Supporting/GoogleService-Info-Debug.plist"; sourceTree = "<group>"; };
+        1D4B6B822B84F27100E07A20 /* GoogleService-Info-Staging.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info-Staging.plist"; path = "../AppHost/Supporting/GoogleService-Info-Staging.plist"; sourceTree = "<group>"; };
+        1D4B6B832B84F27100E07A20 /* GoogleService-Info-Prod.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info-Prod.plist"; path = "../AppHost/Supporting/GoogleService-Info-Prod.plist"; sourceTree = "<group>"; };
+        1D4B6B842B84F27100E07A20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../AppHost/Supporting/Info.plist; sourceTree = "<group>"; };
+        1D4B6B872B84F27100E07A20 /* AroosiApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AroosiApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+        1D4B6B782B84F27100E07A20 /* Frameworks */ = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                1D4B6B932B84F27100E07A20 /* AroosiKit in Frameworks */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+        1D4B6B722B84F27100E07A20 = {
+            isa = PBXGroup;
+            children = (
+                1D4B6B7C2B84F27100E07A20 /* Sources */,
+                1D4B6B852B84F27100E07A20 /* Supporting Files */,
+                1D4B6B882B84F27100E07A20 /* Products */,
+                1D4B6B962B84F27100E07A20 /* Frameworks */,
+            );
+            sourceTree = "<group>";
+        };
+        1D4B6B7C2B84F27100E07A20 /* Sources */ = {
+            isa = PBXGroup;
+            children = (
+                1D4B6B7E2B84F27100E07A20 /* AroosiApp.swift */,
+                1D4B6B7F2B84F27100E07A20 /* AppDelegate.swift */,
+            );
+            name = Sources;
+            sourceTree = "<group>";
+        };
+        1D4B6B852B84F27100E07A20 /* Supporting Files */ = {
+            isa = PBXGroup;
+            children = (
+                1D4B6B802B84F27100E07A20 /* Assets.xcassets */,
+                1D4B6B812B84F27100E07A20 /* GoogleService-Info-Debug.plist */,
+                1D4B6B822B84F27100E07A20 /* GoogleService-Info-Staging.plist */,
+                1D4B6B832B84F27100E07A20 /* GoogleService-Info-Prod.plist */,
+                1D4B6B842B84F27100E07A20 /* Info.plist */,
+            );
+            name = "Supporting Files";
+            sourceTree = "<group>";
+        };
+        1D4B6B882B84F27100E07A20 /* Products */ = {
+            isa = PBXGroup;
+            children = (
+                1D4B6B872B84F27100E07A20 /* AroosiApp.app */,
+            );
+            name = Products;
+            sourceTree = "<group>";
+        };
+        1D4B6B962B84F27100E07A20 /* Frameworks */ = {
+            isa = PBXGroup;
+            children = (
+            );
+            name = Frameworks;
+            sourceTree = "<group>";
+        };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+        1D4B6B792B84F27100E07A20 /* AroosiApp */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = 1D4B6B8C2B84F27100E07A20 /* Build configuration list for PBXNativeTarget "AroosiApp" */;
+            buildPhases = (
+                1D4B6B772B84F27100E07A20 /* Sources */,
+                1D4B6B782B84F27100E07A20 /* Frameworks */,
+                1D4B6B972B84F27100E07A20 /* Resources */,
+            );
+            buildRules = (
+            );
+            dependencies = (
+            );
+            name = AroosiApp;
+            packageProductDependencies = (
+                1D4B6B942B84F27100E07A20 /* AroosiKit */,
+            );
+            productName = AroosiApp;
+            productReference = 1D4B6B872B84F27100E07A20 /* AroosiApp.app */;
+            productType = "com.apple.product-type.application";
+        };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+        1D4B6B732B84F27100E07A20 /* Project object */ = {
+            isa = PBXProject;
+            attributes = {
+                BuildIndependentTargetsInParallel = 1;
+                LastSwiftUpdateCheck = 1540;
+                LastUpgradeCheck = 1540;
+                TargetAttributes = {
+                    1D4B6B792B84F27100E07A20 = {
+                        CreatedOnToolsVersion = 15.4;
+                    };
+                };
+            };
+            buildConfigurationList = 1D4B6B762B84F27100E07A20 /* Build configuration list for PBXProject "AroosiApp" */;
+            compatibilityVersion = "Xcode 15.0";
+            developmentRegion = en;
+            hasScannedForEncodings = 0;
+            knownRegions = (
+                en,
+                Base,
+            );
+            mainGroup = 1D4B6B722B84F27100E07A20;
+            packageReferences = (
+                1D4B6B952B84F27100E07A20 /* XCRemoteSwiftPackageReference "AroosiSwift" */,
+            );
+            productRefGroup = 1D4B6B882B84F27100E07A20 /* Products */;
+            projectDirPath = "";
+            projectRoot = "";
+            targets = (
+                1D4B6B792B84F27100E07A20 /* AroosiApp */,
+            );
+        };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+        1D4B6B972B84F27100E07A20 /* Resources */ = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                1D4B6B8F2B84F27100E07A20 /* Assets.xcassets in Resources */,
+                1D4B6B902B84F27100E07A20 /* GoogleService-Info-Debug.plist in Resources */,
+                1D4B6B912B84F27100E07A20 /* GoogleService-Info-Staging.plist in Resources */,
+                1D4B6B922B84F27100E07A20 /* GoogleService-Info-Prod.plist in Resources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+        1D4B6B772B84F27100E07A20 /* Sources */ = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                1D4B6B8D2B84F27100E07A20 /* AroosiApp.swift in Sources */,
+                1D4B6B8E2B84F27100E07A20 /* AppDelegate.swift in Sources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+        1D4B6B7A2B84F27100E07A20 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_STYLE = Automatic;
+                DEVELOPMENT_TEAM = "";
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = ../AppHost/Supporting/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                );
+                PRODUCT_BUNDLE_IDENTIFIER = ios.aroosi.mobile;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SUPPORTS_MACCATALYST = NO;
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+                SWIFT_VERSION = 5.9;
+                TARGETED_DEVICE_FAMILY = "1";
+            };
+            name = Debug;
+        };
+        1D4B6B7B2B84F27100E07A20 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_STYLE = Automatic;
+                DEVELOPMENT_TEAM = "";
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = ../AppHost/Supporting/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                );
+                PRODUCT_BUNDLE_IDENTIFIER = ios.aroosi.mobile;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SUPPORTS_MACCATALYST = NO;
+                SWIFT_VERSION = 5.9;
+                TARGETED_DEVICE_FAMILY = "1";
+                VALIDATE_PRODUCT = YES;
+            };
+            name = Release;
+        };
+        1D4B6B8A2B84F27100E07A20 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+                CLANG_WARN_BOOL_CONVERSION = YES;
+                CLANG_WARN_COMMA = YES;
+                CLANG_WARN_CONSTANT_CONVERSION = YES;
+                CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+                CLANG_WARN_EMPTY_BODY = YES;
+                CLANG_WARN_ENUM_CONVERSION = YES;
+                CLANG_WARN_INFINITE_RECURSION = YES;
+                CLANG_WARN_INT_CONVERSION = YES;
+                CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+                CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+                CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+                CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+                CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+                CLANG_WARN_STRICT_PROTOTYPES = YES;
+                CLANG_WARN_SUSPICIOUS_MOVE = YES;
+                CODE_SIGN_STYLE = Automatic;
+                COPY_PHASE_STRIP = NO;
+                ENABLE_BITCODE = NO;
+                ENABLE_NS_ASSERTIONS = YES;
+                ENABLE_USER_SCRIPT_SANDBOXING = NO;
+                GCC_C_LANGUAGE_STANDARD = gnu17;
+                GCC_DYNAMIC_NO_PIC = NO;
+                GCC_NO_COMMON_BLOCKS = YES;
+                GCC_OPTIMIZATION_LEVEL = 0;
+                GCC_PREPROCESSOR_DEFINITIONS = (
+                    "DEBUG=1",
+                    "$(inherited)",
+                );
+                GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+                GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+                GCC_WARN_UNDECLARED_SELECTOR = YES;
+                GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+                GCC_WARN_UNUSED_FUNCTION = YES;
+                GCC_WARN_UNUSED_VARIABLE = YES;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+                ONLY_ACTIVE_ARCH = YES;
+                SDKROOT = iphoneos;
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+                SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+            };
+            name = Debug;
+        };
+        1D4B6B8B2B84F27100E07A20 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+                CLANG_WARN_BOOL_CONVERSION = YES;
+                CLANG_WARN_COMMA = YES;
+                CLANG_WARN_CONSTANT_CONVERSION = YES;
+                CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+                CLANG_WARN_EMPTY_BODY = YES;
+                CLANG_WARN_ENUM_CONVERSION = YES;
+                CLANG_WARN_INFINITE_RECURSION = YES;
+                CLANG_WARN_INT_CONVERSION = YES;
+                CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+                CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+                CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+                CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+                CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+                CLANG_WARN_STRICT_PROTOTYPES = YES;
+                CLANG_WARN_SUSPICIOUS_MOVE = YES;
+                CODE_SIGN_STYLE = Automatic;
+                COPY_PHASE_STRIP = NO;
+                ENABLE_BITCODE = NO;
+                ENABLE_NS_ASSERTIONS = NO;
+                ENABLE_USER_SCRIPT_SANDBOXING = NO;
+                GCC_C_LANGUAGE_STANDARD = gnu17;
+                GCC_NO_COMMON_BLOCKS = YES;
+                GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+                GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+                GCC_WARN_UNDECLARED_SELECTOR = YES;
+                GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+                GCC_WARN_UNUSED_FUNCTION = YES;
+                GCC_WARN_UNUSED_VARIABLE = YES;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                SDKROOT = iphoneos;
+                SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+                SWIFT_VERSION = 5.9;
+                VALIDATE_PRODUCT = YES;
+            };
+            name = Release;
+        };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+        1D4B6B762B84F27100E07A20 /* Build configuration list for PBXProject "AroosiApp" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                1D4B6B8A2B84F27100E07A20 /* Debug */, 
+                1D4B6B8B2B84F27100E07A20 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+        1D4B6B8C2B84F27100E07A20 /* Build configuration list for PBXNativeTarget "AroosiApp" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                1D4B6B7A2B84F27100E07A20 /* Debug */,
+                1D4B6B7B2B84F27100E07A20 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+        1D4B6B952B84F27100E07A20 /* XCRemoteSwiftPackageReference "AroosiSwift" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "../";
+            requirement = {
+                kind = localPackage;
+            };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        1D4B6B942B84F27100E07A20 /* AroosiKit */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = 1D4B6B952B84F27100E07A20 /* XCRemoteSwiftPackageReference "AroosiSwift" */;
+            productName = AroosiKit;
+        };
+/* End XCSwiftPackageProductDependency section */
+
+    };
+    rootObject = 1D4B6B732B84F27100E07A20 /* Project object */;
+}

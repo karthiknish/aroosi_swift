@@ -37,7 +37,7 @@ public final class SystemSignInPresenter {
             return window
         }
 
-        if let window = viewController.view.windowScene?.keyWindow {
+        if let window = viewController.view.window?.windowScene?.keyWindow {
             return window
         }
 

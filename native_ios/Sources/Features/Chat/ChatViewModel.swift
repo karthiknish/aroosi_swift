@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-@available(iOS 17, macOS 13, *)
+@available(iOS 17, *)
 @MainActor
 final class ChatViewModel: ObservableObject {
     struct State: Equatable {
@@ -13,7 +13,7 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var state = State()
     @Published var draftMessage: String = ""
 
-    private let conversationID: String
+    private var conversationID: String?
     private let currentUserID: String
     private let messageRepository: ChatMessageRepository
     private let deliveryService: ChatDeliveryServicing?
@@ -22,7 +22,7 @@ final class ChatViewModel: ObservableObject {
 
     private var messageStreamTask: Task<Void, Never>?
 
-    init(conversationID: String,
+    init(conversationID: String?,
          currentUserID: String,
          participants: [String],
          messageRepository: ChatMessageRepository = FirestoreChatMessageRepository(),
@@ -40,15 +40,17 @@ final class ChatViewModel: ObservableObject {
 
     func observeMessages() {
         guard messageStreamTask == nil else { return }
-        guard !conversationID.isEmpty else { return }
+        guard let conversationID, !conversationID.isEmpty else { return }
 
         state.isLoading = true
         state.errorMessage = nil
 
+        let targetConversationID = conversationID
+
         messageStreamTask = Task { [weak self] in
             guard let self else { return }
             do {
-                for try await messages in self.messageRepository.streamMessages(conversationID: self.conversationID) {
+                for try await messages in self.messageRepository.streamMessages(conversationID: targetConversationID) {
                     try Task.checkCancellation()
                     let sorted = messages.sorted { $0.sentAt < $1.sentAt }
                     self.state.messages = sorted
@@ -75,6 +77,23 @@ final class ChatViewModel: ObservableObject {
         observeMessages()
     }
 
+    func updateConversationID(_ newConversationID: String) {
+        stop()
+        conversationID = newConversationID
+        state = State(messages: [], isLoading: true, errorMessage: nil)
+    }
+
+    var hasConversation: Bool {
+        if let conversationID, !conversationID.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    var conversationIdentifier: String? {
+        conversationID
+    }
+
     func sendMessage() async {
         let trimmed = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -83,7 +102,7 @@ final class ChatViewModel: ObservableObject {
         draftMessage = ""
 
         do {
-            guard !conversationID.isEmpty else {
+            guard let conversationID, !conversationID.isEmpty else {
                 state.errorMessage = "This conversation is not available yet."
                 draftMessage = text
                 return
@@ -94,6 +113,9 @@ final class ChatViewModel: ObservableObject {
                                                         authorID: currentUserID,
                                                         text: text,
                                                         sentAt: sentAt)
+            
+            // Show success toast for message sent
+            ToastManager.shared.showInfo("Message sent")
 
             if let deliveryService {
                 do {
@@ -113,7 +135,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     func markConversationRead() async {
-        guard let deliveryService, !conversationID.isEmpty else { return }
+        guard let deliveryService, let conversationID, !conversationID.isEmpty else { return }
 
         do {
             try await deliveryService.markConversationRead(conversationID: conversationID, userID: currentUserID)

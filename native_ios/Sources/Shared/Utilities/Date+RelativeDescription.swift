@@ -1,6 +1,6 @@
 import Foundation
 
-@available(macOS 12.0, iOS 15.0, *)
+@available(iOS 15.0, *)
 private enum RelativeDateFormatterCache {
     static let shared: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
@@ -9,7 +9,7 @@ private enum RelativeDateFormatterCache {
     }()
 }
 
-@available(macOS 12.0, iOS 15.0, *)
+@available(iOS 15.0, *)
 public extension Date {
     func relativeDescription(relativeTo reference: Date = .now,
                              unitsStyle: RelativeDateTimeFormatter.UnitsStyle = .full) -> String {

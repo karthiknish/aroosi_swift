@@ -132,6 +132,10 @@ private final class MockAuthService: AuthProviding {
             throw error
         }
     }
+
+    func signOut() throws {}
+
+    func deleteAccount(password: String?, reason: String?) async throws {}
 }
 
 private enum TestError: Error {
@@ -170,6 +174,22 @@ private final class ProfileRepositoryMock: ProfileRepository {
     }
 
     func updateProfile(_ profile: ProfileSummary) async throws {}
+
+    func fetchShortlist(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        ProfileSearchPage(items: [], nextCursor: nil)
+    }
+
+    func toggleShortlist(userID: String) async throws -> ShortlistToggleResult {
+        ShortlistToggleResult(action: .added)
+    }
+
+    func setShortlistNote(userID: String, note: String) async throws {}
+
+    func fetchFavorites(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        ProfileSearchPage(items: [], nextCursor: nil)
+    }
+
+    func toggleFavorite(userID: String) async throws {}
 }
 
 #if canImport(AuthenticationServices)

@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public protocol ChatDeliveryServicing {
     func handleMessageSent(conversationID: String,
                            senderID: String,
@@ -13,7 +13,7 @@ public protocol ChatDeliveryServicing {
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
     private enum Constants {
         static let conversations = "conversations"
@@ -100,7 +100,7 @@ public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
     }
 }
 #else
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
     public init() {}
 

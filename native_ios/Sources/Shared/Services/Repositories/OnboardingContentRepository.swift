@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public protocol OnboardingContentRepository {
     func fetchContent() async throws -> OnboardingContent
 }
@@ -8,7 +8,7 @@ public protocol OnboardingContentRepository {
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreOnboardingContentRepository: OnboardingContentRepository {
     private enum Constants {
         static let collection = "app_content"
@@ -71,7 +71,7 @@ private func normalize(_ data: [String: Any]) -> [String: Any] {
     return normalized
 }
 #else
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreOnboardingContentRepository: OnboardingContentRepository {
     public init() {}
     public func fetchContent() async throws -> OnboardingContent {

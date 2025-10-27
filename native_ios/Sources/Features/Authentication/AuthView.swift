@@ -11,52 +11,58 @@ struct AuthView: View {
 
     @MainActor
     init(onSignedIn: @escaping (UserProfile) -> Void,
-         viewModel: AuthViewModel = AuthViewModel()) {
+         viewModel: AuthViewModel? = nil) {
         self.onSignedIn = onSignedIn
-        _viewModel = StateObject(wrappedValue: viewModel)
+        let resolvedViewModel = viewModel ?? AuthViewModel()
+        _viewModel = StateObject(wrappedValue: resolvedViewModel)
     }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                VStack(spacing: 12) {
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                
+                ResponsiveVStack(width: width) {
                     Text("Sign in with your Apple ID to continue")
-                        .font(.body)
+                        .font(AroosiTypography.body())
                         .multilineTextAlignment(.center)
 
-                    SignInWithAppleButton(.signIn) { request in
+                    SignInWithAppleButton(onRequest: { request in
                         configureRequest(request)
                     } onCompletion: { result in
                         handleAuthorization(result)
-                    }
+                    })
                     .signInWithAppleButtonStyle(.black)
-                    .frame(height: 50)
+                    .frame(height: Responsive.buttonHeight(for: width))
                     .disabled(viewModel.isLoading)
 
                     if viewModel.isLoading {
                         ProgressView()
                             .progressViewStyle(.circular)
+                            .tint(AroosiColors.primary)
+                    }
+
+                    if let message = viewModel.errorMessage {
+                        Text(message)
+                            .foregroundStyle(AroosiColors.error)
+                            .font(AroosiTypography.caption(width: width))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .transition(.opacity)
+                    }
+
+                    if let profileError = viewModel.profileLoadError {
+                        Text(profileError)
+                            .foregroundStyle(AroosiColors.warning)
+                            .font(AroosiTypography.caption(width: width))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .transition(.opacity)
                     }
                 }
-
-                if let message = viewModel.errorMessage {
-                    Text(message)
-                        .foregroundColor(.red)
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .transition(.opacity)
-                }
-
-                if let profileError = viewModel.profileLoadError {
-                    Text(profileError)
-                        .foregroundColor(.orange)
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .transition(.opacity)
-                }
-
+                .padding(Responsive.screenPadding(width: width))
+                .frame(maxWidth: .infinity)
+                
                 Spacer()
             }
             .padding()
@@ -75,10 +81,16 @@ struct AuthView: View {
     }
 
     private func configureRequest(_ request: ASAuthorizationAppleIDRequest) {
-        let nonce = AppleSignInNonce.random()
-        currentNonce = nonce
-        request.requestedScopes = [.fullName, .email]
-        request.nonce = AppleSignInNonce.sha256(nonce)
+        do {
+            let nonce = try AppleSignInNonce.random()
+            currentNonce = nonce
+            request.requestedScopes = [.fullName, .email]
+            request.nonce = AppleSignInNonce.sha256(nonce)
+        } catch {
+            // If nonce generation fails, cancel the sign-in attempt
+            viewModel.handleError(AuthError.invalidNonce)
+            return
+        }
     }
 
     private func handleAuthorization(_ result: Result<ASAuthorization, Error>) {

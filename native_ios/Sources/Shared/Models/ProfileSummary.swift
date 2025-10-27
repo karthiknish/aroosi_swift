@@ -1,12 +1,13 @@
 import Foundation
 
-public struct ProfileSummary: Equatable, Identifiable {
+public struct ProfileSummary: Codable, Equatable, Identifiable {
     public let id: String
     public var displayName: String
     public var age: Int?
     public var location: String?
     public var bio: String?
     public var avatarURL: URL?
+    public var photos: [String]
     public var interests: [String]
     public var lastActiveAt: Date?
 
@@ -16,6 +17,7 @@ public struct ProfileSummary: Equatable, Identifiable {
                 location: String? = nil,
                 bio: String? = nil,
                 avatarURL: URL? = nil,
+                photos: [String] = [],
                 interests: [String] = [],
                 lastActiveAt: Date? = nil) {
         self.id = id
@@ -24,6 +26,7 @@ public struct ProfileSummary: Equatable, Identifiable {
         self.location = location
         self.bio = bio
         self.avatarURL = avatarURL
+        self.photos = photos
         self.interests = interests
         self.lastActiveAt = lastActiveAt
     }
@@ -38,6 +41,7 @@ extension ProfileSummary {
         let age = data["age"] as? Int ?? (data["age"] as? NSNumber)?.intValue
         let location = data["location"] as? String
         let bio = data["bio"] as? String
+        let photos = data["photos"] as? [String] ?? []
         let interests = data["interests"] as? [String] ?? []
         let avatarURLString = data["avatarURL"] as? String
         let lastActiveTimestamp = data["lastActiveAt"] as? Date
@@ -51,6 +55,7 @@ extension ProfileSummary {
             location: location,
             bio: bio,
             avatarURL: avatarURL,
+            photos: photos,
             interests: interests,
             lastActiveAt: lastActiveTimestamp
         )
@@ -59,6 +64,7 @@ extension ProfileSummary {
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [
             "displayName": displayName,
+            "photos": photos,
             "interests": interests
         ]
 

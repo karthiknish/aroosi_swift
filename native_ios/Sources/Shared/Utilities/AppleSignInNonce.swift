@@ -2,9 +2,13 @@ import CryptoKit
 import Foundation
 import Security
 
-@available(macOS 10.15, iOS 13, *)
+enum NonceError: Error {
+    case randomGenerationFailed(status: OSStatus)
+}
+
+@available(iOS 17, *)
 enum AppleSignInNonce {
-    static func random(length: Int = 32) -> String {
+    static func random(length: Int = 32) throws -> String {
         precondition(length > 0)
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
         var result = ""
@@ -13,8 +17,8 @@ enum AppleSignInNonce {
         while remaining > 0 {
             var random: UInt8 = 0
             let status = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
-            if status != errSecSuccess {
-                fatalError("Unable to generate nonce: SecRandomCopyBytes failed with status \(status)")
+            guard status == errSecSuccess else {
+                throw NonceError.randomGenerationFailed(status: status)
             }
 
             if random < charset.count {

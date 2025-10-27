@@ -1,6 +1,6 @@
 import Foundation
 
-@available(macOS 12.0, iOS 17, *)
+@available(iOS 17, *)
 @MainActor
 final class SettingsViewModel: ObservableObject {
     struct State: Equatable {
@@ -9,21 +9,26 @@ final class SettingsViewModel: ObservableObject {
         var isLoading: Bool = false
         var isPersisting: Bool = false
         var errorMessage: String?
+        var isPerformingAccountAction: Bool = false
+        var dangerErrorMessage: String?
     }
 
     @Published private(set) var state = State()
 
     private let profileRepository: ProfileRepository
     private let settingsRepository: UserSettingsRepository
+    private let authService: AuthProviding
     private let logger = Logger.shared
 
     private var currentUserID: String?
     private var settingsTask: Task<Void, Never>?
 
     init(profileRepository: ProfileRepository = FirestoreProfileRepository(),
-         settingsRepository: UserSettingsRepository = FirestoreUserSettingsRepository()) {
+         settingsRepository: UserSettingsRepository = FirestoreUserSettingsRepository(),
+         authService: AuthProviding = FirebaseAuthService.shared) {
         self.profileRepository = profileRepository
         self.settingsRepository = settingsRepository
+        self.authService = authService
     }
 
     deinit {
@@ -98,5 +103,53 @@ final class SettingsViewModel: ObservableObject {
                 self.state.isPersisting = false
             }
         }
+    }
+
+    func signOut() async -> Bool {
+        state.isPerformingAccountAction = true
+        defer { state.isPerformingAccountAction = false }
+
+        do {
+            try authService.signOut()
+            state.dangerErrorMessage = nil
+            return true
+        } catch {
+            logger.error("Failed to sign out: \(error.localizedDescription)")
+            state.dangerErrorMessage = makeAuthErrorMessage(error)
+            return false
+        }
+    }
+
+    func deleteAccount(password: String?, reason: String?) async -> Bool {
+        state.isPerformingAccountAction = true
+        defer { state.isPerformingAccountAction = false }
+
+        do {
+            try await authService.deleteAccount(password: password, reason: reason)
+            state.dangerErrorMessage = nil
+            return true
+        } catch {
+            logger.error("Failed to delete account: \(error.localizedDescription)")
+            state.dangerErrorMessage = makeAuthErrorMessage(error)
+            return false
+        }
+    }
+
+    func clearDangerError() {
+        state.dangerErrorMessage = nil
+    }
+
+    func clearErrors() {
+        state.errorMessage = nil
+        state.dangerErrorMessage = nil
+    }
+
+    private func makeAuthErrorMessage(_ error: Error) -> String {
+        if let localized = error as? LocalizedError,
+           let description = localized.errorDescription,
+           !description.isEmpty {
+            return description
+        }
+        return "Something went wrong. Please try again."
     }
 }

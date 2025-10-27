@@ -34,21 +34,18 @@ service cloud.firestore {
     
     // Matches collection - only users involved can read/write
     match /matches/{matchId} {
-      allow read, write: if request.auth != null && 
-        (request.resource.data.userId == request.auth.uid || 
-         request.resource.data.matchedUserId == request.auth.uid);
+      allow read: if request.auth != null && isMatchParticipant(resource.data, request.auth.uid);
+      allow create: if request.auth != null && isMatchParticipant(request.resource.data, request.auth.uid);
+      allow update: if request.auth != null && isMatchParticipant(resource.data, request.auth.uid) && matchParticipantsImmutable();
+      allow delete: if request.auth != null && isMatchParticipant(resource.data, request.auth.uid);
     }
     
     // Interests collection - senders/receivers can access their interests
     match /interests/{interestId} {
-      allow read: if request.auth != null && 
-        (request.resource.data.fromUserId == request.auth.uid || 
-         request.resource.data.toUserId == request.auth.uid);
-      allow create: if request.auth != null && 
-        request.resource.data.fromUserId == request.auth.uid &&
-        isValidInterestCreate(request.resource.data);
-      allow update: if request.auth != null && 
-        request.resource.data.toUserId == request.auth.uid;
+      allow read: if request.auth != null && isInterestParticipant(resource.data, request.auth.uid);
+      allow create: if request.auth != null && interestCreateAllowed();
+      allow update: if request.auth != null && interestUpdateAllowed();
+      allow delete: if request.auth != null && resource.data.fromUserId == request.auth.uid;
     }
     
     // Reports collection - users can create reports, admins can read
@@ -61,10 +58,9 @@ service cloud.firestore {
     
     // Blocks collection - users can manage their own blocks
     match /blocks/{blockId} {
-      allow read: if request.auth != null && 
-        request.resource.data.blockerId == request.auth.uid;
-      allow create: if request.auth != null && 
-        request.resource.data.blockerId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.blockerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.blockerId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.blockerId == request.auth.uid;
     }
     
     // Shortlist subcollection - users can manage their own shortlist
@@ -84,6 +80,61 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
       allow delete: if false;
+    }
+    
+    // Family approval requests - requesters and family members can access
+    match /family_approval_requests/{requestId} {
+      // Requesters can read their own sent requests
+      allow read: if request.auth != null && resource.data.requesterId == request.auth.uid;
+      // Family members can read requests assigned to them
+      allow read: if request.auth != null && resource.data.familyMemberId == request.auth.uid;
+      // Users can create requests
+      allow create: if request.auth != null && 
+        request.resource.data.requesterId == request.auth.uid &&
+        isValidFamilyApprovalRequest(request.resource.data);
+      // Requesters can update their own requests (cancel)
+      allow update: if request.auth != null && 
+        resource.data.requesterId == request.auth.uid &&
+        request.resource.data.status == 'cancelled';
+      // Family members can update requests to respond
+      allow update: if request.auth != null && 
+        resource.data.familyMemberId == request.auth.uid &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status in ['approved', 'rejected'];
+    }
+    
+    // Family members - users can manage their own family members
+    match /family_members/{memberId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid &&
+        isValidFamilyMember(request.resource.data);
+      allow update: if request.auth != null && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Compatibility responses - users can read/write their own responses
+    match /compatibility_responses/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Compatibility reports - users involved can read, creator can write
+    match /compatibility_reports/{reportId} {
+      allow read: if request.auth != null && (
+        resource.data.userId1 == request.auth.uid || 
+        resource.data.userId2 == request.auth.uid
+      );
+      allow create: if request.auth != null && (
+        request.resource.data.userId1 == request.auth.uid || 
+        request.resource.data.userId2 == request.auth.uid
+      );
+      allow update: if request.auth != null && (
+        resource.data.userId1 == request.auth.uid || 
+        resource.data.userId2 == request.auth.uid
+      );
+      allow delete: if request.auth != null && resource.data.userId1 == request.auth.uid;
     }
     
     // Default deny for all other collections
@@ -147,4 +198,59 @@ function isValidReportCreate(data) {
 function isAdmin(userId) {
   return exists(/databases/(default)/documents/users/$(userId)) &&
     get(/databases/(default)/documents/users/$(userId)).data.role == 'admin';
+}
+
+function isMatchParticipant(data, userId) {
+  return data != null && (
+    data.userId == userId || data.matchedUserId == userId
+  );
+}
+
+function matchParticipantsImmutable() {
+  return resource.data == null || (
+    resource.data.userId == request.resource.data.userId &&
+    resource.data.matchedUserId == request.resource.data.matchedUserId
+  );
+}
+
+function isInterestParticipant(data, userId) {
+  return data != null && (data.fromUserId == userId || data.toUserId == userId);
+}
+
+function interestCreateAllowed() {
+  return request.resource.data != null &&
+    request.resource.data.fromUserId == request.auth.uid &&
+    request.resource.data.fromUserId != request.resource.data.toUserId &&
+    isValidInterestCreate(request.resource.data);
+}
+
+function interestUpdateAllowed() {
+  return resource.data != null && request.resource.data != null &&
+    resource.data.fromUserId == request.resource.data.fromUserId &&
+    resource.data.toUserId == request.resource.data.toUserId &&
+    resource.data.toUserId == request.auth.uid &&
+    request.resource.data.status in ['pending', 'accepted', 'rejected'];
+}
+
+function isValidFamilyApprovalRequest(data) {
+  return data.requesterId is string &&
+    data.targetUserId is string &&
+    data.requesterId != data.targetUserId &&
+    data.familyMemberId is string &&
+    data.familyMemberName is string &&
+    data.familyMemberRelation is string &&
+    data.status == 'pending' &&
+    data.message is string &&
+    data.message.size() > 0 &&
+    data.message.size() <= 1000;
+}
+
+function isValidFamilyMember(data) {
+  return data.userId is string &&
+    data.name is string &&
+    data.name.size() > 0 &&
+    data.name.size() <= 100 &&
+    data.relation is string &&
+    data.relation in ['father', 'mother', 'brother', 'sister', 'uncle', 'aunt', 'cousin', 'guardian', 'other'] &&
+    data.canApprove is bool;
 }

@@ -2,3 +2,8 @@
 APP_ENV=debug
 FIREBASE_PLIST=GoogleService-Info-Debug
 API_BASE_URL=https://api.dev.aroosi.com
+
+// Debug optimizations: disable for faster builds and better debugging
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+SWIFT_COMPILATION_MODE = singlefile
+GCC_OPTIMIZATION_LEVEL = 0

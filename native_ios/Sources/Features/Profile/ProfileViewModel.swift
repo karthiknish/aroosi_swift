@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-@available(macOS 12.0, iOS 17, *)
+@available(iOS 17, *)
 @MainActor
 final class ProfileViewModel: ObservableObject {
     struct State: Equatable {

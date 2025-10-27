@@ -103,6 +103,22 @@ private final class ProfileRepositoryStreamStub: ProfileRepository {
 
     func updateProfile(_ profile: ProfileSummary) async throws {}
 
+    func fetchShortlist(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        ProfileSearchPage(items: [], nextCursor: nil)
+    }
+
+    func toggleShortlist(userID: String) async throws -> ShortlistToggleResult {
+        ShortlistToggleResult(action: .added)
+    }
+
+    func setShortlistNote(userID: String, note: String) async throws {}
+
+    func fetchFavorites(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        ProfileSearchPage(items: [], nextCursor: nil)
+    }
+
+    func toggleFavorite(userID: String) async throws {}
+
     func send(_ profiles: [ProfileSummary]) {
         if let continuation {
             continuation.yield(profiles)

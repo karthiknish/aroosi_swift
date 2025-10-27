@@ -10,7 +10,7 @@ public protocol LoggerSink: AnyObject {
     func log(level: LoggerLevel, message: String)
 }
 
-@available(macOS 11.0, iOS 15, *)
+@available(iOS 17, *)
 public final class Logger {
     public static let shared = Logger()
 

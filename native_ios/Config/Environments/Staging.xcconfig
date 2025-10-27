@@ -2,3 +2,9 @@
 APP_ENV=staging
 FIREBASE_PLIST=GoogleService-Info-Staging
 API_BASE_URL=https://api.staging.aroosi.com
+
+// Staging optimizations: balance between debug and release
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+GCC_OPTIMIZATION_LEVEL = s
+ENABLE_TESTABILITY = YES

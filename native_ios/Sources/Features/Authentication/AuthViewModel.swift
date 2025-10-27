@@ -4,7 +4,7 @@ import Foundation
 import AuthenticationServices
 #endif
 
-@available(macOS 12.0, iOS 17, *)
+@available(iOS 17, *)
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var isLoading: Bool = false
@@ -48,7 +48,7 @@ final class AuthViewModel: ObservableObject {
     }
 
 #if canImport(AuthenticationServices)
-    @available(iOS 17, macOS 13, *)
+    @available(iOS 17, *)
     func signInWithSystemUI(anchor: ASPresentationAnchor) async {
         isLoading = true
         errorMessage = nil

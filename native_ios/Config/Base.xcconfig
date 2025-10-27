@@ -7,4 +7,4 @@ CURRENT_PROJECT_VERSION = 1
 MARKETING_VERSION = 1.0
 ENABLE_TESTABILITY = YES
 DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
-SWIFT_OPTIMIZATION_LEVEL = -Onone
+// Optimization level set per-environment (Debug.xcconfig, Release.xcconfig)

@@ -1,20 +1,26 @@
-# Aroosi Flutter
+# Aroosi Native iOS
 
-Flutter client that mirrors the production bundle identifiers and store
-configuration used by `aroosi-mobile`.
+Native iOS client for the Aroosi cultural matchmaking platform, built with SwiftUI and Firebase.
 
 ## Development
 
 ```bash
-flutter pub get
-flutter run
+cd native_ios
+swift package update
+swift run
 ```
 
-Environment variables are loaded from `.env` (see `lib/core/env.dart`).
+Open `native_ios/AroosiApp.xcodeproj` in Xcode 15+ for full development experience.
+
+## Project Structure
+
+- `native_ios/` - Swift package with SwiftUI implementation
+- `ios/` - iOS-specific configuration and fastlane setup
+- `firebase/` - Backend configuration and security rules
+- `docs/` - Comprehensive documentation
 
 ## Releases
 
 - iOS bundle id: `com.aroosi.mobile`
-- Versioning, build numbers, and fastlane metadata live alongside the Flutter
-  project. See [docs/release.md](docs/release.md) for the full workflow, required
-  secrets, and helper scripts (`scripts/bump-version.js`).
+- Versioning and build numbers managed in `versioning/`
+- Fastlane configuration in `fastlane/`

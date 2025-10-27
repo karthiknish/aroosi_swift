@@ -39,6 +39,43 @@ public final class FirebaseAuthService: AuthProviding {
         }
     }
 
+    public func signOut() throws {
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            throw mapError(error)
+        }
+    }
+
+    public func deleteAccount(password: String?, reason: String?) async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw AuthError.userNotFound
+        }
+
+        if #available(iOS 15.0.0, *) {
+            Logger.shared.info("Deleting account for user \(user.uid). Reason provided: \(reason ?? "none")")
+        }
+
+        do {
+            try await user.delete()
+        } catch {
+            if let nsError = error as NSError?,
+               AuthErrorCode(_nsError: nsError).code == .requiresRecentLogin {
+                guard let email = user.email,
+                      let password,
+                      !password.isEmpty else {
+                    throw AuthError.requiresRecentLogin
+                }
+
+                let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+                try await user.reauthenticate(with: credential)
+                try await user.delete()
+            } else {
+                throw mapError(error)
+            }
+        }
+    }
+
     private func makeProfile(from user: FirebaseAuth.User) -> UserProfile {
         let displayName: String
         if let name = user.displayName, !name.isEmpty {
@@ -70,6 +107,8 @@ public final class FirebaseAuthService: AuthProviding {
             return AuthError.userNotFound
         case .networkError:
             return AuthError.networkFailure
+        case .requiresRecentLogin:
+            return AuthError.requiresRecentLogin
         default:
             return error
         }
@@ -82,6 +121,7 @@ extension FirebaseAuthService {
         case accountDisabled
         case userNotFound
         case networkFailure
+        case requiresRecentLogin
 
         public var errorDescription: String? {
             switch self {
@@ -93,6 +133,8 @@ extension FirebaseAuthService {
                 return "We couldn't find an account linked to this Apple ID."
             case .networkFailure:
                 return "We couldn't reach the server. Check your connection and try again."
+            case .requiresRecentLogin:
+                return "For security, please sign in again before deleting your account."
             }
         }
     }

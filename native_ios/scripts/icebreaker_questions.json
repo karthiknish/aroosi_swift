@@ -1,0 +1,124 @@
+{
+  "icebreaker_questions": [
+    {
+      "_id": "question_001",
+      "text": "What's your favorite family tradition that you'd like to continue?",
+      "category": "family",
+      "weight": 1,
+      "active": true,
+      "order": 1
+    },
+    {
+      "_id": "question_002",
+      "text": "How do you balance modern life with traditional Islamic values?",
+      "category": "values",
+      "weight": 1,
+      "active": true,
+      "order": 2
+    },
+    {
+      "_id": "question_003",
+      "text": "What qualities do you value most in a life partner?",
+      "category": "relationships",
+      "weight": 1,
+      "active": true,
+      "order": 3
+    },
+    {
+      "_id": "question_004",
+      "text": "Describe your ideal weekend with your future spouse.",
+      "category": "lifestyle",
+      "weight": 1,
+      "active": true,
+      "order": 4
+    },
+    {
+      "_id": "question_005",
+      "text": "What role does faith play in your daily life?",
+      "category": "religious",
+      "weight": 1,
+      "active": true,
+      "order": 5
+    },
+    {
+      "_id": "question_006",
+      "text": "How do you like to spend time with family?",
+      "category": "family",
+      "weight": 1,
+      "active": true,
+      "order": 6
+    },
+    {
+      "_id": "question_007",
+      "text": "What's your favorite way to de-stress after a long day?",
+      "category": "lifestyle",
+      "weight": 1,
+      "active": true,
+      "order": 7
+    },
+    {
+      "_id": "question_008",
+      "text": "How important is cultural heritage in your life?",
+      "category": "cultural",
+      "weight": 1,
+      "active": true,
+      "order": 8
+    },
+    {
+      "_id": "question_009",
+      "text": "What are your thoughts on halal dating and getting to know someone?",
+      "category": "relationships",
+      "weight": 1,
+      "active": true,
+      "order": 9
+    },
+    {
+      "_id": "question_010",
+      "text": "Describe your relationship with your extended family.",
+      "category": "family",
+      "weight": 1,
+      "active": true,
+      "order": 10
+    },
+    {
+      "_id": "question_011",
+      "text": "What hobbies or activities bring you joy?",
+      "category": "lifestyle",
+      "weight": 1,
+      "active": true,
+      "order": 11
+    },
+    {
+      "_id": "question_012",
+      "text": "How do you envision balancing career and family life?",
+      "category": "values",
+      "weight": 1,
+      "active": true,
+      "order": 12
+    },
+    {
+      "_id": "question_013",
+      "text": "What's your favorite Islamic quote or verse and why?",
+      "category": "religious",
+      "weight": 1,
+      "active": true,
+      "order": 13
+    },
+    {
+      "_id": "question_014",
+      "text": "How do you prefer to celebrate special occasions?",
+      "category": "cultural",
+      "weight": 1,
+      "active": true,
+      "order": 14
+    },
+    {
+      "_id": "question_015",
+      "text": "What are your goals for personal growth in the next 5 years?",
+      "category": "values",
+      "weight": 1,
+      "active": true,
+      "order": 15
+    }
+  ]
+}

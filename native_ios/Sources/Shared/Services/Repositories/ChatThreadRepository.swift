@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public protocol ChatThreadRepository {
     func fetchThread(id: String) async throws -> ChatThread
     func streamThreads(for userID: String) -> AsyncThrowingStream<[ChatThread], Error>
@@ -10,7 +10,7 @@ public protocol ChatThreadRepository {
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreChatThreadRepository: ChatThreadRepository {
     private enum Constants {
         static let collection = "conversations"
@@ -119,7 +119,7 @@ private func normalize(_ data: [String: Any]) -> [String: Any] {
     return normalized
 }
 #else
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreChatThreadRepository: ChatThreadRepository {
     public init() {}
 

@@ -47,16 +47,23 @@ final class AppleSignInCoordinator: NSObject {
             self.presentationAnchor = anchor
 
             let request = ASAuthorizationAppleIDProvider().createRequest()
-            let nonce = AppleSignInNonce.random()
-            self.currentNonce = nonce
-            request.requestedScopes = [.fullName, .email]
-            request.nonce = AppleSignInNonce.sha256(nonce)
+            
+            do {
+                let nonce = try AppleSignInNonce.random()
+                self.currentNonce = nonce
+                request.requestedScopes = [.fullName, .email]
+                request.nonce = AppleSignInNonce.sha256(nonce)
 
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            self.authorizationController = controller
-            controller.performRequests()
+                let controller = ASAuthorizationController(authorizationRequests: [request])
+                controller.delegate = self
+                controller.presentationContextProvider = self
+                self.authorizationController = controller
+                controller.performRequests()
+            } catch {
+                // If nonce generation fails, propagate the error
+                continuation.resume(throwing: error)
+                self.continuation = nil
+            }
         }
     }
 

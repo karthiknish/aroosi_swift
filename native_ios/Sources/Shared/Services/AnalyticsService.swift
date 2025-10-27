@@ -16,7 +16,7 @@ public protocol AnalyticsDestination: AnyObject {
     func setUserProperty(_ value: String?, for key: String)
 }
 
-@available(macOS 11.0, iOS 15, *)
+@available(iOS 17, *)
 public final class AnalyticsService {
     public static let shared = AnalyticsService()
 
@@ -70,7 +70,7 @@ public final class AnalyticsService {
     }
 }
 
-@available(macOS 11.0, iOS 15, *)
+@available(iOS 17, *)
 public final class ConsoleAnalyticsDestination: AnalyticsDestination {
     private let logger = Logger.shared
 

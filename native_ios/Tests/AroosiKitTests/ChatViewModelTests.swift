@@ -128,6 +128,42 @@ private final class ChatMessageRepositoryStub: ChatMessageRepository {
         return message
     }
 
+    func sendImageMessage(conversationID: String,
+                          authorID: String,
+                          imageData: Data,
+                          fileName: String,
+                          contentType: String,
+                          caption: String?,
+                          sentAt: Date) async throws -> ChatMessage {
+        return try await sendMessage(conversationID: conversationID,
+                                     authorID: authorID,
+                                     text: caption ?? "",
+                                     sentAt: sentAt)
+    }
+
+    func sendVoiceMessage(conversationID: String,
+                          authorID: String,
+                          audioData: Data,
+                          fileName: String,
+                          contentType: String,
+                          duration: TimeInterval,
+                          sentAt: Date) async throws -> ChatMessage {
+        return try await sendMessage(conversationID: conversationID,
+                                     authorID: authorID,
+                                     text: "Voice message",
+                                     sentAt: sentAt)
+    }
+
+    func addReaction(conversationID: String,
+                     messageID: String,
+                     emoji: String,
+                     userID: String) async throws {}
+
+    func removeReaction(conversationID: String,
+                        messageID: String,
+                        emoji: String,
+                        userID: String) async throws {}
+
     func send(_ messages: [ChatMessage]) {
         continuation?.yield(messages)
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public protocol UserSettingsRepository {
     func streamSettings(for userID: String) -> AsyncThrowingStream<UserSettings, Error>
     func updateSettings(_ settings: UserSettings) async throws
@@ -9,7 +9,7 @@ public protocol UserSettingsRepository {
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreUserSettingsRepository: UserSettingsRepository {
     private enum Constants {
         static let collection = "userSettings"
@@ -78,7 +78,7 @@ public final class FirestoreUserSettingsRepository: UserSettingsRepository {
     }
 }
 #else
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 17.0.0, *)
 public final class FirestoreUserSettingsRepository: UserSettingsRepository {
     public init() {}
 

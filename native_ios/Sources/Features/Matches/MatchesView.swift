@@ -1,10 +1,13 @@
 #if os(iOS)
 import SwiftUI
 
-@available(iOS 17, macOS 13, *)
+@available(iOS 17, *)
 struct MatchesView: View {
     let user: UserProfile
     @StateObject private var viewModel: MatchesViewModel
+    @EnvironmentObject private var coordinator: NavigationCoordinator
+    @State private var activeConversation: MatchesViewModel.MatchListItem?
+    @State private var pendingRoute: NavigationCoordinator.MatchesRoute?
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
@@ -13,9 +16,10 @@ struct MatchesView: View {
     }()
 
     @MainActor
-    init(user: UserProfile, viewModel: MatchesViewModel = MatchesViewModel()) {
+    init(user: UserProfile, viewModel: MatchesViewModel? = nil) {
         self.user = user
-        _viewModel = StateObject(wrappedValue: viewModel)
+        let resolvedViewModel = viewModel ?? MatchesViewModel()
+        _viewModel = StateObject(wrappedValue: resolvedViewModel)
     }
 
     var body: some View {
@@ -24,11 +28,24 @@ struct MatchesView: View {
                 .navigationTitle("Matches")
                 .navigationBarTitleDisplayMode(.large)
         }
+        .tint(AroosiColors.primary)
         .task(id: user.id) {
             viewModel.observeMatches(for: user.id)
         }
         .onDisappear {
             viewModel.stopObserving()
+        }
+        .onAppear { handlePendingRoute() }
+        .onChange(of: coordinator.pendingRoute) { _ in
+            handlePendingRoute()
+        }
+        .onChange(of: viewModel.state.items) { _ in
+            resolvePendingConversationIfNeeded()
+        }
+        .navigationDestination(item: $activeConversation) { item in
+            MatchDetailView(currentUser: user,
+                            item: item,
+                            onUnreadCountReset: { viewModel.updateUnreadCount(for: item.id, count: 0) })
         }
     }
 
@@ -54,6 +71,8 @@ struct MatchesView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(AroosiColors.background)
         .refreshable {
             viewModel.refresh()
         }
@@ -61,6 +80,7 @@ struct MatchesView: View {
             if viewModel.state.isLoading && viewModel.state.items.isEmpty {
                 ProgressView()
                     .progressViewStyle(.circular)
+                    .tint(AroosiColors.primary)
             }
         }
     }
@@ -69,15 +89,15 @@ struct MatchesView: View {
         VStack(spacing: 12) {
             Image(systemName: systemImage)
                 .font(.system(size: 32, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(AroosiColors.primary)
 
             Text(title)
-                .font(.headline)
+                .font(AroosiTypography.heading(.h3))
                 .multilineTextAlignment(.center)
 
             Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(AroosiTypography.body())
+                .foregroundStyle(AroosiColors.muted)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -88,22 +108,22 @@ struct MatchesView: View {
 
     private func row(for item: MatchesViewModel.MatchListItem) -> some View {
         NavigationLink {
-            ChatView(currentUser: user,
-                     item: item,
-                     onUnreadCountReset: { viewModel.updateUnreadCount(for: item.id, count: 0) })
+            MatchDetailView(currentUser: user,
+                            item: item,
+                            onUnreadCountReset: { viewModel.updateUnreadCount(for: item.id, count: 0) })
         } label: {
             HStack(spacing: 16) {
                 avatar(for: item)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title(for: item))
-                        .font(.headline)
-                        .foregroundStyle(.primary)
+                        .font(AroosiTypography.heading(.h3))
+                        .foregroundStyle(AroosiColors.text)
 
                     if let preview = item.lastMessagePreview, !preview.isEmpty {
                         Text(preview)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(AroosiTypography.body(weight: .regular, size: 15))
+                            .foregroundStyle(AroosiColors.muted)
                             .lineLimit(1)
                     }
                 }
@@ -112,16 +132,16 @@ struct MatchesView: View {
 
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(relativeDateString(for: item.lastUpdatedAt))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(AroosiTypography.caption())
+                        .foregroundStyle(AroosiColors.muted)
 
                     if item.unreadCount > 0 {
                         Text("\(item.unreadCount)")
                             .font(.caption2.weight(.semibold))
                             .padding(.vertical, 4)
                             .padding(.horizontal, 8)
-                            .background(Color.accentColor.opacity(0.2))
-                            .foregroundStyle(Color.accentColor)
+                            .background(AroosiColors.primary.opacity(0.2))
+                            .foregroundStyle(AroosiColors.primary)
                             .clipShape(Capsule())
                     }
                 }
@@ -143,19 +163,19 @@ struct MatchesView: View {
                             .resizable()
                             .scaledToFill()
                     case .failure:
-                        Image(systemName: "person.crop.circle.fill")
+                        AroosiAsset.avatarPlaceholder
                             .resizable()
-                            .scaledToFit()
+                            .scaledToFill()
                     @unknown default:
-                        Image(systemName: "person.crop.circle.fill")
+                        AroosiAsset.avatarPlaceholder
                             .resizable()
-                            .scaledToFit()
+                            .scaledToFill()
                     }
                 }
             } else {
-                Image(systemName: "person.crop.circle.fill")
+                AroosiAsset.avatarPlaceholder
                     .resizable()
-                    .scaledToFit()
+                    .scaledToFill()
             }
         }
         .frame(width: 48, height: 48)
@@ -177,9 +197,38 @@ struct MatchesView: View {
     }
 }
 
+@available(iOS 17, *)
+private extension MatchesView {
+    func handlePendingRoute() {
+        guard let route = coordinator.consumePendingRoute(for: .matches) else { return }
+        guard case let .matches(destination) = route else { return }
+
+        switch destination {
+        case .conversation(let matchID, _):
+            if let item = viewModel.state.items.first(where: { $0.id == matchID }) {
+                activeConversation = item
+                pendingRoute = nil
+            } else {
+                pendingRoute = destination
+                viewModel.refresh()
+            }
+        case .shortlist:
+            coordinator.open(.profile(.shortlist))
+        }
+    }
+
+    func resolvePendingConversationIfNeeded() {
+        guard case let .conversation(matchID, _) = pendingRoute else { return }
+        guard let item = viewModel.state.items.first(where: { $0.id == matchID }) else { return }
+        activeConversation = item
+        pendingRoute = nil
+    }
+}
+
 #Preview {
     if #available(iOS 17, *) {
         MatchesView(user: UserProfile(id: "user-123", displayName: "Test User", email: nil, avatarURL: nil))
+        .environmentObject(NavigationCoordinator())
     }
 }
 #endif

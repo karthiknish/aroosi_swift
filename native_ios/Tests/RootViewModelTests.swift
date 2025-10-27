@@ -60,4 +60,8 @@ private final class MockAuthService: AuthProviding {
         }
         return user
     }
+
+    func signOut() throws {}
+
+    func deleteAccount(password: String?, reason: String?) async throws {}
 }

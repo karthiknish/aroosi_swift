@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-@available(macOS 12.0, iOS 17, *)
+@available(iOS 17, *)
 @MainActor
 final class MatchesViewModel: ObservableObject {
     struct State: Equatable {
@@ -14,7 +14,7 @@ final class MatchesViewModel: ObservableObject {
         }
     }
 
-    struct MatchListItem: Identifiable, Equatable {
+    struct MatchListItem: Identifiable, Equatable, Hashable {
         let id: String
         let match: Match
         let counterpartProfile: ProfileSummary?
@@ -22,6 +22,12 @@ final class MatchesViewModel: ObservableObject {
 
         var lastMessagePreview: String? { match.lastMessagePreview }
         var lastUpdatedAt: Date { match.lastUpdatedAt }
+
+        static func == (lhs: MatchListItem, rhs: MatchListItem) -> Bool { lhs.id == rhs.id }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+        }
     }
 
     @Published private(set) var state = State()

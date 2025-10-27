@@ -3,7 +3,7 @@ import AuthenticationServices
 import SwiftUI
 import UIKit
 
-@available(iOS 17, macOS 13, *)
+@available(iOS 17, *)
 struct OnboardingView: View {
     let onComplete: () -> Void
     @StateObject private var contentViewModel: OnboardingViewModel
@@ -11,11 +11,13 @@ struct OnboardingView: View {
 
     @MainActor
     init(onComplete: @escaping () -> Void,
-         contentViewModel: OnboardingViewModel = OnboardingViewModel(),
-         authViewModel: AuthViewModel = AuthViewModel()) {
+         contentViewModel: OnboardingViewModel? = nil,
+         authViewModel: AuthViewModel? = nil) {
         self.onComplete = onComplete
-        _contentViewModel = StateObject(wrappedValue: contentViewModel)
-        _authViewModel = StateObject(wrappedValue: authViewModel)
+        let resolvedContentViewModel = contentViewModel ?? OnboardingViewModel()
+        let resolvedAuthViewModel = authViewModel ?? AuthViewModel()
+        _contentViewModel = StateObject(wrappedValue: resolvedContentViewModel)
+        _authViewModel = StateObject(wrappedValue: resolvedAuthViewModel)
     }
 
     var body: some View {
@@ -32,7 +34,10 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, 32)
             }
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .refreshable {
+                contentViewModel.refresh()
+            }
+            .background(AroosiColors.background.ignoresSafeArea())
 
             if contentViewModel.state.isLoading {
                 ProgressView()
@@ -40,9 +45,7 @@ struct OnboardingView: View {
             }
         }
         .task {
-            if contentViewModel.state.content == nil && !contentViewModel.state.isLoading {
-                contentViewModel.loadContent()
-            }
+            contentViewModel.loadIfNeeded()
         }
         .onChange(of: authViewModel.signedInUser) { _, user in
             guard user != nil else { return }
@@ -51,81 +54,96 @@ struct OnboardingView: View {
     }
 
     private var heroImage: some View {
-        Group {
-            if let url = contentViewModel.state.content?.heroImageURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .frame(maxWidth: .infinity)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    case .failure:
-                        Image(systemName: "heart.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .foregroundStyle(Color.accentColor)
-                    @unknown default:
-                        Image(systemName: "heart.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .foregroundStyle(Color.accentColor)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            
+            VStack(spacing: Responsive.spacing(width: width)) {
+                if let imageURL = contentViewModel.state.content?.imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(AroosiColors.primary)
+                                .frame(maxWidth: .infinity)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                        case .failure:
+                            AroosiAsset.onboardingHero
+                                .resizable()
+                                .scaledToFit()
+                        @unknown default:
+                            AroosiAsset.onboardingHero
+                                .resizable()
+                                .scaledToFit()
+                        }
                     }
+                    .frame(height: Responsive.mediaHeight(for: width, type: .banner))
+                } else if contentViewModel.state.isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    AroosiAsset.onboardingHero
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: Responsive.mediaHeight(for: width, type: .banner))
                 }
-                .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 280)
-            } else if contentViewModel.state.isLoading {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .frame(maxWidth: .infinity)
-            } else {
-                Image(systemName: "heart.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(Color.accentColor)
-                    .frame(height: 160)
             }
         }
     }
 
     private var contentCopy: some View {
-        VStack(spacing: 16) {
-            Text(contentViewModel.state.content?.title ?? "Discover curated matches")
-                .font(.largeTitle.weight(.semibold))
-                .multilineTextAlignment(.center)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            
+            ResponsiveVStack(width: width) {
+                Text(contentViewModel.state.content?.title ?? "Discover curated matches")
+                    .font(AroosiTypography.heading(.h1, width: width))
+                    .multilineTextAlignment(.center)
 
-            Text(contentViewModel.state.content?.tagline ?? "We are fetching the latest story for you.")
-                .font(.title3)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                Text(contentViewModel.state.content?.tagline ?? "We are fetching the latest story for you.")
+                    .font(AroosiTypography.body(weight: .semibold, size: 18, width: width))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(AroosiColors.muted)
 
             if let error = contentViewModel.state.errorMessage {
-                VStack(spacing: 8) {
+                ResponsiveVStack(spacing: Responsive.spacing(width: width, multiplier: 0.5), width: width) {
                     Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                        .font(AroosiTypography.caption(width: width))
+                        .foregroundStyle(AroosiColors.error)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
-                        contentViewModel.retry()
-                    }
-                    .buttonStyle(.bordered)
+                    ResponsiveButton(
+                        title: "Retry",
+                        action: { contentViewModel.refresh() },
+                        style: .outline,
+                        width: width
+                    )
                 }
-                .padding(.top, 8)
+                .padding(.top, Responsive.spacing(width: width, multiplier: 0.5))
+            }
+
+            if let info = contentViewModel.state.infoMessage {
+                Text(info)
+                    .font(AroosiTypography.caption(width: width))
+                    .foregroundStyle(AroosiColors.muted)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, Responsive.spacing(width: width, multiplier: 0.3))
             }
 
             if let profileError = authViewModel.profileLoadError {
                 Text(profileError)
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
+                    .font(AroosiTypography.caption(width: width))
+                    .foregroundStyle(AroosiColors.warning)
                     .multilineTextAlignment(.center)
             }
 
             if let authError = authViewModel.errorMessage {
                 Text(authError)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
+                    .font(AroosiTypography.caption(width: width))
+                    .foregroundStyle(AroosiColors.error)
                     .multilineTextAlignment(.center)
             }
         }
@@ -137,10 +155,10 @@ struct OnboardingView: View {
                 Task { await startSystemSignIn() }
             } label: {
                 Text(contentViewModel.state.content?.callToActionTitle ?? "Get Started")
-                    .font(.headline)
+                    .font(AroosiTypography.body(weight: .semibold, size: 17))
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(AroosiColors.primary)
                     .foregroundStyle(Color.white)
                     .clipShape(Capsule())
             }
@@ -149,6 +167,7 @@ struct OnboardingView: View {
             if authViewModel.isLoading {
                 ProgressView()
                     .progressViewStyle(.circular)
+                    .tint(AroosiColors.primary)
             }
         }
     }
