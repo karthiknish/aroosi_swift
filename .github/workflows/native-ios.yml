@@ -1,0 +1,41 @@
+name: Native iOS CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'native_ios/**'
+      - '.github/workflows/native-ios.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'native_ios/**'
+      - '.github/workflows/native-ios.yml'
+
+jobs:
+  lint-and-test:
+    name: Swift Package Lint & Test
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint & SwiftFormat
+        run: |
+          brew update
+          brew install swiftlint swiftformat
+
+      - name: SwiftFormat (lint mode)
+        run: swiftformat --config native_ios/.swiftformat native_ios/Sources native_ios/AppHost --lint
+
+      - name: SwiftLint
+        run: swiftlint --config native_ios/.swiftlint.yml --path native_ios
+
+      - name: Swift package resolve
+        run: swift package resolve
+        working-directory: aroosi_swift/native_ios
+
+      - name: Swift package tests
+        run: swift test
+        working-directory: aroosi_swift/native_ios
