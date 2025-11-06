@@ -1,4 +1,5 @@
 import SwiftUI
+#if os(iOS)
 
 // MARK: - Toast System
 
@@ -383,3 +384,5 @@ public struct InlineMessageView: View {
         AroosiToast(message: message, style: style.toastStyle)
     }
 }
+
+#endif

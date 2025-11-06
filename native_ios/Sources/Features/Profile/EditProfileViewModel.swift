@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class EditProfileViewModel: ObservableObject {
@@ -93,4 +95,18 @@ final class EditProfileViewModel: ObservableObject {
         form.isSaving = false
         return false
     }
+    
+    func updateProfileImage(url: String) async {
+        do {
+            var updated = originalProfile ?? ProfileSummary(id: userID, displayName: form.displayName)
+            updated.avatarURL = url
+            
+            try await profileRepository.updateProfile(updated)
+            originalProfile = updated
+        } catch {
+            form.errorMessage = "Failed to update profile image. Please try again."
+        }
+    }
 }
+
+#endif

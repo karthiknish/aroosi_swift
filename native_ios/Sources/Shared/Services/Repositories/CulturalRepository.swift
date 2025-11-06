@@ -21,7 +21,15 @@ public final class RemoteCulturalRepository: CulturalRepository {
         if let client {
             self.client = client
         } else {
+            #if os(iOS)
             self.client = try DefaultHTTPClient()
+            #else
+            if #available(macOS 12.0, *) {
+                self.client = try DefaultHTTPClient()
+            } else {
+                throw RepositoryError.unsupportedPlatform
+            }
+            #endif
         }
 
         let configuredDecoder = decoder

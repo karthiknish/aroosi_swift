@@ -40,8 +40,17 @@ struct SettingsView: View {
             }
             .overlay(alignment: .center) {
                 if viewModel.state.isLoading || viewModel.state.isPerformingAccountAction {
-                    ProgressView()
-                        .progressViewStyle(.circular)
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(AroosiColors.primary)
+                        Text(viewModel.state.isPerformingAccountAction ? "Deleting account..." : "Loading...")
+                            .font(AroosiTypography.caption())
+                            .foregroundStyle(AroosiColors.muted)
+                    }
+                    .padding()
+                    .background(AroosiColors.surfaceSecondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .toolbar {

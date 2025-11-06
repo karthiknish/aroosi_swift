@@ -181,13 +181,13 @@ struct ProfileView: View {
             QuickActionButton(
                 icon: "lock.shield",
                 label: "Privacy",
-                action: { /* Navigate to privacy settings */ }
+                action: { coordinator.navigate(to: .privacy) }
             )
             
             QuickActionButton(
                 icon: "questionmark.circle",
                 label: "Support",
-                action: { /* Navigate to support */ }
+                action: { coordinator.navigate(to: .contactSupport) }
             )
         }
     }
@@ -454,6 +454,8 @@ private struct QuickActionButton: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityHint("Double tap to \(label.lowercased())")
     }
 }
 

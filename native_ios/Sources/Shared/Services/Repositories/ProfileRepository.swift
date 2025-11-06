@@ -1,5 +1,6 @@
 import Foundation
 
+#if os(iOS)
 @available(iOS 17.0.0, *)
 public protocol ProfileRepository {
     func fetchProfile(id: String) async throws -> ProfileSummary
@@ -34,7 +35,7 @@ public extension ProfileRepository {
     }
 }
 
-#if canImport(FirebaseFirestore)
+#if os(iOS) && canImport(FirebaseFirestore)
 import FirebaseFirestore
 import FirebaseAuth
 
@@ -359,23 +360,86 @@ private func normalize(_ data: [String: Any]) -> [String: Any] {
     }
     return normalized
 }
+#endif
 #else
 @available(iOS 17.0.0, *)
-public final class FirestoreProfileRepository: ProfileRepository {
+public protocol ProfileRepository {
+    func fetchProfile(id: String) async throws -> ProfileSummary
+    func fetchProfileDetail(id: String) async throws -> ProfileDetail
+    func updateProfile(_ profile: ProfileSummary) async throws
+    func fetchShortlist(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage
+    func toggleShortlist(userID: String) async throws -> ShortlistToggleResult
+    func setShortlistNote(userID: String, note: String) async throws
+    func fetchFavorites(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage
+    func toggleFavorite(userID: String) async throws
+}
+
+@available(iOS 15.0, macOS 10.15, *)
+public protocol ProfileRepositoryWithStreaming: ProfileRepository {
+    func streamProfiles(userIDs: [String]) -> AsyncThrowingStream<[ProfileSummary], Error>
+}
+
+@available(iOS 17.0.0, *)
+public extension ProfileRepository {
+    func fetchProfileDetail(id: String) async throws -> ProfileDetail {
+        let summary = try await fetchProfile(id: id)
+        return ProfileDetail(summary: summary,
+                              about: summary.bio,
+                              gallery: summary.avatarURL.map { [$0] } ?? [],
+                              interests: summary.interests,
+                              languages: [],
+                              motherTongue: nil,
+                              education: nil,
+                              occupation: nil,
+                              culturalProfile: nil,
+                              preferences: nil,
+                              familyBackground: nil,
+                              personalityTraits: [],
+                              isFavorite: false,
+                              isShortlisted: false)
+    }
+}
+
+@available(iOS 15.0, macOS 10.15, *)
+public final class FirestoreProfileRepository: ProfileRepositoryWithStreaming {
     public init() {}
 
     public func fetchProfile(id: String) async throws -> ProfileSummary {
-        throw RepositoryError.unknown
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func fetchProfileDetail(id: String) async throws -> ProfileDetail {
+        throw RepositoryError.unsupportedPlatform
     }
 
     public func streamProfiles(userIDs: [String]) -> AsyncThrowingStream<[ProfileSummary], Error> {
         AsyncThrowingStream { continuation in
-            continuation.finish(throwing: RepositoryError.unknown)
+            continuation.finish(throwing: RepositoryError.unsupportedPlatform)
         }
     }
 
     public func updateProfile(_ profile: ProfileSummary) async throws {
-        throw RepositoryError.unknown
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func fetchShortlist(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func toggleShortlist(userID: String) async throws -> ShortlistToggleResult {
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func setShortlistNote(userID: String, note: String) async throws {
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func fetchFavorites(pageSize: Int, after documentID: String?) async throws -> ProfileSearchPage {
+        throw RepositoryError.unsupportedPlatform
+    }
+
+    public func toggleFavorite(userID: String) async throws {
+        throw RepositoryError.unsupportedPlatform
     }
 }
 #endif

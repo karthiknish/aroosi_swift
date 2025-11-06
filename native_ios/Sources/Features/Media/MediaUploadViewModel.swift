@@ -4,6 +4,12 @@ import PhotosUI
 import UIKit
 import AVFoundation
 import ImageIO
+import SwiftUI
+import UniformTypeIdentifiers
+
+#if canImport(FirebaseStorage)
+import FirebaseStorage
+#endif
 
 @available(iOS 17, *)
 @MainActor
@@ -13,6 +19,7 @@ class MediaUploadViewModel: ObservableObject {
     private let mediaService: MediaService
     private let compressionService: ImageCompressionService
     private let permissionManager: PermissionManager
+    private let logger = Logger.shared
     
     init(mediaService: MediaService = DefaultMediaService(),
          compressionService: ImageCompressionService = DefaultImageCompressionService(),
@@ -23,37 +30,73 @@ class MediaUploadViewModel: ObservableObject {
     }
     
     func processSelectedItems(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
+
         Task {
-            // Check photo library permission first
             let hasPermission = await permissionManager.handlePhotoLibraryPermission()
             guard hasPermission else {
                 state.errorMessage = "Photo library permission is required to select media"
                 return
             }
-            
+
+            state.isUploading = true
+            state.clearError()
+            state.uploadProgress = 0
+
+            let totalCount = Double(items.count)
+            let normalizedTotal = max(totalCount, 1)
+            var completedCount: Double = 0
+
+            defer {
+                state.selectedItems.removeAll()
+                state.isUploading = false
+                state.uploadProgress = 0
+            }
+
             do {
-                state.isUploading = true
-                state.clearError()
-                
                 for item in items {
-                    if let data = try await item.loadTransferable(type: Data.self) {
-                        let processedData = try await compressionService.compressImageData(data, quality: 0.8)
-                        let url = try await mediaService.uploadMedia(data: processedData, type: .image)
-                        state.uploadedURLs.append(url)
-                        
-                        // Show success toast for first upload
-                        if state.uploadedURLs.count == 1 {
-                            ToastManager.shared.showSuccess("Photo uploaded successfully!")
+                    try Task.checkCancellation()
+
+                    guard let rawData = try await item.loadTransferable(type: Data.self) else {
+                        logger.warning("Selected media item did not return data")
+                        continue
+                    }
+
+                    try ImageProcessingUtilities.validateImageSize(rawData)
+                    try ImageProcessingUtilities.validateImageFormat(rawData)
+
+                    let processedData = try await compressionService.compressImageData(rawData,
+                                                                                       quality: 0.8)
+
+                    let url = try await mediaService.uploadMedia(data: processedData,
+                                                                 type: .image) { [weak self] fraction in
+                        guard fraction.isFinite else { return }
+                        Task { @MainActor [weak self] in
+                            guard let self else { return }
+                            let base = completedCount / normalizedTotal
+                            let incremental = fraction / normalizedTotal
+                            let overall = min(1.0, base + incremental)
+                            self.state.uploadProgress = max(self.state.uploadProgress, overall)
                         }
                     }
+
+                    state.uploadedURLs.append(url)
+                    completedCount += 1
+                    state.uploadProgress = min(1.0, completedCount / normalizedTotal)
                 }
-                
-                state.selectedItems.removeAll()
-                
+
+                if !state.uploadedURLs.isEmpty {
+                    ToastManager.shared.showSuccess("Uploaded \(state.uploadedURLs.count) photo\(state.uploadedURLs.count == 1 ? "" : "s") successfully")
+                }
+            } catch is CancellationError {
+                logger.info("Media upload task was cancelled")
+            } catch let mediaError as MediaError {
+                logger.error("Media processing failed: \(mediaError.localizedDescription)")
+                state.errorMessage = mediaError.localizedDescription
             } catch {
+                logger.error("Unexpected media processing error: \(error.localizedDescription)")
                 state.errorMessage = "Failed to process media: \(error.localizedDescription)"
             }
-            state.isUploading = false
         }
     }
     
@@ -85,6 +128,7 @@ class MediaUploadViewModel: ObservableObject {
                 let url = state.uploadedURLs[index]
                 try await mediaService.deleteMedia(url: url)
                 state.uploadedURLs.remove(at: index)
+                ToastManager.shared.showInfo("Removed media")
             } catch {
                 state.errorMessage = "Failed to remove media: \(error.localizedDescription)"
             }
@@ -115,7 +159,7 @@ class MediaUploadState: ObservableObject {
 // MARK: - Protocols
 
 protocol MediaService {
-    func uploadMedia(data: Data, type: MediaType) async throws -> URL
+    func uploadMedia(data: Data, type: MediaType, progress: ((Double) -> Void)?) async throws -> URL
     func deleteMedia(url: URL) async throws
 }
 
@@ -138,11 +182,11 @@ class DefaultMediaService: MediaService {
         self.storageService = storageService
     }
     
-    func uploadMedia(data: Data, type: MediaType) async throws -> URL {
+    func uploadMedia(data: Data, type: MediaType, progress: ((Double) -> Void)?) async throws -> URL {
         let fileName = generateFileName(for: type)
         let path = "media/\(fileName)"
         
-        return try await storageService.uploadData(data, path: path)
+        return try await storageService.uploadData(data, path: path, progress: progress)
     }
     
     func deleteMedia(url: URL) async throws {
@@ -163,6 +207,8 @@ class DefaultMediaService: MediaService {
 }
 
 class DefaultImageCompressionService: ImageCompressionService {
+    private let logger = Logger.shared
+
     func compressImageData(_ data: Data, quality: CGFloat) async throws -> Data {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -253,49 +299,121 @@ class DefaultImageCompressionService: ImageCompressionService {
 // MARK: - Storage Service
 
 protocol StorageService {
-    func uploadData(_ data: Data, path: String) async throws -> URL
+    func uploadData(_ data: Data, path: String, progress: ((Double) -> Void)?) async throws -> URL
     func deleteFile(at url: URL) async throws
 }
 
+#if canImport(FirebaseStorage)
 class DefaultStorageService: StorageService {
     private let storage = Storage.storage()
     private let logger = Logger.shared
-    
-    func uploadData(_ data: Data, path: String) async throws -> URL {
+
+    func uploadData(_ data: Data, path: String, progress: ((Double) -> Void)?) async throws -> URL {
         logger.info("Uploading data to Firebase Storage: \(path)")
-        
+
         let storageRef = storage.reference().child(path)
         let metadata = StorageMetadata()
         metadata.contentType = contentType(for: path)
-        
-        do {
-            let _ = try await storageRef.putDataAsync(data, metadata: metadata)
-            let downloadURL = try await storageRef.downloadURL()
-            
-            logger.info("Successfully uploaded file to: \(downloadURL.absoluteString)")
-            return downloadURL
-            
-        } catch {
-            logger.error("Failed to upload file: \(error.localizedDescription)")
-            throw MediaError.uploadFailed
+
+        var uploadTask: StorageUploadTask?
+
+        let downloadURL: URL = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                uploadTask = storageRef.putData(data, metadata: metadata)
+
+                guard let uploadTask else {
+                    logger.error("Failed to start upload task for path: \(path)")
+                    continuation.resume(throwing: MediaError.uploadFailed)
+                    return
+                }
+
+                var progressHandle: StorageHandle?
+                var successHandle: StorageHandle?
+                var failureHandle: StorageHandle?
+
+                let cleanup = {
+                    if let handle = progressHandle {
+                        uploadTask.removeObserver(withHandle: handle)
+                    }
+                    if let handle = successHandle {
+                        uploadTask.removeObserver(withHandle: handle)
+                    }
+                    if let handle = failureHandle {
+                        uploadTask.removeObserver(withHandle: handle)
+                    }
+                }
+
+                if let progress {
+                    progressHandle = uploadTask.observe(.progress) { snapshot in
+                        guard let fraction = snapshot.progress?.fractionCompleted else { return }
+                        progress(fraction)
+                    }
+                }
+
+                failureHandle = uploadTask.observe(.failure) { snapshot in
+                    cleanup()
+
+                    if let nsError = snapshot.error as NSError?,
+                       let code = StorageErrorCode(rawValue: nsError.code),
+                       code == .cancelled {
+                        logger.info("Upload cancelled for path: \(path)")
+                        continuation.resume(throwing: CancellationError())
+                        return
+                    }
+
+                    if let error = snapshot.error {
+                        logger.error("Failed to upload file: \(error.localizedDescription)")
+                    } else {
+                        logger.error("Failed to upload file for path: \(path)")
+                    }
+
+                    continuation.resume(throwing: MediaError.uploadFailed)
+                }
+
+                successHandle = uploadTask.observe(.success) { _ in
+                    cleanup()
+                    progress?(1.0)
+
+                    storageRef.downloadURL { url, error in
+                        if let error {
+                            logger.error("Failed to fetch download URL: \(error.localizedDescription)")
+                            continuation.resume(throwing: MediaError.uploadFailed)
+                            return
+                        }
+
+                        guard let url else {
+                            logger.error("Download URL missing for path: \(path)")
+                            continuation.resume(throwing: MediaError.uploadFailed)
+                            return
+                        }
+
+                        logger.info("Successfully uploaded file to: \(url.absoluteString)")
+                        continuation.resume(returning: url)
+                    }
+                }
+            }
+        } onCancel: {
+            uploadTask?.cancel()
         }
+
+        return downloadURL
     }
-    
+
     func deleteFile(at url: URL) async throws {
         logger.info("Deleting file from Firebase Storage: \(url.absoluteString)")
-        
+
         do {
-            let storageRef = Storage.storage().reference(forURL: url.absoluteString)
+            let storageRef = storage.reference(forURL: url.absoluteString)
             try await storageRef.delete()
-            
+
             logger.info("Successfully deleted file: \(url.absoluteString)")
-            
+
         } catch {
             logger.error("Failed to delete file: \(error.localizedDescription)")
             throw MediaError.uploadFailed
         }
     }
-    
+
     private func contentType(for path: String) -> String {
         let ext = URL(fileURLWithPath: path).pathExtension.lowercased()
         switch ext {
@@ -311,11 +429,28 @@ class DefaultStorageService: StorageService {
             return "video/quicktime"
         case "avi":
             return "video/x-msvideo"
+        case "m4a":
+            return "audio/m4a"
+        case "mp3":
+            return "audio/mpeg"
+        case "wav":
+            return "audio/wav"
         default:
             return "application/octet-stream"
         }
     }
 }
+#else
+class DefaultStorageService: StorageService {
+    func uploadData(_ data: Data, path: String, progress: ((Double) -> Void)?) async throws -> URL {
+        throw MediaError.uploadFailed
+    }
+
+    func deleteFile(at url: URL) async throws {
+        throw MediaError.uploadFailed
+    }
+}
+#endif
 
 // MARK: - Errors
 
@@ -343,13 +478,6 @@ enum MediaError: Error {
 }
 
 // MARK: - Extensions
-
-extension Data: @retroactive Transferable {
-    static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(contentType: .image)
-        DataRepresentation(contentType: .video)
-    }
-}
 
 extension PhotosPickerItem {
     func loadImageData() async throws -> Data {

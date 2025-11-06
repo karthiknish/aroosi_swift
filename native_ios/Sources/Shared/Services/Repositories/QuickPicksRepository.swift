@@ -1,12 +1,12 @@
 import Foundation
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public enum QuickPickAction: String {
     case like
     case skip
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public struct QuickPickRecommendation: Identifiable, Equatable {
     public let id: String
     public let profile: ProfileSummary
@@ -19,14 +19,14 @@ public struct QuickPickRecommendation: Identifiable, Equatable {
     }
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public protocol QuickPicksRepository {
     func fetchQuickPicks(dayKey: String?) async throws -> [QuickPickRecommendation]
     func act(on userID: String, action: QuickPickAction) async throws
     func fetchCompatibilityScore(for userID: String) async throws -> Int
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public final class RemoteQuickPicksRepository: QuickPicksRepository {
     private let client: HTTPClientProtocol
     private let decoder: JSONDecoder
@@ -39,7 +39,15 @@ public final class RemoteQuickPicksRepository: QuickPicksRepository {
         if let client {
             self.client = client
         } else {
+            #if os(iOS)
             self.client = try DefaultHTTPClient()
+            #else
+            if #available(macOS 12.0, *) {
+                self.client = try DefaultHTTPClient()
+            } else {
+                throw RepositoryError.unsupportedPlatform
+            }
+            #endif
         }
 
         let configuredDecoder = decoder
@@ -48,7 +56,11 @@ public final class RemoteQuickPicksRepository: QuickPicksRepository {
         if let cache {
             self.cache = cache
         } else {
+            #if os(iOS)
             self.cache = DiskCacheStore(name: "quick-picks", expiration: 60 * 15)
+            #else
+            self.cache = nil
+            #endif
         }
     }
 
@@ -131,7 +143,7 @@ public final class RemoteQuickPicksRepository: QuickPicksRepository {
     }
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 private struct QuickPicksEnvelope: Decodable {
     struct DataContainer: Decodable {
         let profiles: [QuickPickItem]?

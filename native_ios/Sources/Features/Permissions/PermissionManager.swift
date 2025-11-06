@@ -4,6 +4,7 @@ import AVFoundation
 import CoreLocation
 import Photos
 import UserNotifications
+import UIKit
 
 @available(iOS 17, *)
 class PermissionManager: ObservableObject {
@@ -262,6 +263,10 @@ struct PermissionRequest: Identifiable {
 // MARK: - PermissionType Extensions
 
 extension PermissionType: CaseIterable, Identifiable {
+    public static var allCases: [PermissionType] {
+        [.camera, .microphone, .photoLibrary, .photoLibraryAddOnly, .tracking, .notifications, .locationWhenInUse]
+    }
+
     public var id: String { rawValue }
     
     public var rawValue: String {

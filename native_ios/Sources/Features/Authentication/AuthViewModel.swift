@@ -4,6 +4,8 @@ import Foundation
 import AuthenticationServices
 #endif
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -34,10 +36,8 @@ final class AuthViewModel: ObservableObject {
 
         do {
             let profile = try await authService.signInWithApple(idToken: idToken, nonce: nonce)
-            let didLoadProfile = await loadProfileSummary(for: profile.id)
-            if didLoadProfile {
-                signedInUser = profile
-            }
+            signedInUser = profile
+            _ = await loadProfileSummary(for: profile.id)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
@@ -60,10 +60,8 @@ final class AuthViewModel: ObservableObject {
 
         do {
             let profile = try await authService.presentSignIn(from: anchor)
-            let didLoadProfile = await loadProfileSummary(for: profile.id)
-            if didLoadProfile {
-                signedInUser = profile
-            }
+            signedInUser = profile
+            _ = await loadProfileSummary(for: profile.id)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
@@ -89,3 +87,5 @@ final class AuthViewModel: ObservableObject {
         }
     }
 }
+
+#endif

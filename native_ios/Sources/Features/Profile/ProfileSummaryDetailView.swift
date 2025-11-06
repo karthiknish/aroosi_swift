@@ -112,16 +112,16 @@ struct ProfileSummaryDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AroosiSpacing.lg) {
                     if let info = viewModel.state.infoMessage {
-                        InlineMessageView(message: info, style: .info)
+                        ProfileInlineMessageView(message: info, style: .info)
                             .onTapGesture { viewModel.dismissMessages() }
                     }
 
                     if let safetyMessage = safetyNotice(for: viewModel.state.safetyStatus) {
-                        InlineMessageView(message: safetyMessage, style: .warning)
+                        ProfileInlineMessageView(message: safetyMessage, style: .warning)
                     }
 
                     if let message = viewModel.state.errorMessage {
-                        InlineMessageView(message: message, style: .error)
+                        ProfileInlineMessageView(message: message, style: .error)
                             .onTapGesture { viewModel.dismissMessages() }
                     }
 
@@ -593,7 +593,7 @@ private struct ReportUserSheet: View {
 }
 
 @available(iOS 17, *)
-private struct InlineMessageView: View {
+private struct ProfileInlineMessageView: View {
     enum Style {
         case info
         case warning

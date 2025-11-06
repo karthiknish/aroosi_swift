@@ -1,3 +1,4 @@
+#if os(iOS)
 import Combine
 import Foundation
 
@@ -35,6 +36,7 @@ final class MatchesViewModel: ObservableObject {
     private let matchRepository: MatchRepository
     private let profileRepository: ProfileRepository
     private let chatThreadRepository: ChatThreadRepository?
+    private let safetyRepository: SafetyRepository
     private let logger = Logger.shared
 
     private var matchStreamTask: Task<Void, Never>?
@@ -43,13 +45,16 @@ final class MatchesViewModel: ObservableObject {
     private var profileCache: [String: ProfileSummary] = [:]
     private var unreadCounts: [String: Int] = [:]
     private var latestMatches: [Match] = []
+    private var safetyStatusCache: [String: SafetyStatus] = [:]
 
     init(matchRepository: MatchRepository = FirestoreMatchRepository(),
          profileRepository: ProfileRepository = FirestoreProfileRepository(),
-         chatThreadRepository: ChatThreadRepository? = FirestoreChatThreadRepository()) {
+         chatThreadRepository: ChatThreadRepository? = FirestoreChatThreadRepository(),
+         safetyRepository: SafetyRepository = FirestoreSafetyRepository()) {
         self.matchRepository = matchRepository
         self.profileRepository = profileRepository
         self.chatThreadRepository = chatThreadRepository
+        self.safetyRepository = safetyRepository
     }
 
     deinit {
@@ -60,6 +65,7 @@ final class MatchesViewModel: ObservableObject {
     func observeMatches(for userID: String) {
         currentUserID = userID
         profileCache.removeAll()
+        safetyStatusCache.removeAll()
         unreadCounts.removeAll()
         latestMatches.removeAll()
 
@@ -155,6 +161,9 @@ final class MatchesViewModel: ObservableObject {
             do {
                 let profile = try await profileRepository.fetchProfile(id: id)
                 profileCache[id] = profile
+                
+                let status = try await safetyRepository.status(for: id)
+                safetyStatusCache[id] = status
             } catch {
                 logger.error("Unable to fetch profile for match participant \(id): \(error.localizedDescription)")
             }
@@ -167,7 +176,13 @@ final class MatchesViewModel: ObservableObject {
 
         for match in matches {
             let counterpartID = match.participantIDs.first { $0 != currentUserID }
-            let profile = counterpartID.flatMap { profileCache[$0] }
+            guard let id = counterpartID else { continue }
+            
+            // Skip if interaction not allowed
+            let status = safetyStatusCache[id] ?? SafetyStatus()
+            guard status.canInteract else { continue }
+            
+            let profile = profileCache[id]
             let unread = unreadCounts[match.id] ?? 0
             items.append(MatchListItem(id: match.id, match: match, counterpartProfile: profile, unreadCount: unread))
         }
@@ -175,3 +190,5 @@ final class MatchesViewModel: ObservableObject {
         return items.sorted { $0.lastUpdatedAt > $1.lastUpdatedAt }
     }
 }
+
+#endif

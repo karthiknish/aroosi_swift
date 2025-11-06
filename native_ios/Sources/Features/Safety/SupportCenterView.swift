@@ -185,7 +185,7 @@ struct SupportCenterView: View {
 }
 
 @available(iOS 17, *)
-private struct Banner: View {
+private struct SupportBanner: View {
     enum Style {
         case success
         case error

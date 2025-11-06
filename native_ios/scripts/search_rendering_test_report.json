@@ -1,0 +1,112 @@
+{
+  "timestamp": "2025-10-27T13:01:10.442Z",
+  "profiles": [
+    {
+      "profileId": "QXmTXwBLrKEWCO7bIeq0",
+      "displayName": "Ahmed Khan",
+      "age": 28,
+      "location": "New York, USA",
+      "bio": "Software engineer passionate about technology and family values.",
+      "avatarURL": "https://ui-avatars.com/api/?name=Ahmed%20Khan&background=4F46E5&color=fff&size=200",
+      "photos": [
+        "https://ui-avatars.com/api/?name=Ahmed%20Khan&background=4F46E5&color=fff&size=200"
+      ],
+      "interests": [
+        "technology",
+        "reading",
+        "family",
+        "travel"
+      ],
+      "isActive": true,
+      "lastActiveAt": null,
+      "hasDisplayName": true,
+      "hasAge": true,
+      "hasLocation": true,
+      "hasBio": true,
+      "hasAvatar": true,
+      "hasPhotos": true,
+      "hasInterests": true,
+      "isActiveUser": true,
+      "canRenderInSearch": true,
+      "renderingQuality": "Excellent"
+    },
+    {
+      "profileId": "cTboa6vZMOBWYPLpnURU",
+      "displayName": "Fatima Al-Rashid",
+      "age": 26,
+      "location": "London, UK",
+      "bio": "Healthcare professional with a passion for helping others and cultural traditions.",
+      "avatarURL": "https://ui-avatars.com/api/?name=Fatima%20Al-Rashid&background=4F46E5&color=fff&size=200",
+      "photos": [
+        "https://ui-avatars.com/api/?name=Fatima%20Al-Rashid&background=4F46E5&color=fff&size=200"
+      ],
+      "interests": [
+        "healthcare",
+        "cooking",
+        "art",
+        "family"
+      ],
+      "isActive": true,
+      "lastActiveAt": null,
+      "hasDisplayName": true,
+      "hasAge": true,
+      "hasLocation": true,
+      "hasBio": true,
+      "hasAvatar": true,
+      "hasPhotos": true,
+      "hasInterests": true,
+      "isActiveUser": true,
+      "canRenderInSearch": true,
+      "renderingQuality": "Excellent"
+    },
+    {
+      "profileId": "urkaBPBkPix3W2iXgaLk",
+      "displayName": "Yusuf Patel",
+      "age": 30,
+      "location": "Toronto, Canada",
+      "bio": "Business owner focused on family values and community service.",
+      "avatarURL": "https://ui-avatars.com/api/?name=Yusuf%20Patel&background=4F46E5&color=fff&size=200",
+      "photos": [
+        "https://ui-avatars.com/api/?name=Yusuf%20Patel&background=4F46E5&color=fff&size=200"
+      ],
+      "interests": [
+        "business",
+        "community",
+        "sports",
+        "reading"
+      ],
+      "isActive": true,
+      "lastActiveAt": null,
+      "hasDisplayName": true,
+      "hasAge": true,
+      "hasLocation": true,
+      "hasBio": true,
+      "hasAvatar": true,
+      "hasPhotos": true,
+      "hasInterests": true,
+      "isActiveUser": true,
+      "canRenderInSearch": true,
+      "renderingQuality": "Excellent"
+    }
+  ],
+  "renderingAnalysis": {
+    "totalProfiles": 3,
+    "renderableProfiles": 3,
+    "excellentProfiles": 3,
+    "goodProfiles": 0,
+    "profilesImages": 3,
+    "profilesInterests": 3,
+    "renderablePercentage": 100,
+    "excellentPercentage": 100,
+    "imageAvailabilityPercentage": 100,
+    "interestsAvailabilityPercentage": 100
+  },
+  "summary": {
+    "overallGrade": "A+ (Excellent)",
+    "searchScreenReady": true,
+    "userExperienceScore": 100,
+    "recommendations": [
+      "Excellent profile quality! Consider adding advanced search features"
+    ]
+  }
+}

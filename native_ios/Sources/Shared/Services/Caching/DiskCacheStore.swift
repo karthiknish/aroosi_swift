@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public final class DiskCacheStore: CacheStore {
     private let directoryURL: URL
     private let fileManager: FileManager
@@ -70,6 +70,7 @@ public final class DiskCacheStore: CacheStore {
         return directoryURL.appendingPathComponent(hash, isDirectory: false)
     }
 
+    @available(macOS 10.15, *)
     private func sha256(_ value: String) -> String {
         let data = Data(value.utf8)
         let digest = SHA256.hash(data: data)

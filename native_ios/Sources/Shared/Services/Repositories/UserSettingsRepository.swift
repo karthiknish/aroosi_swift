@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public protocol UserSettingsRepository {
     func streamSettings(for userID: String) -> AsyncThrowingStream<UserSettings, Error>
@@ -92,4 +94,6 @@ public final class FirestoreUserSettingsRepository: UserSettingsRepository {
         throw RepositoryError.unknown
     }
 }
+#endif
+
 #endif

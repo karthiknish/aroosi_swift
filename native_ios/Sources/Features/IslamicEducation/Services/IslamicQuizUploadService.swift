@@ -4,7 +4,8 @@ import FirebaseFirestore
 #if canImport(FirebaseFirestore)
 
 @available(iOS 17, *)
-public final class IslamicQuizUploadService {
+@MainActor
+public final class IslamicQuizUploadService: ObservableObject {
     private let db = Firestore.firestore()
     private let logger = Logger.shared
     

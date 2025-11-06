@@ -181,7 +181,7 @@ struct RequestDetailView: View {
 // MARK: - Profile Header
 
 @available(iOS 17.0.0, *)
-private struct ProfileHeaderView: View {
+private struct RequestProfileHeaderView: View {
     let profile: ProfileSummary
     
     var body: some View {
@@ -226,7 +226,7 @@ private struct ProfileHeaderView: View {
 // MARK: - Detail Row
 
 @available(iOS 17.0.0, *)
-private struct DetailRow: View {
+private struct RequestDetailRow: View {
     let label: String
     let value: String
     let icon: String

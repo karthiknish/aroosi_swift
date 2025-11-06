@@ -134,7 +134,8 @@ private final class ChatMessageRepositoryStub: ChatMessageRepository {
                           fileName: String,
                           contentType: String,
                           caption: String?,
-                          sentAt: Date) async throws -> ChatMessage {
+                          sentAt: Date,
+                          progress: ((Double) -> Void)?) async throws -> ChatMessage {
         return try await sendMessage(conversationID: conversationID,
                                      authorID: authorID,
                                      text: caption ?? "",
@@ -147,10 +148,26 @@ private final class ChatMessageRepositoryStub: ChatMessageRepository {
                           fileName: String,
                           contentType: String,
                           duration: TimeInterval,
-                          sentAt: Date) async throws -> ChatMessage {
+                          sentAt: Date,
+                          progress: ((Double) -> Void)?) async throws -> ChatMessage {
         return try await sendMessage(conversationID: conversationID,
                                      authorID: authorID,
                                      text: "Voice message",
+                                     sentAt: sentAt)
+    }
+
+    func sendReactionMessage(conversationID: String,
+                             authorID: String,
+                             reaction: String,
+                             targetMessageID: String,
+                             sentAt: Date) async throws -> ChatMessage {
+        try await addReaction(conversationID: conversationID,
+                              messageID: targetMessageID,
+                              emoji: reaction,
+                              userID: authorID)
+        return try await sendMessage(conversationID: conversationID,
+                                     authorID: authorID,
+                                     text: reaction,
                                      sentAt: sentAt)
     }
 
@@ -163,6 +180,13 @@ private final class ChatMessageRepositoryStub: ChatMessageRepository {
                         messageID: String,
                         emoji: String,
                         userID: String) async throws {}
+
+    func markMessageAsRead(conversationID: String,
+                           messageID: String,
+                           readerID: String) async throws {}
+
+    func deleteMessage(conversationID: String,
+                       messageID: String) async throws {}
 
     func send(_ messages: [ChatMessage]) {
         continuation?.yield(messages)

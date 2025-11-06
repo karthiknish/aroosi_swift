@@ -45,7 +45,7 @@ struct NotificationPreferencesView: View {
                 }
             }
             .onAppear {
-                viewModel.loadPreferences()
+                Task { await viewModel.loadPreferencesIfNeeded() }
             }
         }
         .tint(AroosiColors.primary)
@@ -54,7 +54,7 @@ struct NotificationPreferencesView: View {
     private var messageNotificationsSection: some View {
         Section("Messages") {
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.newMessageNotificationsEnabled ?? false },
+                get: { viewModel.state.preferences.newMessageNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .newMessageNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -67,7 +67,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.messageReadReceiptsEnabled ?? false },
+                get: { viewModel.state.preferences.messageReadReceiptsEnabled },
                 set: { viewModel.updatePreference(key: .messageReadReceiptsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -80,7 +80,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.messageSoundEnabled ?? true },
+                get: { viewModel.state.preferences.messageSoundEnabled },
                 set: { viewModel.updatePreference(key: .messageSoundEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -98,7 +98,7 @@ struct NotificationPreferencesView: View {
     private var matchNotificationsSection: some View {
         Section("Matches & Interests") {
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.newMatchNotificationsEnabled ?? true },
+                get: { viewModel.state.preferences.newMatchNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .newMatchNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -111,7 +111,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.interestReceivedNotificationsEnabled ?? true },
+                get: { viewModel.state.preferences.interestReceivedNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .interestReceivedNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -124,7 +124,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.interestAcceptedNotificationsEnabled ?? true },
+                get: { viewModel.state.preferences.interestAcceptedNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .interestAcceptedNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -137,7 +137,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.dailyRecommendationsEnabled ?? false },
+                get: { viewModel.state.preferences.dailyRecommendationsEnabled },
                 set: { viewModel.updatePreference(key: .dailyRecommendationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -155,7 +155,7 @@ struct NotificationPreferencesView: View {
     private var profileNotificationsSection: some View {
         Section("Profile & Activity") {
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.profileViewNotificationsEnabled ?? false },
+                get: { viewModel.state.preferences.profileViewNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .profileViewNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -168,7 +168,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.familyApprovalNotificationsEnabled ?? true },
+                get: { viewModel.state.preferences.familyApprovalNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .familyApprovalNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -181,7 +181,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.compatibilityReportNotificationsEnabled ?? false },
+                get: { viewModel.state.preferences.compatibilityReportNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .compatibilityReportNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -199,7 +199,7 @@ struct NotificationPreferencesView: View {
     private var systemNotificationsSection: some View {
         Section("System Updates") {
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.appUpdateNotificationsEnabled ?? true },
+                get: { viewModel.state.preferences.appUpdateNotificationsEnabled },
                 set: { viewModel.updatePreference(key: .appUpdateNotificationsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -212,7 +212,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.safetyAlertsEnabled ?? true },
+                get: { viewModel.state.preferences.safetyAlertsEnabled },
                 set: { viewModel.updatePreference(key: .safetyAlertsEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -225,7 +225,7 @@ struct NotificationPreferencesView: View {
             }
             
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.communityGuidelinesEnabled ?? true },
+                get: { viewModel.state.preferences.communityGuidelinesEnabled },
                 set: { viewModel.updatePreference(key: .communityGuidelinesEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -243,7 +243,7 @@ struct NotificationPreferencesView: View {
     private var quietHoursSection: some View {
         Section("Quiet Hours") {
             Toggle(isOn: Binding(
-                get: { viewModel.state.preferences?.quietHoursEnabled ?? false },
+                get: { viewModel.state.preferences.quietHoursEnabled },
                 set: { viewModel.updatePreference(key: .quietHoursEnabled, value: $0) }
             )) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -255,11 +255,11 @@ struct NotificationPreferencesView: View {
                 }
             }
             
-            if viewModel.state.preferences?.quietHoursEnabled == true {
+            if viewModel.state.preferences.quietHoursEnabled {
                 HStack {
                     Text("Start Time")
                     Spacer()
-                    Text(viewModel.state.preferences?.quietHoursStart.formatted(date: .omitted, time: .shortened) ?? "10:00 PM")
+                    Text(viewModel.state.preferences.quietHoursStart.formatted(date: .omitted, time: .shortened))
                         .foregroundStyle(AroosiColors.muted)
                 }
                 .contentShape(Rectangle())
@@ -270,7 +270,7 @@ struct NotificationPreferencesView: View {
                 HStack {
                     Text("End Time")
                     Spacer()
-                    Text(viewModel.state.preferences?.quietHoursEnd.formatted(date: .omitted, time: .shortened) ?? "8:00 AM")
+                    Text(viewModel.state.preferences.quietHoursEnd.formatted(date: .omitted, time: .shortened))
                         .foregroundStyle(AroosiColors.muted)
                 }
                 .contentShape(Rectangle())
@@ -279,7 +279,7 @@ struct NotificationPreferencesView: View {
                 }
                 
                 Toggle(isOn: Binding(
-                    get: { viewModel.state.preferences?.quietHoursAllowUrgent ?? false },
+                    get: { viewModel.state.preferences.quietHoursAllowUrgent },
                     set: { viewModel.updatePreference(key: .quietHoursAllowUrgent, value: $0) }
                 )) {
                     VStack(alignment: .leading, spacing: 4) {

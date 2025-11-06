@@ -77,3 +77,20 @@ extension ProfileSummary {
         return dict
     }
 }
+
+public extension ProfileSummary {
+    static let mock = ProfileSummary(
+        id: "preview-profile",
+        displayName: "Aisha Khan",
+        age: 28,
+        location: "Doha, Qatar",
+        bio: "Front-end engineer and madrasa volunteer.",
+        avatarURL: URL(string: "https://storage.googleapis.com/aroosi-app/avatars/preview-user.jpg"),
+        photos: [
+            "https://storage.googleapis.com/aroosi-app/avatars/preview-user.jpg",
+            "https://storage.googleapis.com/aroosi-app/avatars/preview-user-2.jpg"
+        ],
+        interests: ["Community Outreach", "Islamic Studies", "Travel"],
+        lastActiveAt: Date().addingTimeInterval(-3600)
+    )
+}

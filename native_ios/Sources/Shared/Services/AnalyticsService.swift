@@ -20,7 +20,7 @@ public protocol AnalyticsDestination: AnyObject {
 public final class AnalyticsService {
     public static let shared = AnalyticsService()
 
-    private var destinations: [WeakDestination] = []
+    private let destinations = NSHashTable<AnyObject>.weakObjects()
     private let queue = DispatchQueue(label: "com.aroosi.swift.analytics", qos: .utility)
     private let logger = Logger.shared
 
@@ -28,45 +28,39 @@ public final class AnalyticsService {
 
     public func addDestination(_ destination: AnalyticsDestination) {
         queue.sync {
-            destinations.append(WeakDestination(value: destination))
-            purgeDestinations()
+            destinations.add(destination)
         }
     }
 
     public func removeDestination(_ destination: AnalyticsDestination) {
         queue.sync {
-            destinations.removeAll { $0.value === destination || $0.value == nil }
+            destinations.remove(destination)
         }
     }
 
     public func track(_ event: AnalyticsEvent) {
         queue.sync {
-            purgeDestinations()
-            destinations.forEach { $0.value?.track(event: event) }
+            destinations.allObjects.compactMap { $0 as? AnalyticsDestination }.forEach {
+                $0.track(event: event)
+            }
         }
         logger.info("Analytics Event → \(event.name) :: \(event.parameters)")
     }
 
     public func setUserID(_ userID: String?) {
         queue.sync {
-            purgeDestinations()
-            destinations.forEach { $0.value?.setUserID(userID) }
+            destinations.allObjects.compactMap { $0 as? AnalyticsDestination }.forEach {
+                $0.setUserID(userID)
+            }
         }
     }
 
     public func setUserProperty(_ value: String?, for key: String) {
         queue.sync {
-            purgeDestinations()
-            destinations.forEach { $0.value?.setUserProperty(value, for: key) }
+            destinations.allObjects.compactMap { $0 as? AnalyticsDestination }.forEach {
+                $0.setUserProperty(value, for: key)
+            }
         }
-    }
-
-    private func purgeDestinations() {
-        destinations.removeAll { $0.value == nil }
-    }
-
-    private struct WeakDestination {
-        weak var value: AnalyticsDestination?
     }
 }
 

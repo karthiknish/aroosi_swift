@@ -2,86 +2,101 @@
 import Foundation
 import UserNotifications
 import Combine
+import UIKit
 
 @available(iOS 17, *)
 @MainActor
 class NotificationPreferencesViewModel: ObservableObject {
     @Published var state = NotificationPreferencesState()
-    @Published var preferences: NotificationPreferences
     
     private let settingsRepository: SettingsRepository
     private let notificationService: NotificationService
-    private let permissionManager: PermissionManager
     private var cancellables = Set<AnyCancellable>()
+    private let userID: String
+    private let fcmService: FCMService
+    private let logger = Logger.shared
+    private var currentSettings: UserSettings?
+    private var activeTopics: Set<FCMTopic> = []
     
     init(userID: String,
          settingsRepository: SettingsRepository = DefaultSettingsRepository(),
          notificationService: NotificationService = DefaultNotificationService(),
-         permissionManager: PermissionManager = .shared) {
+         fcmService: FCMService = DefaultFCMService()) {
+        self.userID = userID
         self.settingsRepository = settingsRepository
         self.notificationService = notificationService
-        self.permissionManager = permissionManager
-        self.preferences = NotificationPreferences()
-        
-        loadPreferences(userID: userID)
+        self.fcmService = fcmService
+        observePushRegistration()
+        Task { await refreshAuthorizationStatus() }
+        state.deviceToken = PushNotificationService.shared.fcmToken
+        Task { await loadPreferencesIfNeeded(force: true) }
     }
     
-    func loadPreferences(userID: String) {
-        Task {
-            do {
-                state.isLoading = true
-                let settings = try await settingsRepository.fetchSettings(for: userID)
-                preferences = NotificationPreferences(from: settings)
-                state.userID = userID
-            } catch {
-                state.errorMessage = "Failed to load notification preferences: \(error.localizedDescription)"
+    func loadPreferencesIfNeeded(force: Bool = false) async {
+        if state.isLoading { return }
+        if state.hasLoaded && !force { return }
+
+        state.isLoading = true
+        state.clearError()
+
+        do {
+            let settings = try await settingsRepository.fetchSettings(for: userID)
+            apply(settings: settings)
+            state.hasLoaded = true
+
+            await refreshAuthorizationStatus()
+            if state.systemPermissionGranted {
+                try await notificationService.updateNotificationSettings(state.preferences)
+                try await updatePushTopics(for: state.preferences)
             }
-            state.isLoading = false
+        } catch RepositoryError.notFound {
+            let defaults = UserSettings.default(userID: userID)
+            apply(settings: defaults)
+            state.hasLoaded = true
+        } catch {
+            logger.error("Failed to load notification preferences: \(error.localizedDescription)")
+            state.errorMessage = "Failed to load notification preferences. Please try again."
         }
-    }
-    
-    func requestNotificationPermission() async {
-        let hasPermission = await permissionManager.handleNotificationPermission()
-        
-        if hasPermission {
-            do {
-                let granted = try await notificationService.requestPermission()
-                state.systemPermissionGranted = granted
-                
-                if !granted {
-                    state.errorMessage = "Notification permission was denied by the system"
-                }
-            } catch {
-                state.errorMessage = "Failed to request notification permission: \(error.localizedDescription)"
-            }
-        } else {
-            state.systemPermissionGranted = false
-            state.errorMessage = "Notification permission is required to receive notifications"
-        }
+
+        state.isLoading = false
     }
     
     func updatePreference(key: NotificationPreferenceKey, value: Bool) {
         Task {
+            let previous = state.preferences
             do {
                 state.isSaving = true
                 state.clearError()
-                
-                var preferences = state.preferences ?? NotificationPreferences()
-                preferences.updateValue(key: key, value: value)
-                
-                // Update settings repository
-                let settings = UserSettings(from: preferences)
-                try await settingsRepository.updateSettings(settings, userID: userID)
-                
-                state.preferences = preferences
-                
-                // Update notification registration if needed
-                if key.requiresNotificationRegistration {
-                    try await notificationService.updateNotificationSettings(preferences)
+
+                if key.requiresNotificationRegistration && !state.systemPermissionGranted {
+                    state.errorMessage = "Enable notifications in iOS Settings to manage this option."
+                    state.preferences = previous
+                    return
                 }
-                
+
+                var updated = previous
+                updated.updateValue(key: key, value: value)
+                state.preferences = updated
+
+                var settings = currentSettings ?? UserSettings.default(userID: userID)
+                settings.applyNotificationPreferences(updated)
+                try await settingsRepository.updateSettings(settings, userID: userID)
+                currentSettings = settings
+
+                if state.systemPermissionGranted {
+                    try await notificationService.updateNotificationSettings(updated)
+                    if key.requiresNotificationRegistration {
+                        try await updatePushTopics(for: updated)
+                    }
+                }
             } catch {
-                state.errorMessage = "Failed to update preference: \(error.localizedDescription)"
+                logger.error("Failed to update notification preference: \(error.localizedDescription)")
+                state.errorMessage = "Failed to update preference. Please try again."
+                state.preferences = previous
+                if let currentSettings {
+                    let rollback = NotificationPreferences(from: currentSettings)
+                    state.preferences = rollback
+                }
             }
             state.isSaving = false
         }
@@ -94,27 +109,34 @@ class NotificationPreferencesViewModel: ObservableObject {
     
     func updateTime(_ time: Date) {
         Task {
+            let previous = state.preferences
             do {
                 state.isSaving = true
                 state.clearError()
                 
-                var preferences = state.preferences ?? NotificationPreferences()
-                
+                var updated = state.preferences
+
                 switch state.timePickerType {
                 case .startTime:
-                    preferences.quietHoursStart = time
+                    updated.quietHoursStart = time
                 case .endTime:
-                    preferences.quietHoursEnd = time
+                    updated.quietHoursEnd = time
                 }
-                
-                // Update settings repository
-                let settings = UserSettings(from: preferences)
+
+                var settings = currentSettings ?? UserSettings.default(userID: userID)
+                settings.applyNotificationPreferences(updated)
                 try await settingsRepository.updateSettings(settings, userID: userID)
-                
-                state.preferences = preferences
+                currentSettings = settings
+
+                state.preferences = updated
                 state.showingTimePicker = false
-                
+
+                if state.systemPermissionGranted {
+                    try await notificationService.updateNotificationSettings(updated)
+                }
             } catch {
+                logger.error("Failed to update quiet hours: \(error.localizedDescription)")
+                state.preferences = previous
                 state.errorMessage = "Failed to update quiet hours: \(error.localizedDescription)"
             }
             state.isSaving = false
@@ -124,14 +146,21 @@ class NotificationPreferencesViewModel: ObservableObject {
     func requestNotificationPermission() {
         Task {
             do {
+                state.notificationPermissionStatus = .notDetermined
                 let granted = try await notificationService.requestPermission()
                 state.notificationPermissionStatus = granted ? .authorized : .denied
-                
+                state.systemPermissionGranted = granted
+
                 if granted {
                     try await notificationService.registerForRemoteNotifications()
+                    try await notificationService.updateNotificationSettings(state.preferences)
+                    try await updatePushTopics(for: state.preferences)
+                } else {
+                    state.errorMessage = "Notification permission was denied by the system"
                 }
-                
+                await refreshAuthorizationStatus()
             } catch {
+                logger.error("Notification permission request failed: \(error.localizedDescription)")
                 state.errorMessage = "Failed to request notification permission: \(error.localizedDescription)"
             }
         }
@@ -140,19 +169,68 @@ class NotificationPreferencesViewModel: ObservableObject {
     func clearError() {
         state.clearError()
     }
+
+    private func observePushRegistration() {
+        PushNotificationService.shared.$fcmToken
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] token in
+                guard let self else { return }
+                self.state.deviceToken = token
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func refreshAuthorizationStatus() async {
+        let status = await notificationService.getAuthorizationStatus()
+        let systemGranted: Bool
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            systemGranted = true
+        default:
+            systemGranted = false
+        }
+        state.notificationPermissionStatus = status
+        state.systemPermissionGranted = systemGranted
+    }
+    
+    private func updatePushTopics(for preferences: NotificationPreferences) async throws {
+        guard state.systemPermissionGranted else { return }
+        let desired = NotificationPreferenceKey.topics(for: preferences)
+        let topicsToSubscribe = desired.subtracting(activeTopics)
+        let topicsToUnsubscribe = activeTopics.subtracting(desired)
+
+        for topic in topicsToSubscribe {
+            try await fcmService.subscribeToTopic(topic.rawValue)
+        }
+
+        for topic in topicsToUnsubscribe {
+            try await fcmService.unsubscribeFromTopic(topic.rawValue)
+        }
+
+        activeTopics = desired
+    }
+
+    private func apply(settings: UserSettings) {
+        currentSettings = settings
+        let resolved = NotificationPreferences(from: settings)
+        state.preferences = resolved
+    }
 }
 
 // MARK: - State
 
 @available(iOS 17, *)
 class NotificationPreferencesState: ObservableObject {
-    @Published var preferences: NotificationPreferences?
+    @Published var preferences = NotificationPreferences()
     @Published var isLoading = false
     @Published var isSaving = false
     @Published var errorMessage: String?
     @Published var notificationPermissionStatus: UNAuthorizationStatus = .notDetermined
+    @Published var systemPermissionGranted = false
+    @Published var deviceToken: String?
     @Published var showingTimePicker = false
     @Published var timePickerType: TimePickerType = .startTime
+    @Published var hasLoaded = false
     
     func clearError() {
         errorMessage = nil
@@ -246,6 +324,29 @@ enum NotificationPreferenceKey: String, CaseIterable {
             return false
         }
     }
+    
+    static func topics(for preferences: NotificationPreferences) -> Set<FCMTopic> {
+        var topics: Set<FCMTopic> = []
+        if preferences.newMessageNotificationsEnabled { topics.insert(.messages) }
+        if preferences.newMatchNotificationsEnabled { topics.insert(.matches) }
+        if preferences.interestReceivedNotificationsEnabled { topics.insert(.interests) }
+        if preferences.interestAcceptedNotificationsEnabled { topics.insert(.matches) }
+        if preferences.dailyRecommendationsEnabled { topics.insert(.recommendations) }
+        if preferences.familyApprovalNotificationsEnabled { topics.insert(.family) }
+        if preferences.compatibilityReportNotificationsEnabled { topics.insert(.compatibility) }
+        if preferences.safetyAlertsEnabled { topics.insert(.safety) }
+        return topics
+    }
+}
+
+enum FCMTopic: String, CaseIterable {
+    case messages = "notifications_messages"
+    case matches = "notifications_matches"
+    case interests = "notifications_interests"
+    case recommendations = "notifications_recommendations"
+    case family = "notifications_family"
+    case compatibility = "notifications_compatibility"
+    case safety = "notifications_safety"
 }
 
 enum TimePickerType {
@@ -258,23 +359,60 @@ enum TimePickerType {
 extension NotificationPreferences {
     init(from settings: UserSettings) {
         self.newMessageNotificationsEnabled = settings.pushNotificationsEnabled
-        self.messageSoundEnabled = settings.pushNotificationsEnabled
-        self.newMatchNotificationsEnabled = settings.pushNotificationsEnabled
-        self.interestReceivedNotificationsEnabled = settings.pushNotificationsEnabled
-        self.interestAcceptedNotificationsEnabled = settings.pushNotificationsEnabled
-        self.familyApprovalNotificationsEnabled = settings.pushNotificationsEnabled
-        self.safetyAlertsEnabled = settings.pushNotificationsEnabled
-        self.appUpdateNotificationsEnabled = settings.emailUpdatesEnabled
-        self.communityGuidelinesEnabled = settings.emailUpdatesEnabled
+        self.messageReadReceiptsEnabled = settings.messageReadReceiptsEnabled
+        self.messageSoundEnabled = settings.messageSoundEnabled
+        self.newMatchNotificationsEnabled = settings.newMatchNotificationsEnabled
+        self.interestReceivedNotificationsEnabled = settings.interestReceivedNotificationsEnabled
+        self.interestAcceptedNotificationsEnabled = settings.interestAcceptedNotificationsEnabled
+        self.dailyRecommendationsEnabled = settings.dailyRecommendationsEnabled
+        self.profileViewNotificationsEnabled = settings.profileViewNotificationsEnabled
+        self.familyApprovalNotificationsEnabled = settings.familyApprovalNotificationsEnabled
+        self.compatibilityReportNotificationsEnabled = settings.compatibilityReportNotificationsEnabled
+        self.appUpdateNotificationsEnabled = settings.appUpdateNotificationsEnabled
+        self.safetyAlertsEnabled = settings.safetyAlertsEnabled
+        self.communityGuidelinesEnabled = settings.communityGuidelinesEnabled
+        self.quietHoursEnabled = settings.quietHoursEnabled
+        self.quietHoursAllowUrgent = settings.quietHoursAllowUrgent
+
+        let calendar = Calendar(identifier: .gregorian)
+        let defaultStart = calendar.date(from: DateComponents(hour: 22, minute: 0)) ?? Date()
+        let defaultEnd = calendar.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
+
+        self.quietHoursStart = settings.quietHoursStart ?? defaultStart
+        self.quietHoursEnd = settings.quietHoursEnd ?? defaultEnd
     }
 }
 
 extension UserSettings {
-    init(from preferences: NotificationPreferences) {
-        self.pushNotificationsEnabled = preferences.newMessageNotificationsEnabled
-        self.emailUpdatesEnabled = preferences.appUpdateNotificationsEnabled
-        self.profileVisibility = .public
-        self.discoveryPreferences = DiscoveryPreferences.default
+    init(userID: String, preferences: NotificationPreferences, existing: UserSettings? = nil) {
+        if var existing {
+            existing.applyNotificationPreferences(preferences)
+            self = existing
+        } else {
+            self = UserSettings.default(userID: userID)
+            self.applyNotificationPreferences(preferences)
+        }
+    }
+
+    mutating func applyNotificationPreferences(_ preferences: NotificationPreferences) {
+        pushNotificationsEnabled = preferences.newMessageNotificationsEnabled
+        messageReadReceiptsEnabled = preferences.messageReadReceiptsEnabled
+        messageSoundEnabled = preferences.messageSoundEnabled
+        newMatchNotificationsEnabled = preferences.newMatchNotificationsEnabled
+        interestReceivedNotificationsEnabled = preferences.interestReceivedNotificationsEnabled
+        interestAcceptedNotificationsEnabled = preferences.interestAcceptedNotificationsEnabled
+        dailyRecommendationsEnabled = preferences.dailyRecommendationsEnabled
+        profileViewNotificationsEnabled = preferences.profileViewNotificationsEnabled
+        familyApprovalNotificationsEnabled = preferences.familyApprovalNotificationsEnabled
+        compatibilityReportNotificationsEnabled = preferences.compatibilityReportNotificationsEnabled
+        safetyAlertsEnabled = preferences.safetyAlertsEnabled
+        communityGuidelinesEnabled = preferences.communityGuidelinesEnabled
+        appUpdateNotificationsEnabled = preferences.appUpdateNotificationsEnabled
+        emailUpdatesEnabled = preferences.communityGuidelinesEnabled || preferences.appUpdateNotificationsEnabled
+        quietHoursEnabled = preferences.quietHoursEnabled
+        quietHoursAllowUrgent = preferences.quietHoursAllowUrgent
+        quietHoursStart = preferences.quietHoursStart
+        quietHoursEnd = preferences.quietHoursEnd
     }
 }
 
@@ -306,32 +444,53 @@ class DefaultNotificationService: NotificationService {
     }
     
     func updateNotificationSettings(_ preferences: NotificationPreferences) async throws {
-        // Update notification categories and settings
         let center = UNUserNotificationCenter.current()
-        
-        var categories: Set<UNNotificationCategory> = []
-        
+        var categories = Set<UNNotificationCategory>()
+
         if preferences.newMessageNotificationsEnabled {
             let messageCategory = UNNotificationCategory(
                 identifier: "NEW_MESSAGE",
-                actions: [],
+                actions: [UNNotificationAction(identifier: "REPLY", title: "Reply", options: [.foreground]),
+                          UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])],
                 intentIdentifiers: [],
                 options: []
             )
             categories.insert(messageCategory)
         }
-        
+
         if preferences.newMatchNotificationsEnabled {
             let matchCategory = UNNotificationCategory(
                 identifier: "NEW_MATCH",
-                actions: [],
+                actions: [UNNotificationAction(identifier: "VIEW_PROFILE", title: "View Profile", options: [.foreground]),
+                          UNNotificationAction(identifier: "SEND_MESSAGE", title: "Send Message", options: [.foreground])],
                 intentIdentifiers: [],
                 options: []
             )
             categories.insert(matchCategory)
         }
-        
-        await center.setNotificationCategories(categories)
+
+        if preferences.interestReceivedNotificationsEnabled {
+            let interestCategory = UNNotificationCategory(
+                identifier: "INTEREST_RECEIVED",
+                actions: [UNNotificationAction(identifier: "ACCEPT", title: "Accept", options: []),
+                          UNNotificationAction(identifier: "DECLINE", title: "Decline", options: [])],
+                intentIdentifiers: [],
+                options: []
+            )
+            categories.insert(interestCategory)
+        }
+
+        if preferences.safetyAlertsEnabled {
+            let safetyCategory = UNNotificationCategory(
+                identifier: "SAFETY_ALERT",
+                actions: [],
+                intentIdentifiers: [],
+                options: [.customDismissAction]
+            )
+            categories.insert(safetyCategory)
+        }
+
+        center.setNotificationCategories(categories)
     }
 }
 

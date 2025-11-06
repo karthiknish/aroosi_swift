@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public protocol ConversationServicing {
     func ensureConversation(for match: Match,
@@ -37,11 +39,11 @@ public final class FirestoreConversationService: ConversationServicing {
     }
 
     private let db: Firestore
-    private let matchRepository: MatchRepository
+    private let matchRepository: MatchRepositoryWithStreaming
     private let logger = Logger.shared
 
     public init(db: Firestore = .firestore(),
-                matchRepository: MatchRepository = FirestoreMatchRepository()) {
+                matchRepository: MatchRepositoryWithStreaming = FirestoreMatchRepository()) {
         self.db = db
         self.matchRepository = matchRepository
     }
@@ -123,4 +125,5 @@ public final class FirestoreConversationService: ConversationServicing {
         throw ConversationServiceError.unsupported
     }
 }
+#endif
 #endif

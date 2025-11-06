@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class FavoritesViewModel: ObservableObject {
@@ -79,9 +81,14 @@ final class FavoritesViewModel: ObservableObject {
                 self.state.nextCursor = page.nextCursor
                 self.state.errorMessage = nil
             } catch {
-                if (error as? CancellationError) != nil { return }
+                if #available(iOS 15, *), let cancellation = error as? CancellationError {
+                    _ = cancellation
+                    return
+                }
                 self.state.errorMessage = "We couldn't load favorites right now."
             }
         }
     }
 }
+
+#endif

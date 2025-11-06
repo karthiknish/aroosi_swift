@@ -128,7 +128,7 @@ struct QuickPicksView: View {
 
         return GeometryReader { proxy in
             let width = proxy.size.width
-            
+
             VStack(alignment: .leading, spacing: Responsive.spacing(width: width)) {
                 ZStack(alignment: .bottomLeading) {
                     ResponsiveMediaFrame(
@@ -175,35 +175,36 @@ struct QuickPicksView: View {
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, Responsive.spacing(width: width, multiplier: 1.2))
                         .padding(.vertical, Responsive.spacing(width: width, multiplier: 0.6))
-                    .background(AroosiColors.primary.opacity(0.85), in: Capsule())
-                    .padding(16)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: Responsive.spacing(width: width, multiplier: 0.6)) {
-                Text(profile.displayName)
-                    .font(AroosiTypography.heading(.h2, width: width))
-                HStack(spacing: Responsive.spacing(width: width, multiplier: 0.8)) {
-                    if let age = profile.age {
-                        Label("\(age)", systemImage: "calendar")
-                    }
-                    if let location = profile.location, !location.isEmpty {
-                        Label(location, systemImage: "mappin.and.ellipse")
+                        .background(AroosiColors.primary.opacity(0.85), in: Capsule())
+                        .padding(16)
                     }
                 }
-                .font(AroosiTypography.caption(width: width))
-                .foregroundStyle(AroosiColors.muted)
-            }
 
-            NavigationLink {
-                ProfileSummaryDetailView(profileID: profile.id)
-            } label: {
-                ResponsiveButton(
-                    title: "View Profile",
-                    action: {},
-                    style: .primary,
-                    width: width
-                )
+                VStack(alignment: .leading, spacing: Responsive.spacing(width: width, multiplier: 0.6)) {
+                    Text(profile.displayName)
+                        .font(AroosiTypography.heading(.h2, width: width))
+                    HStack(spacing: Responsive.spacing(width: width, multiplier: 0.8)) {
+                        if let age = profile.age {
+                            Label("\(age)", systemImage: "calendar")
+                        }
+                        if let location = profile.location, !location.isEmpty {
+                            Label(location, systemImage: "mappin.and.ellipse")
+                        }
+                    }
+                    .font(AroosiTypography.caption(width: width))
+                    .foregroundStyle(AroosiColors.muted)
+                }
+
+                NavigationLink {
+                    ProfileSummaryDetailView(profileID: profile.id)
+                } label: {
+                    ResponsiveButton(
+                        title: "View Profile",
+                        action: {},
+                        style: .primary,
+                        width: width
+                    )
+                }
             }
         }
     }
@@ -307,48 +308,51 @@ struct QuickPicksView: View {
             }
         }
     }
-    @available(iOS 17, *)
-    private struct MessageBanner: View {
-        enum Style {
-            case info
-            case error
+}
 
-            var tint: Color {
-                switch self {
-                case .info:
-                    return AroosiColors.info
-                case .error:
-                    return AroosiColors.error
-                }
-            }
+}
 
-            var icon: String {
-                switch self {
-                case .info:
-                    return "info.circle"
-                case .error:
-                    return "exclamationmark.triangle"
-                }
+@available(iOS 17, *)
+private struct QuickPicksMessageBanner: View {
+    enum Style {
+        case info
+        case error
+
+        var tint: Color {
+            switch self {
+            case .info:
+                return AroosiColors.info
+            case .error:
+                return AroosiColors.error
             }
         }
 
-        let message: String
-        let style: Style
-
-        var body: some View {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: style.icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(style.tint)
-                Text(message)
-                    .font(AroosiTypography.caption())
-                    .foregroundStyle(AroosiColors.muted)
-                    .multilineTextAlignment(.leading)
+        var icon: String {
+            switch self {
+            case .info:
+                return "info.circle"
+            case .error:
+                return "exclamationmark.triangle"
             }
-            .padding()
-            .background(style.tint.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
+    }
+
+    let message: String
+    let style: Style
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: style.icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(style.tint)
+            Text(message)
+                .font(AroosiTypography.caption())
+                .foregroundStyle(AroosiColors.muted)
+                .multilineTextAlignment(.leading)
+        }
+        .padding()
+        .background(style.tint.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 #endif

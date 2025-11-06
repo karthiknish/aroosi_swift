@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class ShortlistViewModel: ObservableObject {
@@ -123,3 +125,5 @@ final class ShortlistViewModel: ObservableObject {
         }
     }
 }
+
+#endif

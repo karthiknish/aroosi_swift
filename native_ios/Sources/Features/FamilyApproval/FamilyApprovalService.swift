@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 
+#if os(iOS)
+
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
@@ -339,4 +341,5 @@ public final class FamilyApprovalService: ObservableObject {
         summary?.approvalRate ?? 0.0
     }
 }
+#endif
 #endif

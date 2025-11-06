@@ -1,17 +1,23 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public protocol ChatThreadRepository {
     func fetchThread(id: String) async throws -> ChatThread
-    func streamThreads(for userID: String) -> AsyncThrowingStream<[ChatThread], Error>
     func upsertThread(_ thread: ChatThread) async throws
+}
+
+@available(iOS 15.0, macOS 10.15, *)
+public protocol ChatThreadRepositoryWithStreaming: ChatThreadRepository {
+    func streamThreads(for userID: String) -> AsyncThrowingStream<[ChatThread], Error>
 }
 
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
 @available(iOS 17.0.0, *)
-public final class FirestoreChatThreadRepository: ChatThreadRepository {
+public final class FirestoreChatThreadRepository: ChatThreadRepositoryWithStreaming {
     private enum Constants {
         static let collection = "conversations"
         static let participantIDsField = "participantIDs"
@@ -137,4 +143,5 @@ public final class FirestoreChatThreadRepository: ChatThreadRepository {
         throw RepositoryError.unknown
     }
 }
+#endif
 #endif

@@ -1,6 +1,7 @@
 #if os(iOS)
 import Foundation
 import UIKit
+import Darwin
 
 #if canImport(FirebaseCrashlytics)
 import FirebaseCrashlytics
@@ -15,11 +16,11 @@ class CrashReportingService: ObservableObject {
     @Published var lastCrashDate: Date?
     
     private let crashReporter: CrashReporter
-    private let analyticsService: AnalyticsService
+    private let analyticsService: CrashAnalyticsService
     
     init(
         crashReporter: CrashReporter = DefaultCrashReporter(),
-        analyticsService: AnalyticsService = DefaultAnalyticsService()
+        analyticsService: CrashAnalyticsService = DefaultCrashAnalyticsService()
     ) {
         self.crashReporter = crashReporter
         self.analyticsService = analyticsService
@@ -322,9 +323,14 @@ class DefaultCrashReporter: CrashReporter {
     private var onCrashCallback: ((CrashReport) -> Void)?
     private var onMetricsCallback: ((PerformanceMetrics) -> Void)?
     private var performanceTimer: Timer?
+    private static var sharedHandler: DefaultCrashReporter?
+    private static let signalHandler: @convention(c) (Int32) -> Void = { signalCode in
+        DefaultCrashReporter.sharedHandler?.handleSignal(signalCode)
+    }
     
     func setup(onCrash: @escaping (CrashReport) -> Void) {
         onCrashCallback = onCrash
+        DefaultCrashReporter.sharedHandler = self
         
         // Set up crash handler
         NSSetUncaughtExceptionHandler { exception in
@@ -344,18 +350,27 @@ class DefaultCrashReporter: CrashReporter {
     private func setupSignalHandlers() {
         let signals: [Int32] = [SIGABRT, SIGILL, SIGSEGV, SIGFPE, SIGBUS, SIGPIPE]
         
-        for signal in signals {
-            signal(signal) { _ in
-                let crashReport = CrashReport(
-                    exception: nil,
-                    timestamp: Date(),
-                    stackTrace: Thread.callStackSymbols,
-                    signal: signal
-                )
-                
-                self.onCrashCallback?(crashReport)
-            }
+        for code in signals {
+            Darwin.signal(code, DefaultCrashReporter.signalHandler)
         }
+    }
+
+    deinit {
+        performanceTimer?.invalidate()
+        if DefaultCrashReporter.sharedHandler === self {
+            DefaultCrashReporter.sharedHandler = nil
+        }
+    }
+
+    private func handleSignal(_ signalCode: Int32) {
+        let crashReport = CrashReport(
+            exception: nil,
+            timestamp: Date(),
+            stackTrace: Thread.callStackSymbols,
+            signal: signalCode
+        )
+
+        onCrashCallback?(crashReport)
     }
     
     func getCrashCount() -> Int {
@@ -396,7 +411,7 @@ class DefaultCrashReporter: CrashReporter {
     }
     
     private func getCurrentMemoryUsage() -> Double {
-        let machTaskBasicInfo = mach_task_basic_info()
+        var machTaskBasicInfo = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
         
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &machTaskBasicInfo) {
@@ -425,7 +440,8 @@ class DefaultCrashReporter: CrashReporter {
         let result = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numCpus, &info, &numCpuInfo)
         
         if result == KERN_SUCCESS {
-            let cpuLoadInfo = info!.bindMemory(to: processor_cpu_load_info.self, capacity: Int(numCpus))
+            guard let info else { return 0 }
+            let cpuLoadInfo = info.bindMemory(to: processor_cpu_load_info.self, capacity: Int(numCpus))
             
             var totalTicks: UInt32 = 0
             var idleTicks: UInt32 = 0
@@ -446,7 +462,7 @@ class DefaultCrashReporter: CrashReporter {
 
 // MARK: - Analytics Service Protocol
 
-protocol AnalyticsService {
+protocol CrashAnalyticsService {
     func trackCrash(_ crashReport: CrashReport) async
     func trackError(_ errorReport: ErrorReport) async
     func trackCustomEvent(_ customReport: CustomReport) async
@@ -456,7 +472,7 @@ protocol AnalyticsService {
 
 // MARK: - Default Analytics Service
 
-class DefaultAnalyticsService: AnalyticsService {
+class DefaultCrashAnalyticsService: CrashAnalyticsService {
     func trackCrash(_ crashReport: CrashReport) async {
         print("Tracking crash in analytics: \(crashReport.description)")
     }

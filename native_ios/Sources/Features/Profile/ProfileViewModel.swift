@@ -1,6 +1,8 @@
 import Combine
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class ProfileViewModel: ObservableObject {
@@ -83,3 +85,5 @@ final class ProfileViewModel: ObservableObject {
         observeProfile(for: userID)
     }
 }
+
+#endif

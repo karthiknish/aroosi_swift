@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+#if os(iOS)
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
@@ -420,4 +421,5 @@ extension IslamicQuizError {
     ) as Error
 }
 
+#endif
 #endif

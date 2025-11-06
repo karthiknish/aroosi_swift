@@ -7,6 +7,7 @@ public protocol SafetyRepository {
     func unblock(userID: String) async throws
     func report(userID: String, reason: String, details: String?) async throws
     func status(for userID: String) async throws -> SafetyStatus
+    func fetchSubmittedReports() async throws -> [SafetyReport]
 }
 
 #if canImport(FirebaseFirestore)
@@ -25,9 +26,18 @@ public final class FirestoreSafetyRepository: SafetyRepository {
     private let profileRepository: ProfileRepository
 
     public init(db: Firestore = .firestore(),
-                profileRepository: ProfileRepository = FirestoreProfileRepository()) {
+                profileRepository: ProfileRepository? = nil) {
         self.db = db
-        self.profileRepository = profileRepository
+        if let profileRepository = profileRepository {
+            self.profileRepository = profileRepository
+        } else {
+            if #available(iOS 15.0, macOS 10.15, *) {
+                self.profileRepository = FirestoreProfileRepository()
+            } else {
+                // Fallback for older versions - would need a non-streaming implementation
+                fatalError("ProfileRepository requires iOS 15.0+ or macOS 10.15+")
+            }
+        }
     }
 
     public func fetchBlockedUsers() async throws -> [BlockedUser] {
@@ -95,18 +105,14 @@ public final class FirestoreSafetyRepository: SafetyRepository {
         let currentUserID = try currentUserIdentifier()
         guard currentUserID != userID else { return }
 
-        do {
-            try await db.collection(Constants.reportsCollection).addDocument(data: [
-                "reporterId": currentUserID,
-                "reportedUserId": userID,
-                "reason": reason,
-                "description": details ?? "",
-                "createdAt": FieldValue.serverTimestamp(),
-                "status": "pending"
-            ])
-        } catch {
-            throw mapError(error)
-        }
+        _ = try await db.collection(Constants.reportsCollection).addDocument(data: [
+            "reporterId": currentUserID,
+            "reportedUserId": userID,
+            "reason": reason,
+            "description": details ?? "",
+            "createdAt": FieldValue.serverTimestamp(),
+            "status": "pending"
+        ])
     }
 
     public func status(for userID: String) async throws -> SafetyStatus {
@@ -130,6 +136,36 @@ public final class FirestoreSafetyRepository: SafetyRepository {
         return SafetyStatus(isBlocked: isBlocked,
                             isBlockedBy: isBlockedBy,
                             canInteract: !(isBlocked || isBlockedBy))
+    }
+
+    public func fetchSubmittedReports() async throws -> [SafetyReport] {
+        let currentUserID = try currentUserIdentifier()
+
+        let snapshot = try await db.collection(Constants.reportsCollection)
+            .whereField("reporterId", isEqualTo: currentUserID)
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        var reports: [SafetyReport] = []
+        reports.reserveCapacity(snapshot.documents.count)
+
+        for document in snapshot.documents {
+            let data = document.data()
+            guard let reportedUserID = data["reportedUserId"] as? String else { continue }
+            let reason = data["reason"] as? String ?? ""
+            let details = data["description"] as? String
+            let submittedAt = (data["createdAt"] as? Timestamp)?.dateValue()
+            let status = ReportStatus(rawValue: data["status"] as? String ?? "") ?? .pending
+
+            reports.append(SafetyReport(id: document.documentID,
+                                        reportedUserID: reportedUserID,
+                                        reason: reason,
+                                        details: details,
+                                        submittedAt: submittedAt ?? Date(),
+                                        status: status))
+        }
+
+        return reports
     }
 
     private func currentUserIdentifier() throws -> String {
@@ -170,5 +206,6 @@ public final class FirestoreSafetyRepository: SafetyRepository {
     public func unblock(userID: String) async throws {}
     public func report(userID: String, reason: String, details: String?) async throws {}
     public func status(for userID: String) async throws -> SafetyStatus { SafetyStatus() }
+    public func fetchSubmittedReports() async throws -> [SafetyReport] { [] }
 }
 #endif

@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if os(iOS)
+
 @available(iOS 17, *)
 public struct CompatibilityQuestionnaireView: View {
     @StateObject private var service = CompatibilityService()
@@ -414,3 +416,5 @@ private struct CompletionView: View {
         // Questionnaire completed
     }
 }
+
+#endif

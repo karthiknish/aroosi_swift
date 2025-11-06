@@ -1,6 +1,8 @@
 import Combine
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class ChatViewModel: ObservableObject {
@@ -144,3 +146,5 @@ final class ChatViewModel: ObservableObject {
         }
     }
 }
+
+#endif

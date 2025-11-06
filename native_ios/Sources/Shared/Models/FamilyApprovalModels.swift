@@ -73,12 +73,27 @@ public struct FamilyApprovalRequest: Codable, Identifiable, Equatable {
     
     @available(iOS 15.0, *)
     public var formattedCreatedDate: String {
-        createdAt.formatted(date: .abbreviated, time: .omitted)
+        if #available(macOS 12.0, *) {
+            return createdAt.formatted(date: .abbreviated, time: .omitted)
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            formatter.timeStyle = .none
+            return formatter.string(from: createdAt)
+        }
     }
     
     @available(iOS 15.0, *)
     public var formattedRespondedDate: String? {
-        respondedAt?.formatted(date: .abbreviated, time: .omitted)
+        if #available(macOS 12.0, *) {
+            return respondedAt?.formatted(date: .abbreviated, time: .omitted)
+        } else {
+            guard let respondedAt = respondedAt else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            formatter.timeStyle = .none
+            return formatter.string(from: respondedAt)
+        }
     }
 }
 

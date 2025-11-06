@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 15.0, *)
 private enum RelativeDateFormatterCache {
     static let shared: RelativeDateTimeFormatter = {
@@ -20,3 +22,5 @@ public extension Date {
         return formatter.localizedString(for: self, relativeTo: reference)
     }
 }
+
+#endif

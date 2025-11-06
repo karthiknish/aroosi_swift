@@ -32,8 +32,9 @@ public protocol SupportRepository {
     func submitContact(_ request: SupportContactRequest) async throws -> Bool
 }
 
+#if os(iOS)
 #if canImport(FirebaseFirestore)
-@available(iOS 17.0.0, *)
+@available(iOS 17.0.0, macOS 12.0, *)
 public final class RemoteSupportRepository: SupportRepository {
     private let client: HTTPClientProtocol
     private let logger = Logger.shared
@@ -63,7 +64,9 @@ public final class RemoteSupportRepository: SupportRepository {
                         return true
                     }
                 } catch {
-                    if (error as? CancellationError) != nil { throw error }
+                    if #available(iOS 15.0, macOS 12.0, *), let cancellationError = error as? CancellationError {
+                        throw cancellationError
+                    }
                     logger.error("Support request to \(path) failed: \(error.localizedDescription)")
                 }
             }
@@ -132,6 +135,13 @@ private extension Dictionary where Key == String, Value == Any {
         return result
     }
 }
+#else
+@available(iOS 17.0.0, *)
+public final class RemoteSupportRepository: SupportRepository {
+    public init() {}
+    public func submitContact(_ request: SupportContactRequest) async throws -> Bool { false }
+}
+#endif
 #else
 @available(iOS 17.0.0, *)
 public final class RemoteSupportRepository: SupportRepository {

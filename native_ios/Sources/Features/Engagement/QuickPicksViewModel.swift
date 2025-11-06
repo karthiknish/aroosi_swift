@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 17, *)
+@available(iOS 17, macOS 10.15, macCatalyst 13.0, *)
 @MainActor
 final class QuickPicksViewModel: ObservableObject {
     struct State: Equatable {
@@ -135,7 +135,7 @@ final class QuickPicksViewModel: ObservableObject {
     }
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17, macOS 10.15, macCatalyst 13.0, *)
 private struct EmptyQuickPicksRepository: QuickPicksRepository {
     func fetchQuickPicks(dayKey: String?) async throws -> [QuickPickRecommendation] { [] }
     func act(on userID: String, action: QuickPickAction) async throws {}

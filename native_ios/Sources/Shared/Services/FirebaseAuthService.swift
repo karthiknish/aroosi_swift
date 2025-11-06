@@ -1,10 +1,13 @@
 import Foundation
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
 
 #if os(iOS)
 import AuthenticationServices
 #endif
 
+#if canImport(FirebaseAuth)
 public final class FirebaseAuthService: AuthProviding {
     public static let shared = FirebaseAuthService()
 
@@ -139,3 +142,4 @@ extension FirebaseAuthService {
         }
     }
 }
+#endif

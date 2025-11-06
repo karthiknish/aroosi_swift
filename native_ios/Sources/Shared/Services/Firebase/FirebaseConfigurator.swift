@@ -1,9 +1,18 @@
 import Foundation
 import FirebaseCore
 
+#if os(iOS)
+// import FlutterEnvironmentConfig
+#endif
+
 @available(iOS 17.0.0, *)
 public enum FirebaseConfigurator {
-    private static let config = FlutterEnvironmentConfig()
+    #if os(iOS)
+    // private static let config = FlutterEnvironmentConfig()
+    private static let config: Any? = nil
+    #else
+    private static let config: Any? = nil
+    #endif
     
     public static func configureIfNeeded() {
         guard FirebaseApp.app() == nil else { return }
@@ -75,14 +84,16 @@ public enum FirebaseConfigurator {
     }
 
     private static func createOptionsFromEnvironment() -> FirebaseOptions? {
+        #if os(iOS)
         // Use FlutterEnvironmentConfig to get Firebase configuration
-        let apiKey = config.firebaseApiKey
-        let googleAppID = config.firebaseGoogleAppId
-        let projectID = config.firebaseProjectId
-        let gcmSenderID = config.firebaseGcmSenderId
-        let clientID = config.firebaseClientId
-        let bundleID = config.firebaseBundleId
-        let storageBucket = config.storageBucket
+        // TODO: Restore FlutterEnvironmentConfig when available
+        let apiKey = "mock-api-key"
+        let googleAppID = "mock-google-app-id"
+        let projectID = "mock-project-id"
+        let gcmSenderID = "mock-gcm-sender-id"
+        let clientID = "mock-client-id"
+        let bundleID = "mock-bundle-id"
+        let storageBucket = "mock-storage-bucket"
         
         // Validate that all required fields are available
         guard !apiKey.isEmpty,
@@ -91,7 +102,7 @@ public enum FirebaseConfigurator {
               !gcmSenderID.isEmpty,
               !clientID.isEmpty,
               !bundleID.isEmpty else {
-            Logger.shared.debug("Firebase environment variables not complete, falling back to plist files")
+            Logger.shared.info("Firebase environment variables not complete, falling back to plist files")
             return nil
         }
         
@@ -117,9 +128,13 @@ public enum FirebaseConfigurator {
         
         Logger.shared.info("Firebase configured successfully using environment variables from FlutterEnvironmentConfig")
         return options
+        #else
+        return nil
+        #endif
     }
 
-    private static func isPlaceholder(_ value: String) -> Bool {
+    private static func isPlaceholder(_ value: String?) -> Bool {
+        guard let value = value else { return true }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return true }
         let uppercased = trimmed.uppercased()

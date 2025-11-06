@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class CulturalMatchingViewModel: ObservableObject {
@@ -133,3 +135,5 @@ private struct FallbackCulturalRepository: CulturalRepository {
         CulturalCompatibilityReport(overallScore: 0, insights: [], dimensions: [])
     }
 }
+
+#endif

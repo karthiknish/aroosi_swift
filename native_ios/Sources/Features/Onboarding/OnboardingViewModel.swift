@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class OnboardingViewModel: ObservableObject {
@@ -120,3 +122,5 @@ struct SecretsOnboardingFallbackContentProvider: OnboardingFallbackContentProvid
                                  callToActionTitle: callToAction)
     }
 }
+
+#endif

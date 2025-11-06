@@ -180,6 +180,10 @@ private final class MatchRepositoryStub: MatchRepository {
 
     func updateMatch(_ match: Match) async throws {}
 
+    func findMatch(between userID: String, and otherUserID: String) async throws -> Match? {
+        nil
+    }
+
     func send(_ matches: [Match]) {
         continuation?.yield(matches)
     }

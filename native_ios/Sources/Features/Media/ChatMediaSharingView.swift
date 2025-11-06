@@ -59,12 +59,12 @@ struct ChatMediaSharingView: View {
         }
         .tint(AroosiColors.primary)
         .photosPicker(
-            isPresented: $viewModel.state.showingPhotoPicker,
-            selection: $viewModel.state.selectedItems,
+            isPresented: viewModel.photoPickerBinding,
+            selection: viewModel.selectedItemsBinding,
             maxSelectionCount: maxImages - sharedMediaURLs.count,
             matching: .any(of: [.images, .videos])
         )
-        .sheet(isPresented: $viewModel.state.showingVoiceRecorder) {
+        .sheet(isPresented: viewModel.voiceRecorderBinding) {
             VoiceRecorderView(
                 onRecordingComplete: { audioURL in
                     viewModel.processVoiceRecording(audioURL)
@@ -88,7 +88,7 @@ struct ChatMediaSharingView: View {
             
             HStack(spacing: 16) {
                 Button {
-                    viewModel.state.showingPhotoPicker = true
+                    viewModel.presentPhotoPicker()
                 } label: {
                     VStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle")
@@ -104,7 +104,7 @@ struct ChatMediaSharingView: View {
                 }
                 
                 Button {
-                    viewModel.state.showingVoiceRecorder = true
+                    viewModel.presentVoiceRecorder()
                 } label: {
                     VStack(spacing: 8) {
                         Image(systemName: "mic")
@@ -153,7 +153,7 @@ struct ChatMediaSharingView: View {
                     
                     if sharedMediaURLs.count < maxImages {
                         Button {
-                            viewModel.state.showingPhotoPicker = true
+                            viewModel.presentPhotoPicker()
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: "plus")

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FirebaseFirestore)
+import FirebaseFirestore
+#endif
 
 @available(iOS 17.0.0, *)
 public struct Interest: Equatable, Identifiable, Codable {
@@ -57,6 +60,7 @@ public enum InterestResponse {
     }
 }
 
+#if canImport(FirebaseFirestore)
 @available(iOS 17.0.0, *)
 extension Interest {
     init(id: String, data: [String: Any]) throws {
@@ -101,3 +105,4 @@ extension Interest {
         return data
     }
 }
+#endif

@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 
+#if os(iOS)
+
 /// Service for calculating compatibility scores between users
 @available(iOS 17, *)
 @MainActor
@@ -389,3 +391,5 @@ public enum CompatibilityError: LocalizedError {
         }
     }
 }
+
+#endif

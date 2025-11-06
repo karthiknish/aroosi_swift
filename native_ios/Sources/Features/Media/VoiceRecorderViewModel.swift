@@ -5,7 +5,7 @@ import Combine
 
 @available(iOS 17, *)
 @MainActor
-class VoiceRecorderViewModel: ObservableObject {
+final class VoiceRecorderViewModel: NSObject, ObservableObject {
     @Published var state = VoiceRecorderState()
     
     private var audioRecorder: AVAudioRecorder?
@@ -17,6 +17,7 @@ class VoiceRecorderViewModel: ObservableObject {
     
     init(permissionManager: PermissionManager = .shared) {
         self.permissionManager = permissionManager
+        super.init()
         setupAudioSession()
     }
     
@@ -168,6 +169,7 @@ class VoiceRecorderViewModel: ObservableObject {
 // MARK: - AVAudioRecorderDelegate
 
 @available(iOS 17, *)
+@MainActor
 extension VoiceRecorderViewModel: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         if !flag {

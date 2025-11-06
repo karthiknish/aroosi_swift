@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public enum iPhoneSize {
     case mini      // iPhone SE, Mini (width <= 375)
@@ -61,7 +63,7 @@ public enum Responsive {
     }
 
     /// Adaptive spacing with multiplier
-    public static func spacing(width: CGFloat, multiplier: Double = 1) -> CGFloat {
+    public static func spacing(width: CGFloat, multiplier: CGFloat = 1) -> CGFloat {
         let base: CGFloat = isSmallPhone(width: width) ? 12 : isLargePhone(width: width) ? 20 : 16
         return base * multiplier
     }
@@ -79,9 +81,16 @@ public enum Responsive {
         return base * scale
     }
 
-    /// Grid columns for different iPhone sizes
+    /// Grid columns for different screen types
     public static func gridColumns(width: CGFloat) -> Int {
-        isSmallPhone(width: width) ? 2 : 2  // Always 2 columns for iPhones
+        switch screenType(for: width) {
+        case .mobile:
+            return isSmallPhone(width: width) ? 1 : 2
+        case .tablet:
+            return 3
+        case .desktop:
+            return 4
+        }
     }
 
     /// Maximum visible items based on screen size
@@ -119,15 +128,123 @@ public enum Responsive {
         return CGSize(width: cardWidth, height: cardHeight)
     }
     
-    /// Determine screen type for responsive layouts (always mobile for iPhone app)
+    /// Check if device is in landscape orientation
+    public static func isLandscape(width: CGFloat, height: CGFloat) -> Bool {
+        width > height
+    }
+    
+    /// Check if device is in portrait orientation
+    public static func isPortrait(width: CGFloat, height: CGFloat) -> Bool {
+        width <= height
+    }
+    
+    /// Get orientation-aware spacing
+    public static func orientationSpacing(width: CGFloat, height: CGFloat, multiplier: CGFloat = 1) -> CGFloat {
+        let base: CGFloat = isLandscape(width: width, height: height) ?
+            CGFloat(isSmallPhone(width: width) ? 8 : 12) :
+            CGFloat(isSmallPhone(width: width) ? 12 : 16)
+        return base * multiplier
+    }
+    
+    /// Dynamic Type aware font scaling
+    public static func accessibleFont(base: CGFloat, width: CGFloat, style: Font.TextStyle = .body) -> Font {
+        let scaledSize = fontSize(base: base, width: width)
+        return .system(size: scaledSize, weight: .regular, design: .default)
+    }
+    
+    /// Dynamic Type aware font with weight
+    public static func accessibleFont(base: CGFloat, width: CGFloat, weight: Font.Weight = .regular, style: Font.TextStyle = .body) -> Font {
+        let scaledSize = fontSize(base: base, width: width)
+        return .system(size: scaledSize, weight: weight, design: .default)
+    }
+    
+    /// Safe area aware padding
+    public static func safeAreaPadding(width: CGFloat, height: CGFloat, safeArea: EdgeInsets) -> EdgeInsets {
+        let size = iPhoneSize(for: width)
+        let isLandscape = self.isLandscape(width: width, height: height)
+        
+        let top: CGFloat
+        let bottom: CGFloat
+        let leading: CGFloat
+        let trailing: CGFloat
+        
+        if isLandscape {
+            // Reduce vertical padding in landscape
+            top = min(safeArea.top, 12)
+            bottom = min(safeArea.bottom, 12)
+            leading = max(safeArea.leading, 16)
+            trailing = max(safeArea.trailing, 16)
+        } else {
+            switch size {
+            case .mini:
+                top = max(safeArea.top, 12)
+                bottom = max(safeArea.bottom, 12)
+                leading = max(safeArea.leading, 12)
+                trailing = max(safeArea.trailing, 12)
+            case .standard:
+                top = max(safeArea.top, 16)
+                bottom = max(safeArea.bottom, 16)
+                leading = max(safeArea.leading, 16)
+                trailing = max(safeArea.trailing, 16)
+            case .plus:
+                top = max(safeArea.top, 18)
+                bottom = max(safeArea.bottom, 18)
+                leading = max(safeArea.leading, 18)
+                trailing = max(safeArea.trailing, 18)
+            case .proMax:
+                top = max(safeArea.top, 20)
+                bottom = max(safeArea.bottom, 20)
+                leading = max(safeArea.leading, 20)
+                trailing = max(safeArea.trailing, 20)
+            }
+        }
+        
+        return EdgeInsets(top: top, leading: leading, bottom: bottom, trailing: trailing)
+    }
+    
+    /// iPad-optimized grid columns
+    public static func iPadAwareGridColumns(width: CGFloat, height: CGFloat) -> Int {
+        let isLandscape = self.isLandscape(width: width, height: height)
+        let screenType = self.screenType(for: width)
+        
+        switch screenType {
+        case .mobile:
+            return isSmallPhone(width: width) ? 1 : 2
+        case .tablet:
+            return isLandscape ? 4 : 3
+        case .desktop:
+            return isLandscape ? 6 : 4
+        }
+    }
+    
+    /// iPad-optimized spacing
+    public static func iPadSpacing(width: CGFloat, height: CGFloat, multiplier: CGFloat = 1) -> CGFloat {
+        let screenType = self.screenType(for: width)
+        let isLandscape = self.isLandscape(width: width, height: height)
+        
+        let base: CGFloat
+        switch screenType {
+        case .mobile:
+            base = isSmallPhone(width: width) ? 12 : 16
+        case .tablet:
+            base = isLandscape ? 20 : 24
+        case .desktop:
+            base = isLandscape ? 24 : 32
+        }
+        
+        return base * multiplier
+    }
+    
+    /// Determine screen type for responsive layouts
     public static func screenType(for width: CGFloat) -> ScreenType {
-        // iPhone app - always return mobile
+        if width >= 1024 { return .desktop }
+        if width >= 744 { return .tablet }
         return .mobile
     }
     
     /// Check if this is a large screen for layout purposes
     public static func isLargeScreen(width: CGFloat) -> Bool {
-        return isLargePhone(width: width)
+        return screenType(for: width) != .mobile
     }
     
     /// Responsive avatar size based on screen width
@@ -290,13 +407,15 @@ public struct AdaptiveContainer<Content: View>: View {
     public var body: some View {
         GeometryReader { proxy in
             let padding = Responsive.screenPadding(width: proxy.size.width)
-            VStack(alignment: .leading, spacing: AroosiSpacing.lg) {
+            VStack(alignment: .leading, spacing: Responsive.spacing(width: proxy.size.width)) {
                 content()
             }
             .frame(maxWidth: maxWidth ?? (Responsive.screenType(for: proxy.size.width) == .desktop ? 1200 : .infinity), alignment: alignment)
             .padding(padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-            .background(AroosiColors.background)
+            .background(Color(UIColor.systemBackground))
         }
     }
 }
+
+#endif

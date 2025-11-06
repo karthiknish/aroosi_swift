@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if os(iOS)
+
 // MARK: - Responsive Avatar Component
 
 @available(iOS 17.0.0, *)
@@ -44,13 +46,13 @@ public struct ResponsiveAvatar: View {
                         image.resizable()
                             .scaledToFill()
                     case .failure:
-                        avatarPlaceholder
+                        avatarPlaceholder(for: responsiveSize)
                     @unknown default:
-                        avatarPlaceholder
+                        avatarPlaceholder(for: responsiveSize)
                     }
                 }
             } else {
-                avatarPlaceholder
+                avatarPlaceholder(for: responsiveSize)
             }
         }
         .frame(width: responsiveSize, height: responsiveSize)
@@ -60,7 +62,7 @@ public struct ResponsiveAvatar: View {
         }
     }
     
-    private var avatarPlaceholder: some View {
+    private func avatarPlaceholder(for responsiveSize: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: responsiveSize / 2)
             .fill(Color.gray.opacity(0.2))
             .overlay {
@@ -86,7 +88,7 @@ public struct ResponsiveCard<Content: View>: View {
         width: CGFloat,
         height: CGFloat? = nil,
         padding: EdgeInsets? = nil,
-        backgroundColor: Color = AroosiColors.surfaceSecondary,
+        backgroundColor: Color = Color(UIColor.tertiarySystemBackground),
         cornerRadius: CGFloat? = nil,
         @ViewBuilder content: () -> Content
     ) {
@@ -94,7 +96,7 @@ public struct ResponsiveCard<Content: View>: View {
         self.height = height
         self.padding = padding
         self.backgroundColor = backgroundColor
-        self.cornerRadius = cornerRadius ?? Responsive.isLargeScreen(width: width) ? 16 : 12
+        self.cornerRadius = cornerRadius ?? (Responsive.isLargeScreen(width: width) ? 16 : 12)
         self.content = content()
     }
     
@@ -128,8 +130,8 @@ public struct ResponsiveButton: View {
         
         var backgroundColor: Color {
             switch self {
-            case .primary: return AroosiColors.primary
-            case .secondary: return AroosiColors.secondary
+            case .primary: return Color.blue
+            case .secondary: return Color.gray
             case .outline: return Color.clear
             }
         }
@@ -137,13 +139,13 @@ public struct ResponsiveButton: View {
         var foregroundColor: Color {
             switch self {
             case .primary, .secondary: return .white
-            case .outline: return AroosiColors.primary
+            case .outline: return Color.blue
             }
         }
         
         var borderColor: Color? {
             switch self {
-            case .outline: return AroosiColors.primary
+            case .outline: return Color.blue
             default: return nil
             }
         }
@@ -175,7 +177,7 @@ public struct ResponsiveButton: View {
                 }
                 
                 Text(title)
-                    .font(AroosiTypography.body(weight: .semibold, width: width))
+                    .font(.system(size: Responsive.fontSize(base: 16, width: width), weight: .semibold))
             }
             .foregroundStyle(style.foregroundColor)
             .frame(maxWidth: .infinity)
@@ -249,18 +251,18 @@ public struct ResponsiveIconRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(AroosiColors.primary)
+                .foregroundStyle(Color.blue)
                 .frame(width: Responsive.iconWidth(for: width))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(AroosiTypography.body(weight: .medium, width: width))
-                    .foregroundStyle(AroosiColors.text)
+                    .font(.system(size: Responsive.fontSize(base: 16, width: width), weight: .medium))
+                    .foregroundStyle(Color.primary)
                 
                 if let subtitle {
                     Text(subtitle)
-                        .font(AroosiTypography.caption(width: width))
-                        .foregroundStyle(AroosiColors.muted)
+                        .font(.system(size: Responsive.fontSize(base: 12, width: width)))
+                        .foregroundStyle(Color.secondary)
                 }
             }
             
@@ -330,7 +332,6 @@ public struct ResponsiveHStack<Content: View>: View {
 
 // MARK: - View Extension for Conditional Modifiers
 
-@available(iOS 17.0.0, *)
 extension View {
     @ViewBuilder
     func applyIfLet<T>(_ value: T?, transform: (Self, T) -> some View) -> some View {
@@ -406,3 +407,141 @@ public struct ResponsiveContainer<Content: View>: View {
         }
     }
 }
+
+// MARK: - Orientation-Aware Container
+
+@available(iOS 17.0.0, *)
+public struct OrientationAwareContainer<Content: View>: View {
+    let content: Content
+    let maxWidth: CGFloat?
+    let alignment: Alignment
+    
+    public init(
+        maxWidth: CGFloat? = nil,
+        alignment: Alignment = .topLeading,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.maxWidth = maxWidth
+        self.alignment = alignment
+        self.content = content()
+    }
+    
+    public var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let isLandscape = Responsive.isLandscape(width: width, height: height)
+            
+            content
+                .frame(maxWidth: maxWidth ?? .infinity, alignment: alignment)
+                .padding(isLandscape ? 
+                    EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16) :
+                    Responsive.screenPadding(width: width)
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+        }
+    }
+}
+
+// MARK: - Accessible Text Component
+
+@available(iOS 17.0.0, *)
+public struct AccessibleText: View {
+    let text: String
+    let baseFontSize: CGFloat
+    let weight: Font.Weight
+    let style: Font.TextStyle
+    let width: CGFloat
+    
+    public init(
+        _ text: String,
+        baseFontSize: CGFloat = 16,
+        weight: Font.Weight = .regular,
+        style: Font.TextStyle = .body,
+        width: CGFloat
+    ) {
+        self.text = text
+        self.baseFontSize = baseFontSize
+        self.weight = weight
+        self.style = style
+        self.width = width
+    }
+    
+    public var body: some View {
+        Text(text)
+            .font(Responsive.accessibleFont(base: baseFontSize, width: width, weight: weight, style: style))
+            .minimumScaleFactor(0.8)
+            .lineLimit(nil)
+    }
+}
+
+// MARK: - iPad Optimized Grid
+
+@available(iOS 17.0.0, *)
+public struct iPadAwareGrid<Content: View>: View {
+    let columns: Int?
+    let spacing: CGFloat?
+    let width: CGFloat
+    let height: CGFloat
+    let content: Content
+    
+    public init(
+        columns: Int? = nil,
+        spacing: CGFloat? = nil,
+        width: CGFloat,
+        height: CGFloat,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.columns = columns
+        self.spacing = spacing
+        self.width = width
+        self.height = height
+        self.content = content()
+    }
+    
+    public var body: some View {
+        let gridColumns = columns ?? Responsive.iPadAwareGridColumns(width: width, height: height)
+        let gridSpacing = spacing ?? Responsive.iPadSpacing(width: width, height: height)
+        
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: gridColumns),
+            spacing: gridSpacing
+        ) {
+            content
+        }
+    }
+}
+
+// MARK: - Safe Area Aware Container
+
+@available(iOS 17.0.0, *)
+public struct SafeAreaAwareContainer<Content: View>: View {
+    let content: Content
+    let ignoresSafeAreas: Edge.Set
+    let alignment: Alignment
+    
+    public init(
+        ignoresSafeAreas: Edge.Set = [],
+        alignment: Alignment = .topLeading,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.ignoresSafeAreas = ignoresSafeAreas
+        self.alignment = alignment
+        self.content = content()
+    }
+    
+    public var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let safeArea = proxy.safeAreaInsets
+            
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+                .padding(Responsive.safeAreaPadding(width: width, height: height, safeArea: safeArea))
+        }
+        .ignoresSafeArea(.container, edges: ignoresSafeAreas)
+    }
+}
+
+#endif

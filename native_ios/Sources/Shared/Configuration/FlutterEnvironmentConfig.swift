@@ -1,4 +1,6 @@
+#if os(iOS)
 import Foundation
+import Combine
 
 /// Mirrors the environment switching used in aroosi_flutter so both apps hit
 /// the same backend tiers by default.
@@ -26,6 +28,7 @@ public class FlutterEnvironmentConfig: ObservableObject {
         case "staging":
             return "staging"
         case "production", "prod":
+            return "production"
         default:
             return "production"
         }
@@ -44,6 +47,7 @@ public class FlutterEnvironmentConfig: ObservableObject {
         case "staging":
             return Self.defaultStagingBase
         case "production":
+            return Self.defaultProdBase
         default:
             return Self.defaultProdBase
         }
@@ -311,3 +315,5 @@ extension FlutterEnvironmentConfig {
         unsetenv("IOS_CERT_PASSWORD")
     }
 }
+
+#endif

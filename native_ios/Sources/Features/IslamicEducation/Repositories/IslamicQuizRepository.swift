@@ -61,9 +61,7 @@ public final class FirebaseIslamicQuizRepository: IslamicQuizRepository {
         
         let document = try await db.collection(quizzesCollection).document(id).getDocument()
         
-        guard let quiz = try document.data(as: IslamicQuiz.self) else {
-            throw IslamicQuizError.quizNotFound
-        }
+        let quiz = try document.data(as: IslamicQuiz.self)
         
         return quiz
     }
@@ -130,14 +128,14 @@ public final class FirebaseIslamicQuizRepository: IslamicQuizRepository {
             .document(userId)
             .getDocument()
         
-        if let profile = try document.data(as: UserIslamicQuizProfile.self) {
+        if let profile = try? document.data(as: UserIslamicQuizProfile.self) {
             return profile
-        } else {
-            // Create new profile if it doesn't exist
-            let newProfile = UserIslamicQuizProfile(userId: userId)
-            try await updateUserQuizProfile(newProfile)
-            return newProfile
         }
+
+        // Create new profile if it doesn't exist or decoding failed
+        let newProfile = UserIslamicQuizProfile(userId: userId)
+        try await updateUserQuizProfile(newProfile)
+        return newProfile
     }
     
     public func updateUserQuizProfile(_ profile: UserIslamicQuizProfile) async throws {

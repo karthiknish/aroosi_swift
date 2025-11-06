@@ -132,14 +132,57 @@ public extension View {
         self.cornerRadius(ScreenSize.isSmallDevice ? 8 : ScreenSize.isProMaxDevice ? 16 : 12)
     }
     
-    /// Apply font size that adapts to screen size
+    /// Apply font size that adapts to screen size and supports Dynamic Type
     func responsiveFontSize() -> some View {
-        self.font(.system(size: ScreenSize.fontSize()))
+        self.font(.system(size: ScreenSize.fontSize(), weight: .regular))
+            .minimumScaleFactor(0.8)
     }
     
-    /// Apply minimum touch target size
-    func minTouchTarget() -> some View {
-        self.frame(minWidth: ScreenSize.minTouchTarget, minHeight: ScreenSize.minTouchTarget)
+    /// Apply accessible font with Dynamic Type support
+    func accessibleFont(baseSize: CGFloat = 16, weight: Font.Weight = .regular) -> some View {
+        self.font(.system(size: ScreenSize.scaledFont(base: baseSize), weight: weight))
+            .minimumScaleFactor(0.8)
+            .lineLimit(nil)
+    }
+    
+    /// Orientation-aware padding
+    func orientationPadding() -> some View {
+        GeometryReader { proxy in
+            let isLandscape = proxy.size.width > proxy.size.height
+            let padding = isLandscape ? 
+                ScreenSize.padding(small: 8, medium: 12, large: 16, proMax: 20) :
+                ScreenSize.padding()
+            self.padding(padding)
+        }
+    }
+    
+    /// Safe area aware frame
+    func safeAreaFrame() -> some View {
+        GeometryReader { proxy in
+            let safeArea = ScreenSize.safeAreaInsets
+            let usableWidth = proxy.size.width - safeArea.left - safeArea.right
+            let usableHeight = proxy.size.height - safeArea.top - safeArea.bottom
+            
+            self.frame(width: usableWidth, height: usableHeight)
+        }
+    }
+    
+    /// iPad-optimized layout
+    func iPadLayout() -> some View {
+        GeometryReader { proxy in
+            let isTablet = ScreenSize.screenWidth >= 744
+            let isLandscape = proxy.size.width > proxy.size.height
+            
+            if isTablet {
+                // Tablet-specific layout
+                self.frame(maxWidth: isLandscape ? .infinity : 600)
+                    .padding(isLandscape ? 32 : 24)
+            } else {
+                // Phone layout
+                self.frame(maxWidth: .infinity)
+                    .padding(ScreenSize.padding())
+            }
+        }
     }
 }
 

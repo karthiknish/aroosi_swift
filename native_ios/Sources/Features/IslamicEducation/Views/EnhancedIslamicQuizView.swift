@@ -3,6 +3,7 @@ import SwiftUI
 #if canImport(UIKit) && canImport(FirebaseFirestore)
 
 @available(iOS 17.0.0, *)
+@MainActor
 struct EnhancedIslamicQuizView: View {
     let quiz: IslamicQuiz
     @ObservedObject private var quizService: IslamicQuizService
@@ -28,9 +29,9 @@ struct EnhancedIslamicQuizView: View {
         Double(currentQuestionIndex) / Double(quiz.questions.count)
     }
     
-    init(quiz: IslamicQuiz, quizService: IslamicQuizService = IslamicQuizService()) {
+    init(quiz: IslamicQuiz, quizService: IslamicQuizService? = nil) {
         self.quiz = quiz
-        self.quizService = quizService
+        self.quizService = quizService ?? IslamicQuizService()
     }
     
     var body: some View {

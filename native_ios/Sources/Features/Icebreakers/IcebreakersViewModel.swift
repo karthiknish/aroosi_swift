@@ -1,5 +1,7 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class IcebreakersViewModel: ObservableObject {
@@ -34,7 +36,11 @@ final class IcebreakersViewModel: ObservableObject {
 
     func load(for userID: String) {
         currentUserID = userID
-        Task { await fetch(didRequestRefresh: false) }
+        featureFlagService.setUserID(userID)
+        Task {
+            await featureFlagService.refresh()
+            await fetch(didRequestRefresh: false)
+        }
     }
 
     func refresh() {
@@ -46,6 +52,7 @@ final class IcebreakersViewModel: ObservableObject {
         
         // Check if feature is enabled
         guard featureFlagService.isEnabled("ENABLE_ICEBREAKERS") else {
+            state.isFeatureEnabled = false
             state.errorMessage = "Icebreaker feature is currently disabled."
             return
         }
@@ -76,8 +83,17 @@ final class IcebreakersViewModel: ObservableObject {
     private func fetch(didRequestRefresh: Bool) async {
         guard let currentUserID else { return }
         
+        if didRequestRefresh {
+            await featureFlagService.refresh()
+        }
+
+        let isEnabled = featureFlagService.isEnabled("ENABLE_ICEBREAKERS")
+        state.isFeatureEnabled = isEnabled
+
         // Check if feature is enabled
-        guard featureFlagService.isEnabled("ENABLE_ICEBREAKERS") else {
+        guard isEnabled else {
+            state.items = []
+            state.savingIdentifiers.removeAll()
             state.errorMessage = "Icebreaker feature is currently disabled."
             state.isLoading = false
             state.isRefreshing = false
@@ -94,6 +110,7 @@ final class IcebreakersViewModel: ObservableObject {
         do {
             let items = try await repository.fetchDailyIcebreakers(for: currentUserID)
             state.items = items
+            state.errorMessage = nil
         } catch {
             logger.error("Failed to load icebreakers: \(error.localizedDescription)")
             state.errorMessage = "We couldn't load today's icebreakers. Pull to refresh to try again."
@@ -112,3 +129,5 @@ final class IcebreakersViewModel: ObservableObject {
         return newState
     }
 }
+
+#endif

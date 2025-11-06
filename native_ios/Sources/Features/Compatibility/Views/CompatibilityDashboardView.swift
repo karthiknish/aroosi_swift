@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if os(iOS)
+
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 #endif
@@ -12,13 +14,25 @@ public struct CompatibilityDashboardView: View {
     @State private var reports: [CompatibilityReport] = []
     @State private var hasCompletedQuestionnaire = false
     @State private var matchUserNames: [String: String] = [:]
-    
+
+    private let profileRepository: (any ProfileRepository)?
+    private let logger = Logger.shared
+
     let userId: String
     let userName: String
     
-    public init(userId: String, userName: String) {
+    public init(
+        userId: String,
+        userName: String,
+        profileRepository: (any ProfileRepository)? = nil
+    ) {
         self.userId = userId
         self.userName = userName
+        #if canImport(FirebaseFirestore)
+        self.profileRepository = profileRepository ?? FirestoreProfileRepository()
+        #else
+        self.profileRepository = profileRepository
+        #endif
     }
     
     public var body: some View {
@@ -67,15 +81,14 @@ public struct CompatibilityDashboardView: View {
                 }
             }
             .sheet(item: $showingScore) { score in
+                let counterpartID = counterpartID(for: score)
                 CompatibilityScoreView(
                     score: score,
                     user1Name: userName,
-                    user2Name: matchUserNames[score.userId2] ?? "Loading..."
+                    user2Name: displayName(for: counterpartID)
                 )
-                .onAppear {
-                    Task {
-                        await fetchMatchUserName(for: score.userId2)
-                    }
+                .task {
+                    await fetchMatchUserName(for: counterpartID)
                 }
             }
         }
@@ -166,8 +179,15 @@ public struct CompatibilityDashboardView: View {
                 .font(AroosiTypography.heading(.h3))
             
             ForEach(reports) { report in
-                ReportCard(report: report) {
+                let counterpartID = counterpartID(for: report)
+                ReportCard(
+                    report: report,
+                    counterpartName: displayName(for: counterpartID)
+                ) {
                     showingScore = report.scores
+                }
+                .task {
+                    await fetchMatchUserName(for: counterpartID)
                 }
             }
         }
@@ -175,6 +195,7 @@ public struct CompatibilityDashboardView: View {
     
     // MARK: - Data Loading
     
+    @MainActor
     private func loadData() async {
         // Check if questionnaire is completed
         do {
@@ -184,9 +205,48 @@ public struct CompatibilityDashboardView: View {
             if hasCompletedQuestionnaire {
                 // Load reports
                 reports = try await service.fetchReports(userId: userId)
+                await ensureMatchNames(for: reports)
             }
         } catch {
             // Error handled by service state
+        }
+    }
+
+    private func counterpartID(for report: CompatibilityReport) -> String {
+        report.userId1 == userId ? report.userId2 : report.userId1
+    }
+
+    private func counterpartID(for score: CompatibilityScore) -> String {
+        score.userId1 == userId ? score.userId2 : score.userId1
+    }
+
+    private func displayName(for counterpartID: String) -> String {
+        matchUserNames[counterpartID] ?? "Match"
+    }
+
+    @MainActor
+    private func ensureMatchNames(for reports: [CompatibilityReport]) async {
+        let ids = Set(reports.map { counterpartID(for: $0) }).filter { !$0.isEmpty }
+        for id in ids {
+            await fetchMatchUserName(for: id)
+        }
+    }
+
+    @MainActor
+    private func fetchMatchUserName(for counterpartID: String) async {
+        guard matchUserNames[counterpartID] == nil else { return }
+
+        guard let profileRepository else {
+            matchUserNames[counterpartID] = "Match"
+            return
+        }
+
+        do {
+            let profile = try await profileRepository.fetchProfile(id: counterpartID)
+            matchUserNames[counterpartID] = profile.displayName
+        } catch {
+            logger.error("Failed to load match user name for \(counterpartID): \(error.localizedDescription)")
+            matchUserNames[counterpartID] = "Match"
         }
     }
 }
@@ -214,6 +274,7 @@ private struct FeatureBullet: View {
 @available(iOS 17.0.0, *)
 private struct ReportCard: View {
     let report: CompatibilityReport
+    let counterpartName: String
     let onTap: () -> Void
     
     var body: some View {
@@ -232,7 +293,7 @@ private struct ReportCard: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Match with User") // TODO: Fetch actual name
+                        Text(counterpartName.isEmpty ? "Match" : counterpartName)
                             .font(AroosiTypography.heading(.h4))
                         
                         Text(report.scores.compatibilityLevel)
@@ -275,44 +336,16 @@ private struct ReportCard: View {
     private var scoreColor: Color {
         switch report.scores.overallScore {
         case 80...100:
-            return .green
+            return AroosiColors.success
         case 60..<80:
-            return .blue
+            return AroosiColors.info
         case 40..<60:
-            return .orange
+            return AroosiColors.warning
         default:
-            return .red
+            return AroosiColors.error
         }
     }
     
-    // MARK: - Helper Functions
-    
-    private func fetchMatchUserName(for userId: String) async {
-        guard matchUserNames[userId] == nil else { return } // Already fetched
-        
-        #if canImport(FirebaseFirestore)
-        do {
-            let db = Firestore.firestore()
-            let document = try await db.collection("users").document(userId).getDocument()
-            
-            if let data = document.data(),
-               let displayName = data["displayName"] as? String {
-                await MainActor.run {
-                    matchUserNames[userId] = displayName
-                }
-            }
-        } catch {
-            print("Failed to fetch user name for \(userId): \(error)")
-            await MainActor.run {
-                matchUserNames[userId] = "Unknown User"
-            }
-        }
-        #else
-        await MainActor.run {
-            matchUserNames[userId] = "Match User"
-        }
-        #endif
-    }
 }
 
 @available(iOS 17, *)
@@ -324,3 +357,5 @@ private struct ReportCard: View {
         )
     }
 }
+
+#endif

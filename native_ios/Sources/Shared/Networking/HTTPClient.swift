@@ -57,7 +57,7 @@ public protocol HTTPClientProtocol {
     func data(for request: HTTPRequest) async throws -> (Data, HTTPURLResponse)
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17.0.0, macOS 12.0, *)
 public final class DefaultHTTPClient: HTTPClientProtocol {
     private let session: URLSession
     private let environment: EnvironmentConfig

@@ -3,9 +3,11 @@ import AuthenticationServices
 import SwiftUI
 import UIKit
 
+@available(iOS 17, *)
 struct AuthView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: AuthViewModel
+    @ObservedObject private var offlineDataManager = OfflineDataManager.shared
     @State private var currentNonce: String?
     let onSignedIn: (UserProfile) -> Void
 
@@ -24,28 +26,37 @@ struct AuthView: View {
                 
                 ResponsiveVStack(width: width) {
                     Text("Sign in with your Apple ID to continue")
-                        .font(AroosiTypography.body())
+                        .font(.body)
                         .multilineTextAlignment(.center)
 
                     SignInWithAppleButton(onRequest: { request in
                         configureRequest(request)
-                    } onCompletion: { result in
+                    }, onCompletion: { result in
                         handleAuthorization(result)
                     })
                     .signInWithAppleButtonStyle(.black)
                     .frame(height: Responsive.buttonHeight(for: width))
-                    .disabled(viewModel.isLoading)
+                    .disabled(viewModel.isLoading || !offlineDataManager.isOnline)
 
                     if viewModel.isLoading {
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .tint(AroosiColors.primary)
+                            .tint(Color.blue)
+                    }
+
+                    if !offlineDataManager.isOnline {
+                        Text("No internet connection. Please check your network and try again.")
+                            .foregroundStyle(Color.orange)
+                            .font(.caption)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .transition(.opacity)
                     }
 
                     if let message = viewModel.errorMessage {
                         Text(message)
-                            .foregroundStyle(AroosiColors.error)
-                            .font(AroosiTypography.caption(width: width))
+                            .foregroundStyle(Color.red)
+                            .font(.caption)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                             .transition(.opacity)
@@ -53,8 +64,8 @@ struct AuthView: View {
 
                     if let profileError = viewModel.profileLoadError {
                         Text(profileError)
-                            .foregroundStyle(AroosiColors.warning)
-                            .font(AroosiTypography.caption(width: width))
+                            .foregroundStyle(Color.orange)
+                            .font(.caption)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                             .transition(.opacity)

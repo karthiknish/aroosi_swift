@@ -199,6 +199,10 @@ private final class MatchRepositoryStub: MatchRepository {
     }
 
     func updateMatch(_ match: Match) async throws {}
+
+    func findMatch(between userID: String, and otherUserID: String) async throws -> Match? {
+        nil
+    }
 }
 
 @available(iOS 15.0, macOS 12.0, *)

@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if os(iOS)
+
 #if canImport(FirebaseFirestore)
 
 @available(iOS 17.0.0, *)
@@ -16,8 +18,8 @@ struct FamilyApprovalView: View {
                 // Summary Card
                 if let summary = service.summary {
                     SummaryCardView(summary: summary)
-                        .padding(.horizontal, AroosiSpacing.md)
-                        .padding(.vertical, AroosiSpacing.sm)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                 }
                 
                 // Tabs
@@ -26,13 +28,13 @@ struct FamilyApprovalView: View {
                     Text("Sent (\(service.sentRequests.count))").tag(1)
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, AroosiSpacing.md)
-                .padding(.vertical, AroosiSpacing.sm)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
                 
                 // Content
                 if service.isLoading {
                     ProgressView()
-                        .tint(AroosiColors.primary)
+                        .tint(Color.blue)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     TabView(selection: $selectedTab) {
@@ -47,7 +49,7 @@ struct FamilyApprovalView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                 }
             }
-            .background(AroosiColors.background)
+            .background(Color(UIColor.systemBackground))
             .navigationTitle("Family Approval")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -139,7 +141,7 @@ private struct SummaryCardView: View {
             }
         }
         .padding()
-        .background(AroosiColors.mutedSystemBackground)
+        .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(12)
     }
 }
@@ -166,7 +168,7 @@ private struct StatBox: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(AroosiColors.cardBackground)
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(8)
     }
 }
@@ -308,12 +310,12 @@ private struct RequestCard: View {
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .background(AroosiColors.surfaceSecondary)
+                .background(Color(UIColor.tertiarySystemBackground))
                 .cornerRadius(8)
             }
         }
         .padding()
-        .background(AroosiColors.cardBackground)
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -343,12 +345,14 @@ private struct StatusBadge: View {
         case .pending: return .orange
         case .approved: return .green
         case .rejected: return .red
-        case .cancelled: return .gray
+        case .cancelled: return Color(.gray)
         }
     }
 }
 
 // MARK: - Empty State
+
+#if os(iOS)
 
 @available(iOS 17.0.0, *)
 private struct EmptyStateView: View {
@@ -376,10 +380,16 @@ private struct EmptyStateView: View {
     }
 }
 
+#endif
+
 // MARK: - Previews
 
+#if os(iOS)
+@available(iOS 17.0.0, *)
 #Preview {
     FamilyApprovalView()
         
 }
+#endif
+#endif
 #endif

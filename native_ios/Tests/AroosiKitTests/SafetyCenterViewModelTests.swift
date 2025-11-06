@@ -65,4 +65,9 @@ private final class MockSafetyRepository: SafetyRepository {
     func report(userID: String, reason: String, details: String?) async throws {}
 
     func status(for userID: String) async throws -> SafetyStatus { SafetyStatus() }
+
+    func fetchSubmittedReports() async throws -> [SafetyReport] {
+        if shouldThrow { throw RepositoryError.networkFailure }
+        return []
+    }
 }

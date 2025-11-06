@@ -21,31 +21,37 @@ struct OnboardingView: View {
     }
 
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    heroImage
-                        .padding(.top, 64)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let isLandscape = Responsive.isLandscape(width: width, height: height)
+            let safeArea = proxy.safeAreaInsets
+            
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: Responsive.orientationSpacing(width: width, height: height, multiplier: isLandscape ? 0.8 : 1.0)) {
+                        heroImage
+                            .padding(.top, isLandscape ? 20 : Responsive.screenPadding(width: width).top)
 
-                    contentCopy
+                        contentCopy
 
-                    actionButtons
-                        .padding(.bottom, 48)
+                        actionButtons
+                            .padding(.bottom, isLandscape ? 20 : Responsive.screenPadding(width: width).bottom)
+                    }
+                    .padding(Responsive.safeAreaPadding(width: width, height: height, safeArea: safeArea))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 32)
-            }
-            .refreshable {
-                contentViewModel.refresh()
-            }
-            .background(AroosiColors.background.ignoresSafeArea())
-
-            if contentViewModel.state.isLoading {
-                ProgressView()
-                    .progressViewStyle(.circular)
+                .refreshable {
+                    contentViewModel.refresh()
+                }
+                .background(Color(UIColor.systemBackground).ignoresSafeArea())
+                .navigationTitle("")
+                .navigationBarHidden(true)
             }
         }
-        .task {
-            contentViewModel.loadIfNeeded()
+        if contentViewModel.state.isLoading {
+            ProgressView()
+                .progressViewStyle(.circular)
         }
         .onChange(of: authViewModel.signedInUser) { _, user in
             guard user != nil else { return }
@@ -58,13 +64,13 @@ struct OnboardingView: View {
             let width = proxy.size.width
             
             VStack(spacing: Responsive.spacing(width: width)) {
-                if let imageURL = contentViewModel.state.content?.imageURL {
+                if let imageURL = contentViewModel.state.content?.heroImageURL {
                     AsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .empty:
                             ProgressView()
                                 .progressViewStyle(.circular)
-                                .tint(AroosiColors.primary)
+                                .tint(Color.blue)
                                 .frame(maxWidth: .infinity)
                         case .success(let image):
                             image
@@ -101,50 +107,51 @@ struct OnboardingView: View {
             
             ResponsiveVStack(width: width) {
                 Text(contentViewModel.state.content?.title ?? "Discover curated matches")
-                    .font(AroosiTypography.heading(.h1, width: width))
+                    .font(.largeTitle.weight(.bold))
                     .multilineTextAlignment(.center)
 
                 Text(contentViewModel.state.content?.tagline ?? "We are fetching the latest story for you.")
-                    .font(AroosiTypography.body(weight: .semibold, size: 18, width: width))
+                    .font(.body.weight(.semibold))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(AroosiColors.muted)
+                    .foregroundStyle(Color.secondary)
 
-            if let error = contentViewModel.state.errorMessage {
-                ResponsiveVStack(spacing: Responsive.spacing(width: width, multiplier: 0.5), width: width) {
-                    Text(error)
-                        .font(AroosiTypography.caption(width: width))
-                        .foregroundStyle(AroosiColors.error)
-                        .multilineTextAlignment(.center)
-                    ResponsiveButton(
-                        title: "Retry",
-                        action: { contentViewModel.refresh() },
-                        style: .outline,
-                        width: width
-                    )
+                if let error = contentViewModel.state.errorMessage {
+                    ResponsiveVStack(spacing: Responsive.spacing(width: width, multiplier: 0.5), width: width) {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(Color.red)
+                            .multilineTextAlignment(.center)
+                        ResponsiveButton(
+                            title: "Retry",
+                            action: { contentViewModel.refresh() },
+                            style: .outline,
+                            width: width
+                        )
+                    }
+                    .padding(.top, Responsive.spacing(width: width, multiplier: 0.5))
                 }
-                .padding(.top, Responsive.spacing(width: width, multiplier: 0.5))
-            }
 
-            if let info = contentViewModel.state.infoMessage {
-                Text(info)
-                    .font(AroosiTypography.caption(width: width))
-                    .foregroundStyle(AroosiColors.muted)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, Responsive.spacing(width: width, multiplier: 0.3))
-            }
+                if let info = contentViewModel.state.infoMessage {
+                    Text(info)
+                        .font(.caption)
+                        .foregroundStyle(Color.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, Responsive.spacing(width: width, multiplier: 0.3))
+                }
 
-            if let profileError = authViewModel.profileLoadError {
-                Text(profileError)
-                    .font(AroosiTypography.caption(width: width))
-                    .foregroundStyle(AroosiColors.warning)
-                    .multilineTextAlignment(.center)
-            }
+                if let profileError = authViewModel.profileLoadError {
+                    Text(profileError)
+                        .font(.caption)
+                        .foregroundStyle(Color.orange)
+                        .multilineTextAlignment(.center)
+                }
 
-            if let authError = authViewModel.errorMessage {
-                Text(authError)
-                    .font(AroosiTypography.caption(width: width))
-                    .foregroundStyle(AroosiColors.error)
-                    .multilineTextAlignment(.center)
+                if let authError = authViewModel.errorMessage {
+                    Text(authError)
+                        .font(.caption)
+                        .foregroundStyle(Color.red)
+                        .multilineTextAlignment(.center)
+                }
             }
         }
     }
@@ -155,10 +162,10 @@ struct OnboardingView: View {
                 Task { await startSystemSignIn() }
             } label: {
                 Text(contentViewModel.state.content?.callToActionTitle ?? "Get Started")
-                    .font(AroosiTypography.body(weight: .semibold, size: 17))
+                    .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AroosiColors.primary)
+                    .background(Color.blue)
                     .foregroundStyle(Color.white)
                     .clipShape(Capsule())
             }
@@ -167,7 +174,7 @@ struct OnboardingView: View {
             if authViewModel.isLoading {
                 ProgressView()
                     .progressViewStyle(.circular)
-                    .tint(AroosiColors.primary)
+                    .tint(Color.blue)
             }
         }
     }

@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-10-27T17:17:39.106Z",
+  "score": 62,
+  "grade": "D",
+  "totalIssues": 11,
+  "issues": {
+    "critical": [],
+    "high": [],
+    "medium": [
+      {
+        "file": "Sources/Shared/Services/Repositories/ProfileSearchRepository.swift",
+        "type": "Database Query",
+        "issue": "Query with limit but no pagination strategy",
+        "impact": "Poor performance with large datasets",
+        "fix": "Implement proper pagination with startAfter cursor"
+      }
+    ],
+    "low": [
+      {
+        "file": "Sources/Features/Cultural/CulturalMatchingView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 13, HStack: 8)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Dashboard/DashboardView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 13, HStack: 8)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/IslamicEducation/Views/ContentDetailView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 15, HStack: 7)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/IslamicEducation/Views/EnhancedIslamicQuizView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 14, HStack: 13)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/IslamicEducation/Views/IslamicEducationListView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 12, HStack: 10)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Onboarding/MatrimonyOnboardingView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 26, HStack: 5)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Profile/EditProfileView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 23, HStack: 9)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Profile/MatrimonyProfileView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 18, HStack: 6)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Settings/AppStoreInfoView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 20, HStack: 5)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      },
+      {
+        "file": "Sources/Features/Settings/DataUsagePolicyView.swift",
+        "type": "View Complexity",
+        "issue": "Excessive container views (VStack: 21, HStack: 6)",
+        "impact": "Unnecessary view overhead",
+        "fix": "Simplify view hierarchy and remove redundant containers"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate": [],
+    "shortTerm": [],
+    "longTerm": [
+      "Implement proper pagination for all database queries",
+      "Extract complex views into separate reusable components",
+      "Implement image resizing and compression for better performance",
+      "Optimize animations to reduce performance impact",
+      "Add performance monitoring with Firebase Performance Monitoring"
+    ]
+  }
+}

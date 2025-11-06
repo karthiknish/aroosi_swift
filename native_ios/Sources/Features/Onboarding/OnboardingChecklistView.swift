@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 #if canImport(FirebaseFirestore)
@@ -208,4 +209,5 @@ private struct ChecklistTile: View {
     })
 }
 
+#endif
 #endif

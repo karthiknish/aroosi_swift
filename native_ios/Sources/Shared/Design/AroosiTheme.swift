@@ -1,8 +1,7 @@
+#if os(iOS)
 import SwiftUI
 import CoreText
-#if os(iOS)
 import UIKit
-#endif
 
 @available(iOS 17.0.0, *)
 public enum AroosiTheme {
@@ -65,6 +64,7 @@ public enum AroosiColors {
     public static let onDark = Color.white
 
     // MARK: - Borders
+    public static let border = Color(hex: 0xE5E7EB)
     public static let borderPrimary = Color(hex: 0xE5E7EB)
 
     // MARK: - Status Colors
@@ -72,6 +72,19 @@ public enum AroosiColors {
     public static let success = Color(hex: 0x7BA17D)
     public static let warning = Color(hex: 0xF59E0B)
     public static let info = Color(hex: 0x3B82F6)
+
+    #if canImport(UIKit)
+    /// Dynamic iOS system background (adapts to light/dark mode)
+    public static let systemBackground = Color(uiColor: .systemBackground)
+    /// Secondary system background for grouped surfaces
+    public static let secondarySystemBackground = Color(uiColor: .secondarySystemBackground)
+    /// Tertiary system background for nested grouped content
+    public static let tertiarySystemBackground = Color(uiColor: .tertiarySystemBackground)
+    /// Muted grouped background, used for cards and search fields
+    public static let mutedSystemBackground = Color(uiColor: .systemGroupedBackground)
+    /// System separator color for subtle dividers
+    public static let separator = Color(uiColor: .separator)
+    #endif
 }
 
 @available(iOS 15.0.15, *)
@@ -122,7 +135,7 @@ public enum AroosiMotionDurations {
 }
 
 /// Animation curves matching Flutter motion constants
-@available(iOS 17.0.15, *)
+@available(iOS 17.0, *)
 public enum AroosiMotionCurves {
     /// Standard ease curve - balanced acceleration/deceleration
     public static let ease: Animation = .easeInOut
@@ -199,6 +212,19 @@ public enum AroosiTypography {
     public static func heading(_ level: HeadingLevel) -> Font {
         Font.custom(headingFontName, size: level.size, relativeTo: .title2)
     }
+    
+    /// Create heading text style with size and weight (backward compatibility)
+    /// - Parameters:
+    ///   - size: Font size
+    ///   - weight: Font weight
+    public static func heading(_ size: CGFloat, weight: BodyWeight = .regular) -> Font {
+        body(weight: weight, size: size)
+    }
+
+    /// Convenience overload to allow labeled size parameter.
+    public static func heading(size: CGFloat, weight: BodyWeight = .regular) -> Font {
+        heading(size, weight: weight)
+    }
 
     /// Create body text style
     /// - Parameters:
@@ -208,10 +234,20 @@ public enum AroosiTypography {
         Font.custom(weight.fontName, size: size, relativeTo: .body)
     }
 
+    /// Convenience overload to accept labeled size arguments used across legacy views.
+    public static func body(size: CGFloat, weight: BodyWeight = .regular) -> Font {
+        body(weight: weight, size: size)
+    }
+
     /// Create caption text style
     /// - Parameter weight: Font weight (default: regular)
     public static func caption(weight: BodyWeight = .regular) -> Font {
         Font.custom(weight.fontName, size: 13, relativeTo: .caption)
+    }
+
+    /// Convenience overload mirroring historic API that allowed explicit size.
+    public static func caption(size: CGFloat, weight: BodyWeight = .regular) -> Font {
+        Font.custom(weight.fontName, size: size, relativeTo: .caption)
     }
     
     // MARK: - Responsive Typography Methods
@@ -616,3 +652,5 @@ public struct AroosiDotsLoadingView: View {
         }
     }
 }
+
+#endif

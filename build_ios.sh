@@ -1,39 +1,48 @@
 #!/bin/bash
 
-# Aroosi iOS Build Script
-# This script builds the Aroosi iOS app with the native assets fix applied
+set -euo pipefail
 
-echo "🚀 Building Aroosi iOS App (iPhone-only)..."
-echo "📱 Device Family: iPhone only"
-echo "🔧 Build Type: $1"
-echo "🔧 Native Assets: Disabled (Flutter 3.35.4 fix)"
+# Native SwiftUI iOS build helper
+# Usage: ./build_ios.sh [debug|release]
 
-case "$1" in
-    "debug")
-        echo "🔨 Building Debug..."
-        flutter build ios --debug --no-codesign --dart-define=FLUTTER_NATIVE_ASSETS=false
+CONFIG_RAW=${1:-release}
+
+case "${CONFIG_RAW,,}" in
+    debug)
+        CONFIG="Debug"
         ;;
-    "profile")
-        echo "🔨 Building Profile (Production Recommended)..."
-        flutter build ios --profile --no-codesign --dart-define=FLUTTER_NATIVE_ASSETS=false
-        ;;
-    "release")
-        echo "⚠️  Release build not recommended due to Flutter 3.35.4 bug"
-        echo "🔨 Building Release with workaround..."
-        flutter build ios --release --no-codesign --dart-define=FLUTTER_NATIVE_ASSETS=false
+    release|profile)
+        CONFIG="Release"
         ;;
     *)
-        echo "Usage: $0 {debug|profile|release}"
-        echo "Recommended: ./build_ios.sh profile"
+        echo "Unknown build configuration: ${CONFIG_RAW}" >&2
+        echo "Usage: $0 [debug|release]" >&2
         exit 1
         ;;
 esac
 
-if [ $? -eq 0 ]; then
-    echo "✅ Build Successful!"
-    echo "📁 Build location: build/ios/iphoneos/Runner.app"
-    echo "🍎 Next steps: Open ios/Runner.xcworkspace in Xcode to archive and upload to App Store"
+PROJECT_PATH="native_ios/iOSApp/AroosiApp.xcodeproj"
+SCHEME="AroosiApp"
+DERIVED_DATA="native_ios/DerivedData"
+
+echo "� Building native iOS app"
+echo "📦 Scheme: ${SCHEME}"
+echo "⚙️  Configuration: ${CONFIG}"
+
+xcodebuild \
+    -project "${PROJECT_PATH}" \
+    -scheme "${SCHEME}" \
+    -configuration "${CONFIG}" \
+    -destination "generic/platform=iOS" \
+    -derivedDataPath "${DERIVED_DATA}" \
+    clean build
+
+APP_PATH="${DERIVED_DATA}/Build/Products/${CONFIG}-iphoneos/${SCHEME}.app"
+
+if [ -d "${APP_PATH}" ]; then
+    echo "✅ Build succeeded"
+    echo "📁 Built app: ${APP_PATH}"
 else
-    echo "❌ Build Failed!"
+    echo "⚠️ Build finished but the expected app bundle was not found." >&2
     exit 1
 fi

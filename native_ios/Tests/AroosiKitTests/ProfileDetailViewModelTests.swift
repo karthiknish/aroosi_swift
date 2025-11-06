@@ -178,6 +178,8 @@ private final class MockSafetyRepository: SafetyRepository {
     func status(for userID: String) async throws -> SafetyStatus {
         status
     }
+
+    func fetchSubmittedReports() async throws -> [SafetyReport] { [] }
 }
 
 @available(iOS 17, macOS 13, *)

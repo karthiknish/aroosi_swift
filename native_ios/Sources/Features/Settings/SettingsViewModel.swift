@@ -1,3 +1,4 @@
+#if os(iOS)
 import Foundation
 
 @available(iOS 17, *)
@@ -153,3 +154,5 @@ final class SettingsViewModel: ObservableObject {
         return "Something went wrong. Please try again."
     }
 }
+
+#endif

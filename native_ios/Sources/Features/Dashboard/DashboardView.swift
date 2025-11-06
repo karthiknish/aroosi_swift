@@ -19,29 +19,58 @@ struct DashboardView: View {
         NavigationStack {
             GeometryReader { proxy in
                 let width = proxy.size.width
-                ScrollView {
-                    VStack(spacing: Responsive.spacing(width: width, multiplier: 1.0)) {
-                        if let info = viewModel.state.infoMessage {
-                            InfoBanner(message: info, onDismiss: viewModel.dismissInfoMessage)
+                let height = proxy.size.height
+                let isLandscape = Responsive.isLandscape(width: width, height: height)
+                let safeArea = proxy.safeAreaInsets
+                
+                if isLandscape {
+                    // Landscape layout: two columns
+                    HStack(spacing: Responsive.iPadSpacing(width: width, height: height)) {
+                        // Left column: greeting and stats
+                        VStack(spacing: Responsive.orientationSpacing(width: width, height: height)) {
+                            if let info = viewModel.state.infoMessage {
+                                InfoBanner(message: info, onDismiss: viewModel.dismissInfoMessage)
+                            }
+                            greetingSection(width: width * 0.45, height: height)
+                            statsSection(width: width * 0.45, height: height)
                         }
-                        greetingSection(width: width)
-                        statsSection(width: width)
-                        quickActionsSection(width: width)
-                        recentMatchesSection(width: width)
-                        quickPicksSection(width: width)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Right column: actions and matches
+                        VStack(spacing: Responsive.orientationSpacing(width: width, height: height)) {
+                            quickActionsSection(width: width * 0.45, height: height)
+                            recentMatchesSection(width: width * 0.45, height: height)
+                            quickPicksSection(width: width * 0.45, height: height)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(Responsive.screenPadding(width: width))
+                    .padding(Responsive.safeAreaPadding(width: width, height: height, safeArea: safeArea))
+                } else {
+                    // Portrait layout: single column
+                    ScrollView {
+                        VStack(spacing: Responsive.spacing(width: width, multiplier: 1.0)) {
+                            if let info = viewModel.state.infoMessage {
+                                InfoBanner(message: info, onDismiss: viewModel.dismissInfoMessage)
+                            }
+                            greetingSection(width: width, height: height)
+                            statsSection(width: width, height: height)
+                            quickActionsSection(width: width, height: height)
+                            recentMatchesSection(width: width, height: height)
+                            quickPicksSection(width: width, height: height)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Responsive.safeAreaPadding(width: width, height: height, safeArea: safeArea))
+                    }
                 }
-                .background(AroosiColors.groupedBackground)
+                .background(Color(UIColor.groupTableViewBackground))
                 .refreshable { viewModel.refresh() }
                 .overlay { loadingOverlay }
             }
-            .background(AroosiColors.groupedBackground)
+            .background(Color(UIColor.groupTableViewBackground))
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
         }
-        .background(AroosiColors.groupedBackground.ignoresSafeArea())
+        .background(Color(UIColor.groupTableViewBackground).ignoresSafeArea())
         .task(id: user.id) {
             viewModel.loadIfNeeded(for: user.id)
         }
@@ -79,7 +108,7 @@ struct DashboardView: View {
         }
     }
 
-    private func greetingSection(width: CGFloat) -> some View {
+    private func greetingSection(width: CGFloat, height: CGFloat) -> some View {
         let displayName = viewModel.state.profile?.displayName.nonEmpty ?? user.displayName
         let location = viewModel.state.profile?.location?.nonEmpty
 
@@ -102,7 +131,7 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func statsSection(width: CGFloat) -> some View {
+    private func statsSection(width: CGFloat, height: CGFloat) -> some View {
         let stackSpacing = Responsive.isLargeScreen(width: width) ? AroosiSpacing.lg : AroosiSpacing.md
         let content = Group {
             StatCard(title: "Matches",
@@ -125,7 +154,7 @@ struct DashboardView: View {
         }
     }
 
-    private func quickActionsSection(width: CGFloat) -> some View {
+    private func quickActionsSection(width: CGFloat, height: CGFloat) -> some View {
         let isLarge = Responsive.isLargeScreen(width: width)
         let featureFlagService = FeatureFlagService.shared
         
@@ -135,11 +164,11 @@ struct DashboardView: View {
 
             Group {
                 NavigationLink {
-                    SearchView(user: user)
+                    HomeView(user: user)
                 } label: {
-                    ActionCard(title: "Discover Profiles",
-                               subtitle: "Search by interests",
-                               systemImage: "magnifyingglass")
+                    ActionCard(title: "Home Hub",
+                               subtitle: "Catch up and manage your journey",
+                               systemImage: "house.fill")
                 }
 
                 NavigationLink {
@@ -173,7 +202,7 @@ struct DashboardView: View {
         }
     }
 
-    private func recentMatchesSection(width: CGFloat) -> some View {
+    private func recentMatchesSection(width: CGFloat, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Matches")
@@ -191,8 +220,8 @@ struct DashboardView: View {
                     .foregroundStyle(AroosiColors.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                VStack(spacing: 12) {
-                    ForEach(viewModel.state.recentMatches) { item in
+                LazyVStack(spacing: 12) {
+                    ForEach(viewModel.state.recentMatches, id: \.id) { item in
                         NavigationLink {
                             ChatView(currentUser: user,
                                      item: item,
@@ -207,7 +236,7 @@ struct DashboardView: View {
         }
     }
 
-    private func quickPicksSection(width: CGFloat) -> some View {
+    private func quickPicksSection(width: CGFloat, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Quick Picks")
@@ -226,7 +255,7 @@ struct DashboardView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(viewModel.state.quickPicks) { profile in
+                        ForEach(viewModel.state.quickPicks, id: \.id) { profile in
                             QuickPickCard(profile: profile,
                                           isSending: viewModel.state.isSendingInterest(for: profile.id),
                                           isSent: viewModel.state.hasSentInterest(to: profile.id),
@@ -444,6 +473,8 @@ private struct QuickPickCard: View {
             .buttonStyle(.borderedProminent)
             .tint(AroosiColors.primary)
             .disabled(isSending || isSent)
+            .accessibilityLabel(isSent ? "Interest Sent" : "Send Interest")
+            .accessibilityHint(isSent ? "You have already sent interest to this profile" : "Double tap to send interest to this profile")
         }
         .padding()
         .frame(width: 200, alignment: .leading)
@@ -484,7 +515,7 @@ private struct QuickPickCard: View {
 }
 
 @available(iOS 17, *)
-private struct InfoBanner: View {
+private struct DashboardInfoBanner: View {
     let message: String
     let onDismiss: () -> Void
 

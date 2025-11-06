@@ -53,11 +53,33 @@ struct MatchesView: View {
     private var content: some View {
         List {
             if let error = viewModel.state.errorMessage {
-                unavailableView(
-                    title: "Unable to Load",
-                    message: error,
-                    systemImage: "exclamationmark.triangle"
-                )
+                VStack(spacing: 12) {
+                    unavailableView(
+                        title: "Unable to Load",
+                        message: error,
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    
+                    Button {
+                        viewModel.refresh()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Retry Loading Matches")
+                        }
+                        .font(.body.weight(.medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(AroosiColors.primary)
+                        .clipShape(Capsule())
+                    }
+                    .padding(.top, 8)
+                    .accessibilityLabel("Retry Loading Matches")
+                    .accessibilityHint("Double tap to retry loading your matches")
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else if viewModel.state.isEmpty {
                 unavailableView(
                     title: "No Matches Yet",

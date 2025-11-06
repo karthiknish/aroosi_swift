@@ -1,3 +1,4 @@
+#if os(iOS)
 import Foundation
 
 @available(iOS 17, *)
@@ -113,3 +114,5 @@ private extension String {
         return trimmed.isEmpty ? nil : trimmed
     }
 }
+
+#endif

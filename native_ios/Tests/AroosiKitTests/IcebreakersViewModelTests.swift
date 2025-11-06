@@ -46,6 +46,31 @@ final class IcebreakersViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.state.items.first?.isAnswered ?? false)
         XCTAssertEqual(viewModel.state.items.first?.currentAnswer, "This is my answer")
     }
+
+    func testLoadWhenFeatureDisabledClearsItems() async {
+        let repository = IcebreakerRepositoryStub()
+        repository.items = [IcebreakerItem(id: "q1", text: "Question 1")]
+
+        let featureFlagService = FeatureFlagService(
+            configProvider: StubConfigProvider(config: makeConfig(featureFlags: ["enable_icebreakers": false])),
+            remoteStore: nil
+        )
+
+        let viewModel = IcebreakersViewModel(repository: repository, featureFlagService: featureFlagService)
+        viewModel.load(for: "user")
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertTrue(viewModel.state.items.isEmpty)
+        XCTAssertFalse(viewModel.state.isFeatureEnabled)
+        XCTAssertEqual(viewModel.state.errorMessage, "Icebreaker feature is currently disabled.")
+    }
+
+    private func makeConfig(featureFlags: [String: Bool]) -> AppConfig {
+        let environment = EnvironmentConfig(environment: .development,
+                                            apiBaseURL: URL(string: "https://example.com")!,
+                                            featureFlags: featureFlags)
+        return AppConfig(environment: environment, secrets: Secrets(values: [:]))
+    }
 }
 
 private final class IcebreakerRepositoryStub: IcebreakerRepository {
@@ -63,4 +88,11 @@ private final class IcebreakerRepositoryStub: IcebreakerRepository {
     }
 
     func fetchAnswers(for userID: String) async throws -> [IcebreakerAnswer] { [] }
+}
+
+@available(iOS 17, macOS 13, *)
+private struct StubConfigProvider: AppConfigProviding {
+    let config: AppConfig
+
+    func load() throws -> AppConfig { config }
 }

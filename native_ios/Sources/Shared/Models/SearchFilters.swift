@@ -7,19 +7,22 @@ public struct SearchFilters: Equatable {
     public var maxAge: Int?
     public var preferredGender: String?
     public var pageSize: Int?
+    public var interests: Set<String>
 
     public init(query: String? = nil,
                 city: String? = nil,
                 minAge: Int? = nil,
                 maxAge: Int? = nil,
                 preferredGender: String? = nil,
-                pageSize: Int? = nil) {
+                pageSize: Int? = nil,
+                interests: Set<String> = []) {
         self.query = query?.nonEmpty
         self.city = city?.nonEmpty
         self.minAge = minAge
         self.maxAge = maxAge
         self.preferredGender = preferredGender?.nonEmpty
         self.pageSize = pageSize
+        self.interests = SearchFilters.normalize(interests: interests)
     }
 
     public var trimmedQuery: String? {
@@ -55,6 +58,22 @@ public struct SearchFilters: Equatable {
         var next = self
         next.pageSize = pageSize
         return next
+    }
+
+    public func updating(interests: Set<String>) -> SearchFilters {
+        var next = self
+        next.interests = SearchFilters.normalize(interests: interests)
+        return next
+    }
+}
+
+private extension SearchFilters {
+    static func normalize(interests: Set<String>) -> Set<String> {
+        Set(
+            interests
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
     }
 }
 

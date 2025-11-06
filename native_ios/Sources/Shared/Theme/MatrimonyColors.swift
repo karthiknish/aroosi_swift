@@ -80,42 +80,51 @@ struct MatrimonyTheme {
         // This would be called at app startup
     }
     
-    // Button Styles
-    static let primaryButtonStyle = PrimitiveButtonStyle { configuration in
-        configuration.label
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(MatrimonyColors.matrimonyPrimaryGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
+    // Button Styles - TODO: Fix PrimitiveButtonStyle implementation
+    // static let primaryButtonStyle = PrimitiveButtonStyle { configuration in
+    //     configuration.label
+    //         .font(.system(size: 16, weight: .semibold))
+    //         .foregroundStyle(.white)
+    //         .frame(maxWidth: .infinity)
+    //         .padding(.vertical, 16)
+    //         .background(MatrimonyColors.matrimonyPrimaryGradient)
+    //         .clipShape(RoundedRectangle(cornerRadius: 12))
+    //         .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+    //         .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    // }
     
-    static let secondaryButtonStyle = PrimitiveButtonStyle { configuration in
-        configuration.label
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(MatrimonyColors.matrimonyPrimary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(MatrimonyColors.matrimonySecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
+    // static let secondaryButtonStyle = PrimitiveButtonStyle { configuration in
+    //     configuration.label
+    //         .font(.system(size: 16, weight: .semibold))
+    //         .foregroundStyle(MatrimonyColors.matrimonyPrimary)
+    //         .frame(maxWidth: .infinity)
+    //         .padding(.vertical, 16)
+    //         .background(MatrimonyColors.matrimonySecondary)
+    //         .clipShape(RoundedRectangle(cornerRadius: 12))
+    //         .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+    //         .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    // }
     
-    // Card Styles
-    static let primaryCardStyle = RoundedRectangle(cornerRadius: 16)
-        .fill(Color.white)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    // Card Styles - TODO: Fix 'some View' property definitions
+    // static let primaryCardStyle = RoundedRectangle(cornerRadius: 16)
+    //     .fill(Color.white)
+    //     .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
     
-    static let elevatedCardStyle = RoundedRectangle(cornerRadius: 16)
-        .fill(Color.white)
-        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+    // static let elevatedCardStyle = RoundedRectangle(cornerRadius: 16)
+    //     .fill(Color.white)
+    //     .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
 }
 
 // MARK: - Typography for Matrimony
+
+// TODO: Move these enum definitions to appropriate location
+enum HeadingSize {
+    case h1, h2, h3, h4, h5, h6
+}
+
+enum BodySize {
+    case small, medium, large
+}
 
 @available(iOS 17, *)
 struct MatrimonyTypography {
@@ -169,40 +178,52 @@ struct MatrimonyTypography {
 @available(iOS 17, *)
 struct MatrimonyComponentStyles {
     // Profile Card Style
-    static let profileCardStyle = RoundedRectangle(cornerRadius: 20)
-        .fill(Color.white)
-        .shadow(color: MatrimonyColors.matrimonyPrimary.opacity(0.1), radius: 15, x: 0, y: 8)
+    static func profileCardStyle() -> some View {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(Color.white)
+            .shadow(color: MatrimonyColors.matrimonyPrimary.opacity(0.1), radius: 15, x: 0, y: 8)
+    }
     
     // Sacred Badge Style
-    static let sacredBadgeStyle = Capsule()
-        .fill(MatrimonyColors.matrimonySacredGradient)
-        .shadow(color: MatrimonyColors.matrimonySacred.opacity(0.3), radius: 4, x: 0, y: 2)
+    static func sacredBadgeStyle() -> some View {
+        Capsule()
+            .fill(MatrimonyColors.matrimonySacredGradient)
+            .shadow(color: MatrimonyColors.matrimonySacred.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
     
     // Family Badge Style
-    static let familyBadgeStyle = Capsule()
-        .fill(MatrimonyColors.matrimonyFamily)
-        .shadow(color: MatrimonyColors.matrimonyFamily.opacity(0.3), radius: 4, x: 0, y: 2)
+    static func familyBadgeStyle() -> some View {
+        Capsule()
+            .fill(MatrimonyColors.matrimonyFamily)
+            .shadow(color: MatrimonyColors.matrimonyFamily.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
     
     // Tradition Badge Style
-    static let traditionBadgeStyle = Capsule()
-        .fill(MatrimonyColors.matrimonyTradition)
-        .shadow(color: MatrimonyColors.matrimonyTradition.opacity(0.3), radius: 4, x: 0, y: 2)
+    static func traditionBadgeStyle() -> some View {
+        Capsule()
+            .fill(MatrimonyColors.matrimonyTradition)
+            .shadow(color: MatrimonyColors.matrimonyTradition.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
     
     // Input Field Style
-    static let inputFieldStyle = RoundedRectangle(cornerRadius: 12)
-        .stroke(MatrimonyColors.matrimonySecondary, lineWidth: 1)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-        )
+    static func inputFieldStyle() -> some View {
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(MatrimonyColors.matrimonySecondary, lineWidth: 1)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+            )
+    }
     
     // Selected Input Field Style
-    static let selectedInputFieldStyle = RoundedRectangle(cornerRadius: 12)
-        .stroke(MatrimonyColors.matrimonyPrimary, lineWidth: 2)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(MatrimonyColors.matrimonyPrimary.opacity(0.05))
-        )
+    static func selectedInputFieldStyle() -> some View {
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(MatrimonyColors.matrimonyPrimary, lineWidth: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(MatrimonyColors.matrimonyPrimary.opacity(0.05))
+            )
+    }
 }
 
 // MARK: - Animation Constants

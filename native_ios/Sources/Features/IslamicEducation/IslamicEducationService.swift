@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+#if os(iOS)
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
@@ -133,6 +134,11 @@ public final class IslamicEducationService: ObservableObject {
         } catch {
             Logger.shared.error("Failed to load user progress: \(error)")
         }
+    }
+
+    public func clearUserState() {
+        userProgress = [:]
+        bookmarkedContent = []
     }
     
     public func markAsViewed(contentId: String, userId: String) async {
@@ -276,7 +282,7 @@ public final class IslamicEducationService: ObservableObject {
                     tags: content.tags,
                     isFeatured: content.isFeatured,
                     viewCount: content.viewCount,
-                    likeCount: (content.likeCount ?? 0) + (isLiked ? 1 : -1),
+                    likeCount: max(content.likeCount + (isLiked ? 1 : -1), 0),
                     bookmarkCount: content.bookmarkCount,
                     quiz: content.quiz,
                     relatedContent: content.relatedContent
@@ -306,8 +312,8 @@ public final class IslamicEducationService: ObservableObject {
         
         // Sort by engagement metrics
         let sorted = content.sorted { lhs, rhs in
-            let lhsScore = (lhs.viewCount ?? 0) + (lhs.likeCount ?? 0) * 2 + (lhs.bookmarkCount ?? 0) * 3
-            let rhsScore = (rhs.viewCount ?? 0) + (rhs.likeCount ?? 0) * 2 + (rhs.bookmarkCount ?? 0) * 3
+            let lhsScore = lhs.viewCount + lhs.likeCount * 2 + lhs.bookmarkCount * 3
+            let rhsScore = rhs.viewCount + rhs.likeCount * 2 + rhs.bookmarkCount * 3
             return lhsScore > rhsScore
         }
         
@@ -429,5 +435,7 @@ public struct QuizResult: Equatable {
         self.totalQuestions = totalQuestions
         self.passed = passed
     }
+
 }
+#endif
 #endif

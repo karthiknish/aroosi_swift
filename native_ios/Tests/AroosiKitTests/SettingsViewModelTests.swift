@@ -11,15 +11,13 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         let profile = ProfileSummary(id: "user-1", displayName: "Aisha")
         let settings = UserSettings(userID: "user-1", pushNotificationsEnabled: true, emailUpdatesEnabled: false, supportEmail: "help@example.com")
         profileRepository.profiles[profile.id] = profile
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
 
         viewModel.observe(userID: "user-1")
         await Task.yield()
@@ -37,14 +35,12 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         let initial = UserSettings(userID: "user-1", pushNotificationsEnabled: false, emailUpdatesEnabled: false)
         settingsRepository.send(initial)
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
         viewModel.observe(userID: "user-1")
         await waitForState(viewModel) { $0.settings != nil }
 
@@ -59,15 +55,13 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         settingsRepository.shouldFailUpdate = true
         let initial = UserSettings(userID: "user-1", pushNotificationsEnabled: false, emailUpdatesEnabled: false)
         settingsRepository.send(initial)
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
         viewModel.observe(userID: "user-1")
         await waitForState(viewModel) { $0.settings != nil }
 
@@ -82,14 +76,12 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         authService.shouldFailSignOut = true
         settingsRepository.send(UserSettings(userID: "user-1", pushNotificationsEnabled: false, emailUpdatesEnabled: false))
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
 
         let success = await viewModel.signOut()
 
@@ -101,13 +93,11 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         settingsRepository.send(UserSettings(userID: "user-1", pushNotificationsEnabled: false, emailUpdatesEnabled: false))
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
 
         let success = await viewModel.deleteAccount(password: "pass123", reason: "testing")
 
@@ -121,45 +111,17 @@ final class SettingsViewModelTests: XCTestCase {
         let profileRepository = ProfileRepositoryStub()
         let settingsRepository = UserSettingsRepositoryStub()
         let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
         authService.deleteAccountResult = .failure(TestError.operationFailed)
         settingsRepository.send(UserSettings(userID: "user-1", pushNotificationsEnabled: false, emailUpdatesEnabled: false))
 
         let viewModel = SettingsViewModel(profileRepository: profileRepository,
                                           settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
+                          authService: authService)
 
         let success = await viewModel.deleteAccount(password: nil, reason: nil)
 
         XCTAssertFalse(success)
         XCTAssertNotNil(viewModel.state.dangerErrorMessage)
-    }
-
-    func testObserveLoadsSubscriptionStatus() async {
-        let profileRepository = ProfileRepositoryStub()
-        let settingsRepository = UserSettingsRepositoryStub()
-        let authService = AuthServiceStub()
-        let subscriptionRepository = SubscriptionRepositoryStub()
-        let expectedStatus = SubscriptionStatus(planIdentifier: "gold",
-                                               planName: "Gold",
-                                               isActive: true,
-                                               isTrial: false,
-                                               renewsAutomatically: true,
-                                               expiresAt: Date().addingTimeInterval(86_400),
-                                               managementURL: URL(string: "https://example.com/manage"))
-        subscriptionRepository.status = expectedStatus
-
-        let viewModel = SettingsViewModel(profileRepository: profileRepository,
-                                          settingsRepository: settingsRepository,
-                                          authService: authService,
-                                          subscriptionRepository: subscriptionRepository)
-
-        viewModel.observe(userID: "user-1")
-        await waitForState(viewModel) { !$0.isLoadingSubscription }
-
-        XCTAssertEqual(viewModel.state.subscriptionStatus, expectedStatus)
-        XCTAssertFalse(viewModel.state.isLoadingSubscription)
     }
 
     private func waitForState(_ viewModel: SettingsViewModel,
@@ -288,30 +250,5 @@ private final class UserSettingsRepositoryStub: UserSettingsRepository {
         } else {
             pendingSettings.append(settings)
         }
-    }
-}
-
-@available(macOS 13.0, iOS 17.0, *)
-@preconcurrency
-private final class SubscriptionRepositoryStub: SubscriptionRepository {
-    var status: SubscriptionStatus = SubscriptionStatus(planIdentifier: "free",
-                                                         planName: "Free",
-                                                         isActive: false,
-                                                         isTrial: false,
-                                                         renewsAutomatically: false,
-                                                         expiresAt: nil,
-                                                         managementURL: nil)
-    var manageURL: URL? = URL(string: "https://example.com/manage")
-    var shouldThrow = false
-
-    func fetchStatus(for userID: String) async throws -> SubscriptionStatus {
-        if shouldThrow {
-            throw TestError.operationFailed
-        }
-        return status
-    }
-
-    func managementURL(for userID: String) -> URL? {
-        manageURL
     }
 }

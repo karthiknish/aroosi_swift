@@ -1,7 +1,16 @@
 import Foundation
 import FirebaseFirestore
 
+public enum CompatibilityRepositoryError: Error {
+    case invalidResponse
+    case documentNotFound
+    case encodingError
+    case unknown
+}
+
 /// Repository for managing compatibility responses and reports in Firestore
+#if os(iOS)
+
 @available(iOS 17, *)
 public struct CompatibilityRepository {
     
@@ -127,7 +136,8 @@ public struct CompatibilityRepository {
         status: ApprovalStatus
     ) async throws {
         // Optimized: Use transaction for atomic read-modify-write
-        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+        if #available(iOS 15.0, macOS 10.15, *) {
+            _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
             let docRef = self.reportsCollection.document(reportId)
             let snapshot: DocumentSnapshot
             do {
@@ -151,6 +161,9 @@ public struct CompatibilityRepository {
             
             return nil
         })
+        } else {
+            throw CompatibilityRepositoryError.unknown
+        }
     }
     
     // MARK: - Encoding/Decoding Helpers
@@ -177,7 +190,7 @@ public struct CompatibilityRepository {
     private func decodeResponse(from data: [String: Any], userId: String) throws -> CompatibilityResponse {
         guard let responsesData = data["responses"] as? [String: Any],
               let completedAtTimestamp = data["completedAt"] as? Timestamp else {
-            throw CompatibilityError.invalidResponse
+            throw CompatibilityRepositoryError.invalidResponse
         }
         
         var responses: [String: ResponseValue] = [:]
@@ -219,7 +232,7 @@ public struct CompatibilityRepository {
               let userId2 = data["userId2"] as? String,
               let generatedAtTimestamp = data["generatedAt"] as? Timestamp,
               let scoresData = data["scores"] as? [String: Any] else {
-            throw CompatibilityError.invalidResponse
+            throw CompatibilityRepositoryError.invalidResponse
         }
         
         let isShared = data["isShared"] as? Bool ?? false
@@ -261,7 +274,7 @@ public struct CompatibilityRepository {
         guard let overallScore = data["overallScore"] as? Double,
               let categoryScores = data["categoryScores"] as? [String: Double],
               let calculatedAtTimestamp = data["calculatedAt"] as? Timestamp else {
-            throw CompatibilityError.invalidResponse
+            throw CompatibilityRepositoryError.invalidResponse
         }
         
         let detailedBreakdown = data["detailedBreakdown"] as? [String: Double]
@@ -297,7 +310,7 @@ public struct CompatibilityRepository {
               let createdAtTimestamp = data["createdAt"] as? Timestamp,
               let statusString = data["approvalStatus"] as? String,
               let status = FamilyFeedbackApprovalStatus(rawValue: statusString) else {
-            throw CompatibilityError.invalidResponse
+            throw CompatibilityRepositoryError.invalidResponse
         }
         
         return FamilyFeedback(
@@ -311,3 +324,4 @@ public struct CompatibilityRepository {
         )
     }
 }
+#endif

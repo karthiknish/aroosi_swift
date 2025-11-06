@@ -6,5 +6,6 @@ public enum RepositoryError: Error, Equatable {
     case permissionDenied
     case networkFailure
     case alreadyExists
+    case unsupportedPlatform
     case unknown
 }

@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 #if canImport(FirebaseFirestore)
@@ -50,6 +51,15 @@ struct IslamicEducationListView: View {
             // Load user progress when auth is available
             if let userId = authService.currentUser?.uid {
                 await service.loadUserProgress(userId: userId)
+            }
+        }
+        .onChange(of: authService.currentUser?.uid) { newValue in
+            Task {
+                if let userId = newValue {
+                    await service.loadUserProgress(userId: userId)
+                } else {
+                    await service.clearUserState()
+                }
             }
         }
     }
@@ -116,7 +126,44 @@ struct IslamicEducationListView: View {
                 .fontWeight(.bold)
                 .padding(.horizontal)
             
-            if searchResults.isEmpty {
+            if service.isLoading && isSearching {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(AroosiColors.primary)
+                    Text("Searching Islamic education content…")
+                        .font(.caption)
+                        .foregroundStyle(Color.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else if let error = service.error, isSearching {
+                VStack(spacing: 12) {
+                    ContentUnavailableView(
+                        "Search Error",
+                        systemImage: "exclamationmark.magnifyingglass",
+                        description: Text(error.localizedDescription)
+                    )
+                    
+                    Button {
+                        performSearch()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Retry Search")
+                        }
+                        .font(.body.weight(.medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(AroosiColors.primary)
+                        .clipShape(Capsule())
+                    }
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else if searchResults.isEmpty && isSearching {
                 ContentUnavailableView(
                     "No Results",
                     systemImage: "magnifyingglass",
@@ -163,7 +210,7 @@ private struct FeaturedContentCard: View {
         VStack(alignment: .leading, spacing: 8) {
             // Thumbnail
             if let imageUrl = content.content.images?.first?.url {
-                AsyncImage(url: URL(string: imageUrl)) { image in
+                AsyncImage(url: imageUrl) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -192,7 +239,7 @@ private struct FeaturedContentCard: View {
                     Spacer()
                     HStack(spacing: 4) {
                         Image(systemName: "eye")
-                        Text("\(content.viewCount ?? 0)")
+                        Text("\(content.viewCount)")
                     }
                 }
                 .font(.caption2)
@@ -217,7 +264,7 @@ private struct CategoryCard: View {
         VStack(spacing: 12) {
             Image(systemName: category.icon)
                 .font(.system(size: 32))
-                .foregroundStyle(.aroosi)
+                .foregroundStyle(AroosiColors.primary)
             
             Text(category.displayName)
                 .font(.subheadline)
@@ -227,7 +274,7 @@ private struct CategoryCard: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 120)
-        .background(AroosiColors.mutedSystemBackground)
+        .background(Color.secondarySystemBackground)
         .cornerRadius(12)
     }
 }
@@ -242,7 +289,7 @@ private struct ContentListRow: View {
         HStack(spacing: 12) {
             // Thumbnail
             if let imageUrl = content.content.images?.first?.url {
-                AsyncImage(url: URL(string: imageUrl)) { image in
+                AsyncImage(url: imageUrl) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -272,11 +319,11 @@ private struct ContentListRow: View {
                     HStack(spacing: 12) {
                         HStack(spacing: 4) {
                             Image(systemName: "eye")
-                            Text("\(content.viewCount ?? 0)")
+                            Text("\(content.viewCount)")
                         }
                         HStack(spacing: 4) {
                             Image(systemName: "heart")
-                            Text("\(content.likeCount ?? 0)")
+                            Text("\(content.likeCount)")
                         }
                     }
                 }
@@ -334,7 +381,7 @@ private struct ProgressSummaryView: View {
             }
         }
         .padding()
-        .background(AroosiColors.mutedSystemBackground)
+        .background(Color.secondarySystemBackground)
         .cornerRadius(12)
     }
 }
@@ -391,7 +438,7 @@ private struct SearchBar: View {
             }
         }
         .padding(10)
-        .background(AroosiColors.mutedSystemBackground)
+        .background(Color.secondarySystemBackground)
         .cornerRadius(10)
     }
 }
@@ -417,4 +464,5 @@ extension EducationCategory {
     IslamicEducationListView()
         
 }
+#endif
 #endif

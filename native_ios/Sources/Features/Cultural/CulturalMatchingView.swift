@@ -5,6 +5,7 @@ import SwiftUI
 struct CulturalMatchingView: View {
     let user: UserProfile
     @StateObject private var viewModel: CulturalMatchingViewModel
+    @State private var showingQuestionnaire = false
 
     @MainActor
     init(user: UserProfile, viewModel: CulturalMatchingViewModel? = nil) {
@@ -55,6 +56,12 @@ struct CulturalMatchingView: View {
         }
         .task(id: user.id) {
             viewModel.load(for: user.id)
+        }
+        .sheet(isPresented: $showingQuestionnaire) {
+            CompatibilityQuestionnaireView(userId: user.id) {
+                showingQuestionnaire = false
+                viewModel.refresh()
+            }
         }
     }
 
@@ -107,10 +114,8 @@ struct CulturalMatchingView: View {
                     .foregroundStyle(AroosiColors.muted)
             }
 
-            NavigationLink {
-                Text("Assessment coming soon")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(AroosiColors.background)
+            Button {
+                showingQuestionnaire = true
             } label: {
                 Label("Update Preferences", systemImage: "pencil")
                     .font(AroosiTypography.caption(weight: .semibold))

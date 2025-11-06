@@ -8,6 +8,7 @@ struct ChatView: View {
     let onUnreadCountReset: () -> Void
     private let conversationService: any ConversationServicing
     @StateObject private var viewModel: ChatViewModel
+    @ObservedObject private var offlineDataManager = OfflineDataManager.shared
     @State private var conversationID: String?
     @State private var scrollPosition: ChatMessage.ID?
     @State private var autoScrollEnabled = true
@@ -97,6 +98,10 @@ struct ChatView: View {
                     LazyVStack(spacing: 12) {
                         if let counterpart = item.counterpartProfile {
                             conversationHeader(for: counterpart)
+                        }
+                        
+                        if !offlineDataManager.isOnline {
+                            offlineStatusBanner
                         }
 
                         if viewModel.state.isLoading && viewModel.state.messages.isEmpty {
@@ -440,6 +445,23 @@ struct ChatView: View {
         }
 
         isEnsuringConversation = false
+    }
+    
+    private var offlineStatusBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.caption)
+                .foregroundStyle(.white)
+            
+            Text("Offline - Messages will be sent when connection is restored")
+                .font(.caption)
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.9))
+        .clipShape(Capsule())
+        .padding(.horizontal, 16)
     }
 }
 

@@ -91,13 +91,23 @@ public struct EnvironmentConfigLoader: EnvironmentConfigLoading {
     }
 
     private func loadFeatureFlags(for environment: AppEnvironment) -> [String: Bool] {
-        let prefix = "FEATURE_FLAG_"
+        let featureFlagPrefix = "FEATURE_FLAG_"
+        let enablePrefix = "ENABLE_"
         var flags: [String: Bool] = [:]
 
-        for (key, value) in environmentVariables where key.hasPrefix(prefix) {
-            let normalizedKey = key.replacingOccurrences(of: prefix, with: "").lowercased()
-            let boolValue = (value as NSString).boolValue
-            flags[normalizedKey] = boolValue
+        for (key, value) in environmentVariables {
+            if key.hasPrefix(featureFlagPrefix) {
+                let normalizedKey = key.replacingOccurrences(of: featureFlagPrefix, with: "").lowercased()
+                let boolValue = (value as NSString).boolValue
+                flags[normalizedKey] = boolValue
+                continue
+            }
+
+            if key.hasPrefix(enablePrefix) {
+                let normalizedKey = key.lowercased()
+                let boolValue = (value as NSString).boolValue
+                flags[normalizedKey] = boolValue
+            }
         }
 
         // Common defaults per environment can be defined here if needed.

@@ -4,7 +4,6 @@ import Combine
 
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
-import FirebaseAuth
 #endif
 
 @available(iOS 17, *)
@@ -16,12 +15,12 @@ class MatrimonyProfileViewModel: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
     
-    private let user: User
+    private let userID: String
     private let matrimonyService: MatrimonyProfileService
     private var cancellables = Set<AnyCancellable>()
     
-    init(user: User, matrimonyService: MatrimonyProfileService = DefaultMatrimonyProfileService()) {
-        self.user = user
+    init(userID: String, matrimonyService: MatrimonyProfileService = DefaultMatrimonyProfileService()) {
+        self.userID = userID
         self.matrimonyService = matrimonyService
         
         loadProfile()
@@ -36,7 +35,7 @@ class MatrimonyProfileViewModel: ObservableObject {
     func refreshProfile() async {
         do {
             isLoading = true
-            profile = try await matrimonyService.getMatrimonyProfile(for: user.id)
+            profile = try await matrimonyService.getMatrimonyProfile(for: userID)
         } catch {
             errorMessage = "Failed to load profile: \(error.localizedDescription)"
             showError = true
@@ -239,13 +238,16 @@ class DefaultMatrimonyProfileService: MatrimonyProfileService {
                 "familyType": profile.familyType ?? NSNull(),
                 "familyStatus": profile.familyStatus ?? NSNull(),
                 "financialStatus": profile.financialStatus ?? NSNull(),
-                "education": profile.education,
-                "occupation": profile.occupation,
-                "income": profile.income,
-                "religiousPreference": profile.religiousPreference.rawValue,
-                "about": profile.about,
-                "interests": profile.interests,
-                "photos": profile.photos.map { $0.absoluteString },
+                "educationLevel": profile.educationLevel?.rawValue ?? NSNull(),
+                "college": profile.college ?? NSNull(),
+                "occupation": profile.occupation ?? NSNull(),
+                "company": profile.company ?? NSNull(),
+                "income": profile.annualIncome ?? NSNull(),
+                "religion": profile.religion?.rawValue ?? NSNull(),
+                "religiousPractices": profile.religiousPractices ?? NSNull(),
+                "motherTongue": profile.motherTongue ?? NSNull(),
+                "community": profile.community ?? NSNull(),
+                "photos": profile.profilePhotoURL.map { [$0.absoluteString] } ?? [],
                 "phoneNumber": profile.phoneNumber ?? NSNull(),
                 "email": profile.email ?? NSNull(),
                 "profileCompleteness": profile.profileCompleteness,
@@ -295,18 +297,21 @@ class DefaultMatrimonyProfileService: MatrimonyProfileService {
         }
         
         let marriageIntentionRaw = data["marriageIntention"] as? String
-        let marriageIntention = MarriageIntention(rawValue: marriageIntentionRaw ?? "firstMarriage") ?? .firstMarriage
-        
-        let religiousPreferenceRaw = data["religiousPreference"] as? String
-        let religiousPreference = Religion(rawValue: religiousPreferenceRaw ?? "islam") ?? .islam
-        
+        let marriageIntention = marriageIntentionRaw.flatMap { MarriageIntention(rawValue: $0) }
+
+        let religionRaw = (data["religion"] as? String) ?? (data["religiousPreference"] as? String)
+        let religion = religionRaw.flatMap { Religion(rawValue: $0) }
+
         let familyValuesRaw = data["familyValues"] as? [String] ?? []
         let familyValues = familyValuesRaw.compactMap { FamilyValue(rawValue: $0) }
-        
         let photoURLsRaw = data["photos"] as? [String] ?? []
-        let photos = photoURLsRaw.compactMap { URL(string: $0) }
-        
-        let profilePhotoURL = data["profilePhotoURL"] as? String.flatMap { URL(string: $0) }
+        let profilePhotoURL = (data["profilePhotoURL"] as? String)
+            .flatMap { URL(string: $0) }
+            ?? photoURLsRaw.first.flatMap { URL(string: $0) }
+
+        let educationLevelRaw = (data["educationLevel"] as? String) ?? (data["education"] as? String)
+        let educationLevel = educationLevelRaw.flatMap { EducationLevel(rawValue: $0) }
+        let income = data["income"] as? String
         
         return MatrimonyProfile(
             id: data["id"] as? String ?? UUID().uuidString,
@@ -324,13 +329,13 @@ class DefaultMatrimonyProfileService: MatrimonyProfileService {
             familyType: data["familyType"] as? String,
             familyStatus: data["familyStatus"] as? String,
             financialStatus: data["financialStatus"] as? String,
-            education: data["education"] as? String ?? "",
-            occupation: data["occupation"] as? String ?? "",
-            income: data["income"] as? String ?? "",
-            religiousPreference: religiousPreference,
-            about: data["about"] as? String ?? "",
-            interests: data["interests"] as? [String] ?? [],
-            photos: photos,
+            religion: religion,
+            religiousPractices: data["religiousPractices"] as? String,
+            educationLevel: educationLevel,
+            college: data["college"] as? String,
+            occupation: data["occupation"] as? String,
+            company: data["company"] as? String,
+            annualIncome: income,
             phoneNumber: data["phoneNumber"] as? String,
             email: data["email"] as? String,
             profileCompleteness: data["profileCompleteness"] as? Double ?? 0.0,
@@ -366,13 +371,15 @@ class DefaultMatrimonyProfileService: MatrimonyProfileService {
             familyType: "Joint Family",
             familyStatus: "Middle Class",
             financialStatus: "Stable",
-            education: "MBA",
+            religion: .islam,
+            motherTongue: "Hindi",
+            community: "Sunni",
+            religiousPractices: "Prays regularly",
+            educationLevel: .masters,
+            college: "IIT Bombay",
             occupation: "Software Engineer",
-            income: "15-20 LPA",
-            religiousPreference: .islam,
-            about: "Looking for a compatible life partner",
-            interests: ["Reading", "Traveling", "Cooking"],
-            photos: [],
+            company: "Aroosi Tech",
+            annualIncome: "15-20 LPA",
             phoneNumber: "+91 98765 43210",
             email: "priya.sharma@email.com",
             profileCompleteness: 85.0,
@@ -418,22 +425,4 @@ enum ProfileError: Error, LocalizedError {
         }
     }
 }
-
-// MARK: - User Extension
-
-extension User {
-    static let preview = User(
-        id: "preview-user-123",
-        email: "aisha.khan@example.com",
-        displayName: "Aisha Khan",
-        photoURL: URL(string: "https://storage.googleapis.com/aroosi-app/avatars/preview-user.jpg"),
-        isEmailVerified: true,
-        createdAt: Date().addingTimeInterval(-30 * 24 * 60 * 60), // 30 days ago
-        lastLoginAt: Date().addingTimeInterval(-2 * 60 * 60) // 2 hours ago
-    )
-    
-    // Legacy support for existing code
-    static let mock = preview
-}
-
 #endif

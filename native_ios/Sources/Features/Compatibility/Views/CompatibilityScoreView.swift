@@ -1,6 +1,8 @@
 import SwiftUI
 import Charts
 
+#if os(iOS)
+
 @available(iOS 17, *)
 public struct CompatibilityScoreView: View {
     let score: CompatibilityScore
@@ -214,13 +216,13 @@ public struct CompatibilityScoreView: View {
     private var scoreColor: Color {
         switch score.overallScore {
         case 80...100:
-            return .green
+            return AroosiColors.success
         case 60..<80:
-            return .blue
+            return AroosiColors.info
         case 40..<60:
-            return .orange
+            return AroosiColors.warning
         default:
-            return .red
+            return AroosiColors.error
         }
     }
     
@@ -234,6 +236,7 @@ public struct CompatibilityScoreView: View {
 
 // MARK: - Category Score Row
 
+@available(iOS 17, *)
 private struct CategoryScoreRow: View {
     let category: IslamicCompatibilityCategory
     let score: Double
@@ -271,20 +274,20 @@ private struct CategoryScoreRow: View {
     private var scoreColor: Color {
         switch score {
         case 0.8...1.0:
-            return .green
+            return AroosiColors.success
         case 0.6..<0.8:
-            return .blue
+            return AroosiColors.info
         case 0.4..<0.6:
-            return .orange
+            return AroosiColors.warning
         default:
-            return .red
+            return AroosiColors.error
         }
     }
 }
 
 // MARK: - Insight Card
 
-@available(iOS 17.15, *)
+@available(iOS 17, *)
 private struct InsightCard: View {
     let icon: String
     let title: String
@@ -340,3 +343,5 @@ private struct InsightCard: View {
         user2Name: "Mohammad"
     )
 }
+
+#endif

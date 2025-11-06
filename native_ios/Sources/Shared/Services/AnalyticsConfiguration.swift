@@ -1,5 +1,11 @@
 import Foundation
 import UserNotifications
+#if canImport(FirebaseAnalytics)
+import FirebaseAnalytics
+#endif
+#if os(iOS)
+import UIKit
+#endif
 
 @available(iOS 17, *)
 public final class AnalyticsConfiguration {
@@ -48,8 +54,10 @@ public final class AnalyticsConfiguration {
         analyticsService.setUserProperty(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, for: "app_version")
         analyticsService.setUserProperty("iOS", for: "platform")
         analyticsService.setUserProperty("matrimony", for: "app_category")
+        #if os(iOS)
         analyticsService.setUserProperty(UIDevice.current.model, for: "device_model")
         analyticsService.setUserProperty(UIDevice.current.systemVersion, for: "os_version")
+        #endif
         
         // Set matrimony-specific properties
         analyticsService.setUserProperty("true", for: "matrimony_focused")
@@ -73,12 +81,13 @@ public final class AnalyticsConfiguration {
         ))
         
         // Track matrimony-specific launch
-        if let firebaseDestination = analyticsService.destinations.compactMap({ $0 as? FirebaseAnalyticsDestination }).first {
-            firebaseDestination.trackMatrimonyEvent(.onboardingStarted, parameters: [
+        analyticsService.track(AnalyticsEvent(
+            name: "matrimony_app_launched",
+            parameters: [
                 "source": "app_launch",
                 "matrimony_focus": "true"
-            ])
-        }
+            ]
+        ))
     }
     
     private static func hasConfigured() -> Bool {
@@ -92,7 +101,9 @@ public final class AnalyticsConfiguration {
     // MARK: - Privacy Settings
     
     public static func updateAnalyticsConsent(_ granted: Bool) {
+        #if canImport(FirebaseAnalytics)
         Analytics.setAnalyticsCollectionEnabled(granted)
+        #endif
         
         let analyticsService = AnalyticsService.shared
         analyticsService.track(AnalyticsEvent(
@@ -107,7 +118,9 @@ public final class AnalyticsConfiguration {
     }
     
     public static func disableAnalytics() {
+        #if canImport(FirebaseAnalytics)
         Analytics.setAnalyticsCollectionEnabled(false)
+        #endif
         
         let analyticsService = AnalyticsService.shared
         analyticsService.track(AnalyticsEvent(
@@ -143,14 +156,5 @@ public final class AnalyticsConfiguration {
         ))
         
         Logger.shared.info("Matrimony-specific analytics configured")
-    }
-}
-
-// MARK: - Analytics Service Extension
-
-extension AnalyticsService {
-    var destinations: [AnalyticsDestination] {
-        // This is a workaround to access private destinations for configuration
-        return [] // In a real implementation, you'd provide proper access
     }
 }

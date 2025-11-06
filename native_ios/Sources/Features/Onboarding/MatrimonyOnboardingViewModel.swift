@@ -166,7 +166,7 @@ enum OnboardingStep: CaseIterable {
 
 // MARK: - Data Models
 
-enum MarriageIntention: CaseIterable {
+enum MarriageIntention: String, CaseIterable, Codable {
     case firstMarriage
     case secondMarriage
     case remarriageAfterWidowhood
@@ -212,7 +212,7 @@ enum MarriageIntention: CaseIterable {
     }
 }
 
-enum FamilyValue: CaseIterable {
+enum FamilyValue: String, CaseIterable, Codable {
     case traditional
     case modern
     case religious
@@ -265,7 +265,7 @@ enum FamilyValue: CaseIterable {
     }
 }
 
-enum Religion: CaseIterable {
+enum Religion: String, CaseIterable, Codable {
     case hindu
     case muslim
     case christian
@@ -353,7 +353,7 @@ enum Religion: CaseIterable {
     }
 }
 
-enum EducationLevel: CaseIterable {
+enum EducationLevel: String, CaseIterable, Codable {
     case highSchool
     case bachelors
     case masters
@@ -574,7 +574,7 @@ class DefaultMatrimonyOnboardingService: MatrimonyOnboardingService {
                 minAge: partnerPreferencesData["minAge"] as? Int ?? 18,
                 maxAge: partnerPreferencesData["maxAge"] as? Int ?? 100,
                 maxDistance: partnerPreferencesData["maxDistance"] as? Int ?? 50,
-                educationLevel: partnerPreferencesData["educationLevel"] as? String.flatMap { EducationLevel(rawValue: $0) }
+                educationLevel: (partnerPreferencesData["educationLevel"] as? String).flatMap { EducationLevel(rawValue: $0) }
             )
             
             let onboarding = MatrimonyOnboardingData(

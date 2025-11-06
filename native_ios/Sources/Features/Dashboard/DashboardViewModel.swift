@@ -1,13 +1,35 @@
 import Foundation
 
-@available(iOS 17, *)
+#if os(iOS)
+typealias DashboardMatchListItem = MatchesViewModel.MatchListItem
+#else
+struct DashboardMatchListItem: Identifiable, Equatable, Hashable {
+    let id: String
+    let match: Match
+    let counterpartProfile: ProfileSummary?
+    let unreadCount: Int
+
+    var lastMessagePreview: String? { match.lastMessagePreview }
+    var lastUpdatedAt: Date { match.lastUpdatedAt }
+
+    static func == (lhs: DashboardMatchListItem, rhs: DashboardMatchListItem) -> Bool { lhs.id == rhs.id }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+#endif
+
+#if os(iOS)
+
+@available(iOS 17.0.0, *)
 @MainActor
-final class DashboardViewModel: ObservableObject {
+public final class DashboardViewModel: ObservableObject {
     struct State: Equatable {
         var profile: ProfileSummary?
         var activeMatchesCount: Int = 0
         var unreadMessagesCount: Int = 0
-        var recentMatches: [MatchesViewModel.MatchListItem] = []
+        var recentMatches: [DashboardMatchListItem] = []
         var quickPicks: [ProfileSummary] = []
         var isLoading: Bool = false
         var isRefreshing: Bool = false
@@ -28,12 +50,13 @@ final class DashboardViewModel: ObservableObject {
     @Published private(set) var state = State()
 
     private let profileRepository: ProfileRepository
-    private let matchRepository: MatchRepository
+    private let matchRepository: MatchRepositoryWithStreaming
     private let chatThreadRepository: ChatThreadRepository?
     private let searchRepository: ProfileSearchRepository
     private let quickPicksRepository: QuickPicksRepository
-    private let interestRepository: InterestRepository
-    private let matchCreationService: MatchCreationService
+    private let interestRepository: InterestRepositoryWithStreaming
+    private let matchCreationService: MatchCreationService?
+    private let safetyRepository: SafetyRepository
     private let pageSize: Int
 
     private var currentUserID: String?
@@ -45,14 +68,16 @@ final class DashboardViewModel: ObservableObject {
     private var profileCache: [String: ProfileSummary] = [:]
     private var unreadCounts: [String: Int] = [:]
     private var latestMatches: [Match] = []
+    private var safetyStatusCache: [String: SafetyStatus] = [:]
 
     init(profileRepository: ProfileRepository = FirestoreProfileRepository(),
-         matchRepository: MatchRepository = FirestoreMatchRepository(),
+         matchRepository: MatchRepositoryWithStreaming = FirestoreMatchRepository(),
          chatThreadRepository: ChatThreadRepository? = FirestoreChatThreadRepository(),
          searchRepository: ProfileSearchRepository = FirestoreProfileSearchRepository(),
          quickPicksRepository: QuickPicksRepository? = nil,
-         interestRepository: InterestRepository = FirestoreInterestRepository(),
-         matchCreationService: MatchCreationService = MatchCreationService(),
+         interestRepository: InterestRepositoryWithStreaming = FirestoreInterestRepository(),
+         matchCreationService: MatchCreationService? = nil,
+         safetyRepository: SafetyRepository = FirestoreSafetyRepository(),
          pageSize: Int = 8) {
         self.profileRepository = profileRepository
         self.matchRepository = matchRepository
@@ -67,6 +92,7 @@ final class DashboardViewModel: ObservableObject {
         }
         self.interestRepository = interestRepository
         self.matchCreationService = matchCreationService
+        self.safetyRepository = safetyRepository
         self.pageSize = pageSize
     }
 
@@ -123,6 +149,9 @@ final class DashboardViewModel: ObservableObject {
                 try await self.interestRepository.sendInterest(from: currentUserID, to: profile.id)
                 self.state.sentInterestIDs.insert(profile.id)
                 self.state.infoMessage = "Interest sent to \(profile.displayName)."
+            } catch let repositoryError as RepositoryError where repositoryError == .alreadyExists {
+                self.state.sentInterestIDs.insert(profile.id)
+                self.state.infoMessage = "You've already sent interest to \(profile.displayName)."
             } catch {
                 self.state.errorMessage = "We couldn't send interest right now. Please try again later."
             }
@@ -208,9 +237,15 @@ final class DashboardViewModel: ObservableObject {
                         pageSize: self.pageSize,
                         cursor: nil
                     )
-                    recommendations = page.items.filter { $0.id != userID }.map {
-                        QuickPickRecommendation(id: $0.id, profile: $0)
+                    
+                    var filtered: [QuickPickRecommendation] = []
+                    for rec in page.items.filter({ $0.id != userID }) {
+                        let status = try await self.safetyRepository.status(for: rec.id)
+                        if status.canInteract {
+                            filtered.append(QuickPickRecommendation(id: rec.id, profile: rec))
+                        }
                     }
+                    recommendations = filtered
                 }
 
                 self.state.quickPicks = Array(recommendations.prefix(self.pageSize)).map { $0.profile }
@@ -239,24 +274,35 @@ final class DashboardViewModel: ObservableObject {
             do {
                 let profile = try await profileRepository.fetchProfile(id: id)
                 profileCache[id] = profile
+                
+                // Cache safety status
+                let status = try await safetyRepository.status(for: id)
+                safetyStatusCache[id] = status
             } catch {
                 profileCache[id] = nil
             }
         }
+        state.recentMatches = buildItems(from: latestMatches, currentUserID: userID)
     }
 
-    private func buildItems(from matches: [Match], currentUserID: String) -> [MatchesViewModel.MatchListItem] {
-        var items: [MatchesViewModel.MatchListItem] = []
+    private func buildItems(from matches: [Match], currentUserID: String) -> [DashboardMatchListItem] {
+        var items: [DashboardMatchListItem] = []
         items.reserveCapacity(matches.count)
 
         for match in matches {
             let counterpartID = match.participantIDs.first { $0 != currentUserID }
-            let profile = counterpartID.flatMap { profileCache[$0] }
+            guard let id = counterpartID else { continue }
+            
+            // Skip if interaction not allowed
+            let status = safetyStatusCache[id] ?? SafetyStatus()
+            guard status.canInteract else { continue }
+            
+            let profile = profileCache[id]
             let unread = unreadCounts[match.id] ?? 0
-            let item = MatchesViewModel.MatchListItem(id: match.id,
-                                                      match: match,
-                                                      counterpartProfile: profile,
-                                                      unreadCount: unread)
+            let item = DashboardMatchListItem(id: match.id,
+                                              match: match,
+                                              counterpartProfile: profile,
+                                              unreadCount: unread)
             items.append(item)
         }
 
@@ -286,9 +332,10 @@ final class DashboardViewModel: ObservableObject {
     }
 }
 
-@available(iOS 17.0.0, *)
+@available(iOS 17, macOS 10.15, macCatalyst 13.0, *)
 private struct EmptyQuickPicksRepository: QuickPicksRepository {
     func fetchQuickPicks(dayKey: String?) async throws -> [QuickPickRecommendation] { [] }
     func act(on userID: String, action: QuickPickAction) async throws {}
     func fetchCompatibilityScore(for userID: String) async throws -> Int { 0 }
 }
+#endif

@@ -17,7 +17,9 @@ struct IcebreakersView: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 List {
-                    if viewModel.state.items.isEmpty && !viewModel.state.isLoading {
+                    if !viewModel.state.isFeatureEnabled {
+                        featureDisabledState
+                    } else if viewModel.state.items.isEmpty && !viewModel.state.isLoading {
                         emptyState
                     } else {
                         Section {
@@ -57,6 +59,23 @@ struct IcebreakersView: View {
         }
     }
 
+    private var featureDisabledState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "lock.slash")
+                .font(.system(size: 48))
+                .foregroundStyle(AroosiColors.error)
+            Text("Icebreakers are currently disabled")
+                .font(AroosiTypography.heading(.h3))
+            Text("Check back soon—this feature is temporarily turned off by our team.")
+                .font(AroosiTypography.body())
+                .foregroundStyle(AroosiColors.muted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .listRowBackground(Color.clear)
+    }
+
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "quote.bubble")
@@ -76,7 +95,7 @@ struct IcebreakersView: View {
 
     private var progressBanner: some View {
         Group {
-            if viewModel.state.items.isEmpty { EmptyView() }
+            if viewModel.state.items.isEmpty || !viewModel.state.isFeatureEnabled { EmptyView() }
             else {
                 let answeredCount = viewModel.state.items.filter { $0.isAnswered }.count
                 let total = viewModel.state.items.count

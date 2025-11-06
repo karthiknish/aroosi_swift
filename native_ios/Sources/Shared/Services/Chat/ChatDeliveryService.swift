@@ -37,17 +37,11 @@ public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
 
         do {
             let snapshot = try await conversationRef.getDocument()
-            var unreadCounts = snapshot.data()?[Constants.unreadCounts] as? [String: Int] ?? [:]
-
-            for participant in participants {
-                if participant == senderID {
-                    unreadCounts[participant] = 0
-                } else {
-                    unreadCounts[participant] = (unreadCounts[participant] ?? 0) + 1
-                }
-            }
-
-            let totalUnread = unreadCounts.values.reduce(0, +)
+            let existingCounts = snapshot.data()?[Constants.unreadCounts] as? [String: Int] ?? [:]
+            let unreadCounts = ChatUnreadCounter.updatedCounts(afterSendingFrom: senderID,
+                                                               participants: participants,
+                                                               existing: existingCounts)
+            let totalUnread = ChatUnreadCounter.totalUnread(from: unreadCounts)
 
             try await conversationRef.setData([
                 Constants.unreadCounts: unreadCounts,
@@ -64,14 +58,13 @@ public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
 
         do {
             let snapshot = try await conversationRef.getDocument()
-            var unreadCounts = snapshot.data()?[Constants.unreadCounts] as? [String: Int] ?? [:]
-            unreadCounts[userID] = 0
-            let totalUnread = unreadCounts.values.reduce(0, +)
+            let existingCounts = snapshot.data()?[Constants.unreadCounts] as? [String: Int] ?? [:]
+            let unreadCounts = ChatUnreadCounter.clearedCounts(for: userID, existing: existingCounts)
+            let totalUnread = ChatUnreadCounter.totalUnread(from: unreadCounts)
 
             try await conversationRef.setData([
                 Constants.unreadCounts: unreadCounts,
-                Constants.legacyUnreadCount: totalUnread,
-                Constants.lastActivityAt: FieldValue.serverTimestamp()
+                Constants.legacyUnreadCount: totalUnread
             ], merge: true)
         } catch {
             throw mapError(error)
@@ -97,6 +90,41 @@ public final class FirestoreChatDeliveryService: ChatDeliveryServicing {
 
         logger.error("Firestore chat delivery error: \(error.localizedDescription)")
         return RepositoryError.unknown
+    }
+}
+
+@available(iOS 17.0.0, *)
+enum ChatUnreadCounter {
+    static func updatedCounts(afterSendingFrom senderID: String,
+                              participants: [String],
+                              existing: [String: Int]) -> [String: Int] {
+        var counts = existing
+        let allParticipants = Set(participants + [senderID])
+
+        for participant in allParticipants {
+            if participant == senderID {
+                counts[participant] = 0
+            } else {
+                counts[participant] = (counts[participant] ?? 0) + 1
+            }
+        }
+
+        // Remove stale entries for users no longer in the conversation
+        for key in counts.keys where !allParticipants.contains(key) {
+            counts.removeValue(forKey: key)
+        }
+
+        return counts
+    }
+
+    static func clearedCounts(for userID: String, existing: [String: Int]) -> [String: Int] {
+        var counts = existing
+        counts[userID] = 0
+        return counts
+    }
+
+    static func totalUnread(from counts: [String: Int]) -> Int {
+        counts.values.reduce(0, +)
     }
 }
 #else

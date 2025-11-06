@@ -2,6 +2,8 @@ import CryptoKit
 import Foundation
 import Security
 
+#if os(iOS)
+
 enum NonceError: Error {
     case randomGenerationFailed(status: OSStatus)
 }
@@ -36,3 +38,5 @@ enum AppleSignInNonce {
         return hashedData.map { String(format: "%02x", $0) }.joined()
     }
 }
+
+#endif

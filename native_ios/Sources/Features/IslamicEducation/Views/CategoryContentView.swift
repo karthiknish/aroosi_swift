@@ -1,5 +1,6 @@
 import SwiftUI
 
+#if os(iOS)
 #if canImport(FirebaseFirestore)
 
 @available(iOS 17.0.0, *)
@@ -17,7 +18,7 @@ struct CategoryContentView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: category.icon)
                         .font(.system(size: 48))
-                        .foregroundStyle(.aroosi)
+                        .foregroundStyle(AroosiColors.primary)
                     
                     Text(category.displayName)
                         .font(.title)
@@ -74,14 +75,15 @@ struct CategoryContentView: View {
 
 // MARK: - Category Content Row
 
+@available(iOS 17.0.0, *)
 private struct CategoryContentRow: View {
     let content: IslamicEducationalContent
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                if let imageUrl = content.content.thumbnailUrl {
-                    AsyncImage(url: URL(string: imageUrl)) { image in
+                if let imageUrl = content.content.images?.first?.url {
+                    AsyncImage(url: imageUrl) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -169,22 +171,14 @@ extension EducationCategory {
             return "Learn about the sacred bond of marriage in Islam and its significance"
         case .familyValues:
             return "Explore Islamic teachings on family, kinship, and community"
-        case .parentingIslam:
-            return "Guidance on raising children according to Islamic principles"
-        case .relationshipEthics:
-            return "Understanding halal relationships and Islamic boundaries"
-        case .spiritualGrowth:
-            return "Strengthen your faith and connection with Allah"
-        case .islamicEtiquette:
-            return "Learn proper conduct and manners in Islam"
-        case .communicationSkills:
-            return "Develop effective and respectful communication"
-        case .conflictResolution:
-            return "Islamic approaches to resolving disputes peacefully"
+        case .relationshipAdvice:
+            return "Understand Islamic guidance for healthy relationships"
+        case .islamicEthics:
+            return "Deepen your knowledge of Islamic morals and ethics"
         case .afghanCulture:
             return "Discover Afghan cultural traditions and heritage"
-        case .islamicHistory:
-            return "Journey through Islamic history and civilization"
+        case .general:
+            return "Explore meaningful insights to strengthen your faith"
         }
     }
 }
@@ -200,7 +194,8 @@ extension EducationCategory {
 #Preview("Bookmarks") {
     NavigationStack {
         BookmarkedContentView()
-            
     }
 }
+#endif
+
 #endif

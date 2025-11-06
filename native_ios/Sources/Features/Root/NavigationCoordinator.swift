@@ -6,15 +6,16 @@ import Foundation
 public final class NavigationCoordinator: ObservableObject {
     public enum Tab: Hashable {
         case dashboard
-        case search
+        case home
         case matches
         case profile
         case settings
+        case admin
     }
 
     public enum Route: Equatable {
         case dashboard(DashboardRoute)
-        case search(SearchRoute)
+        case home(HomeRoute)
         case matches(MatchesRoute)
         case profile(ProfileRoute)
         case settings(SettingsRoute)
@@ -22,7 +23,7 @@ public final class NavigationCoordinator: ObservableObject {
         var tab: Tab {
             switch self {
             case .dashboard: return .dashboard
-            case .search: return .search
+            case .home: return .home
             case .matches: return .matches
             case .profile: return .profile
             case .settings: return .settings
@@ -46,15 +47,11 @@ public final class NavigationCoordinator: ObservableObject {
         }
     }
 
-    public enum SearchRoute: Equatable, Identifiable {
-        case filters
-        case advanced
+    public enum HomeRoute: Equatable, Identifiable {
+        case overview
 
         public var id: String {
-            switch self {
-            case .filters: return "search.filters"
-            case .advanced: return "search.advanced"
-            }
+            "home.overview"
         }
     }
 
@@ -184,8 +181,10 @@ public final class NavigationCoordinator: ObservableObject {
             } else {
                 navigate(to: .settings)
             }
-        case "search":
-            open(.search(.filters))
+        case "home", "search":
+            navigate(to: .home)
+        case "admin":
+            navigate(to: .admin)
         default:
             break
         }

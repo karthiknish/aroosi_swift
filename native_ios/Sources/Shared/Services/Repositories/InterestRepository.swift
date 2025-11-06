@@ -1,11 +1,17 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public protocol InterestRepository {
     func sendInterest(from userID: String, to targetUserID: String) async throws
     func checkForMutualInterest(userID: String, targetID: String) async throws -> [Interest]
     func respondToInterest(id: String, response: InterestResponse) async throws
     func updateInterestStatuses(userID: String, targetID: String, status: Interest.Status) async throws
+}
+
+@available(iOS 15.0, macOS 10.15, *)
+public protocol InterestRepositoryWithStreaming: InterestRepository {
     func streamPendingInterests(for userID: String) -> AsyncThrowingStream<[Interest], Error>
 }
 
@@ -13,7 +19,7 @@ public protocol InterestRepository {
 import FirebaseFirestore
 
 @available(iOS 17.0.0, *)
-public final class FirestoreInterestRepository: InterestRepository {
+public final class FirestoreInterestRepository: InterestRepositoryWithStreaming {
     private enum Constants {
         static let collection = "interests"
         static let fromUserField = "fromUserId"
@@ -195,6 +201,7 @@ public final class FirestoreInterestRepository: InterestRepository {
         throw RepositoryError.unknown
     }
 }
+#endif
 #endif
 
 // MARK: - Notification Extensions

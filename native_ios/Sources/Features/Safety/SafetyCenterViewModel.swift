@@ -1,10 +1,13 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class SafetyCenterViewModel: ObservableObject {
     struct State: Equatable {
         var blockedUsers: [BlockedUser] = []
+        var submittedReports: [SafetyReport] = []
         var isLoading = false
         var isRefreshing = false
         var errorMessage: String?
@@ -12,6 +15,10 @@ final class SafetyCenterViewModel: ObservableObject {
 
         var hasBlockedUsers: Bool {
             !blockedUsers.isEmpty
+        }
+
+        var hasReports: Bool {
+            !submittedReports.isEmpty
         }
     }
 
@@ -58,18 +65,24 @@ final class SafetyCenterViewModel: ObservableObject {
             state.isRefreshing = false
         }
 
+        async let blockedTask = repository.fetchBlockedUsers()
+        async let reportsTask = repository.fetchSubmittedReports()
+
         do {
-            let users = try await repository.fetchBlockedUsers()
+            let (users, reports) = try await (blockedTask, reportsTask)
             state.blockedUsers = users
+            state.submittedReports = reports
         } catch let error as RepositoryError {
             switch error {
             case .permissionDenied:
-                state.errorMessage = "Sign in to manage blocked users."
+                state.errorMessage = "Sign in to manage safety settings."
             default:
-                state.errorMessage = "Failed to load blocked users. Please try again."
+                state.errorMessage = "Failed to load safety settings. Please try again."
             }
         } catch {
-            state.errorMessage = "Failed to load blocked users. Please try again."
+            state.errorMessage = "Failed to load safety settings. Please try again."
         }
     }
 }
+
+#endif

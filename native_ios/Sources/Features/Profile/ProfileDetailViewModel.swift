@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+#if os(iOS)
+
 @available(iOS 17, *)
 @MainActor
 final class ProfileDetailViewModel: ObservableObject {
@@ -161,3 +163,5 @@ final class ProfileDetailViewModel: ObservableObject {
         }
     }
 }
+
+#endif

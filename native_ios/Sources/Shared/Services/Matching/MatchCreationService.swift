@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 
+#if os(iOS)
+
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
@@ -54,7 +56,10 @@ public final class MatchCreationService: ObservableObject {
         // Check if match already exists
         if let existingMatch = try await findExistingMatch(between: user1, and: user2) {
             logger.info("Match already exists between \(user1) and \(user2)")
-            return existingMatch
+
+            let resolvedMatch = try await reactivateIfNeeded(existingMatch, user1: user1, user2: user2)
+            lastCreatedMatch = resolvedMatch
+            return resolvedMatch
         }
         
         isCreatingMatch = true
@@ -118,7 +123,9 @@ public final class MatchCreationService: ObservableObject {
         
         // Create conversation for the match
         let conversationID = try await conversationService.ensureConversation(
-            participants: [user1, user2]
+            for: match,
+            participants: [user1, user2],
+            currentUserID: user1
         )
         
         // Update match with conversation ID
@@ -136,9 +143,39 @@ public final class MatchCreationService: ObservableObject {
     }
     
     private func findExistingMatch(between user1: String, and user2: String) async throws -> Match? {
-        // This would require adding a method to MatchRepository to search by participants
-        // For now, we'll create the match and let the repository handle duplicates
-        return nil
+        try await matchRepository.findMatch(between: user1, and: user2)
+    }
+
+    private func reactivateIfNeeded(_ match: Match, user1: String, user2: String) async throws -> Match {
+        switch match.status {
+        case .active:
+            return match
+        case .blocked:
+            throw MatchCreationError.matchAlreadyExists
+        case .pending, .closed:
+            break
+        }
+
+        let conversationID: String
+        if let existingConversationID = match.conversationID {
+            conversationID = existingConversationID
+        } else {
+            conversationID = try await conversationService.ensureConversation(
+                for: match,
+                participants: [user1, user2],
+                currentUserID: user1
+            )
+        }
+
+        let updatedMatch = Match(id: match.id,
+                                 participants: match.participants,
+                                 status: .active,
+                                 lastMessagePreview: match.lastMessagePreview,
+                                 lastUpdatedAt: Date(),
+                                 conversationID: conversationID)
+
+        try await matchRepository.updateMatch(updatedMatch)
+        return updatedMatch
     }
 }
 
@@ -181,4 +218,5 @@ public final class MatchCreationService: ObservableObject {
         false
     }
 }
+#endif
 #endif

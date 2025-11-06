@@ -1,20 +1,30 @@
-import Foundation
 import Combine
+import Foundation
 
+#if os(iOS)
 #if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
 #if canImport(FirebaseCore)
 import FirebaseCore
-#endif
 #endif
 
 @available(iOS 17, *)
 @MainActor
 final class RootViewModel: ObservableObject {
+    struct Capabilities: Equatable {
+        var canAccessAdmin: Bool
+    }
+
+    struct Session: Equatable {
+        var user: UserProfile
+        var capabilities: Capabilities
+    }
+
     enum State {
         case loading
         case signedOut
-        case signedIn(UserProfile)
+        case signedIn(Session)
     }
 
     @Published private(set) var state: State = .loading
@@ -34,20 +44,14 @@ final class RootViewModel: ObservableObject {
 
     func bootstrap() async {
         do {
-            if let user = try await authService.currentUser() {
-                state = .signedIn(user)
-                featureFlags.setUserID(user.id)
-            } else {
-                state = .signedOut
-                featureFlags.setUserID(nil)
-            }
+            let current = try await authService.currentUser()
+            await updateState(with: current)
         } catch {
             Logger.shared.error("Failed to load auth state: \(error.localizedDescription)")
-            state = .signedOut
+            await updateState(with: nil)
         }
 
         registerAuthStateListenerIfNeeded()
-        await featureFlags.refresh()
     }
 
     func handleOnboardingComplete() {
@@ -76,21 +80,41 @@ final class RootViewModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 do {
-                    if let user = try await self.authService.currentUser() {
-                        self.state = .signedIn(user)
-                        self.featureFlags.setUserID(user.id)
-                    } else {
-                        self.state = .signedOut
-                        self.featureFlags.setUserID(nil)
-                    }
-                    await self.featureFlags.refresh()
+                    let current = try await self.authService.currentUser()
+                    await self.updateState(with: current)
                 } catch {
                     Logger.shared.error("Auth state listener error: \(error.localizedDescription)")
-                    self.state = .signedOut
-                    self.featureFlags.setUserID(nil)
+                    await self.updateState(with: nil)
                 }
             }
         }
 #endif
     }
+
+    private func updateState(with user: UserProfile?) async {
+        if let user {
+            featureFlags.setUserID(user.id)
+            await featureFlags.refresh()
+            state = .signedIn(buildSession(for: user))
+        } else {
+            featureFlags.setUserID(nil)
+            await featureFlags.refresh()
+            state = .signedOut
+        }
+    }
+
+    private func buildSession(for user: UserProfile) -> Session {
+        let canAccessAdmin = evaluateAdminAccess(for: user)
+        return Session(user: user, capabilities: Capabilities(canAccessAdmin: canAccessAdmin))
+    }
+
+    private func evaluateAdminAccess(for user: UserProfile) -> Bool {
+        if let email = user.email?.lowercased(), email.hasSuffix("@aroosi.com") {
+            return true
+        }
+
+        return featureFlags.isEnabled("ENABLE_ADMIN_DASHBOARD")
+    }
 }
+
+#endif

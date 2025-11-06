@@ -1,17 +1,24 @@
 import Foundation
 
+#if os(iOS)
+
 @available(iOS 17.0.0, *)
 public protocol MatchRepository {
     func fetchMatch(id: String) async throws -> Match
-    func streamMatches(for userID: String) -> AsyncThrowingStream<[Match], Error>
     func updateMatch(_ match: Match) async throws
+    func findMatch(between userID: String, and otherUserID: String) async throws -> Match?
+}
+
+@available(iOS 15.0, macOS 10.15, *)
+public protocol MatchRepositoryWithStreaming: MatchRepository {
+    func streamMatches(for userID: String) -> AsyncThrowingStream<[Match], Error>
 }
 
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 
 @available(iOS 17.0.0, *)
-public final class FirestoreMatchRepository: MatchRepository {
+public final class FirestoreMatchRepository: MatchRepositoryWithStreaming {
     private enum Constants {
         static let collection = "matches"
         static let participantIDsField = "participantIDs"
@@ -80,6 +87,24 @@ public final class FirestoreMatchRepository: MatchRepository {
         }
     }
 
+    public func findMatch(between userID: String, and otherUserID: String) async throws -> Match? {
+        let query = db.collection(Constants.collection)
+            .whereField(Constants.participantIDsField, arrayContains: userID)
+            .limit(to: 25)
+
+        let snapshot = try await query.getDocuments()
+
+        for document in snapshot.documents {
+            let data = normalize(document.data())
+            guard let match = Match(id: document.documentID, data: data) else { continue }
+            if match.participantIDs.contains(otherUserID) {
+                return match
+            }
+        }
+
+        return nil
+    }
+
     private func mapError(_ error: Error) -> Error {
         if let firestoreError = error as NSError?,
            let codeValue = FirestoreErrorCode.Code(rawValue: firestoreError.code) {
@@ -139,5 +164,10 @@ public final class FirestoreMatchRepository: MatchRepository {
     public func updateMatch(_ match: Match) async throws {
         throw RepositoryError.unknown
     }
+
+    public func findMatch(between userID: String, and otherUserID: String) async throws -> Match? {
+        nil
+    }
 }
+#endif
 #endif

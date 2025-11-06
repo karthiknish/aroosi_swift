@@ -2,6 +2,29 @@
 import Foundation
 import CoreData
 import Network
+import Combine
+import SwiftUI
+
+@available(iOS 17, *)
+struct Conversation: Identifiable, Codable {
+    var id: String
+    var participantIDs: [String]
+    var participantNames: [String]
+    var lastMessageAt: Date?
+    var unreadCount: Int
+
+    init(id: String,
+         participantIDs: [String] = [],
+         participantNames: [String] = [],
+         lastMessageAt: Date? = nil,
+         unreadCount: Int = 0) {
+        self.id = id
+        self.participantIDs = participantIDs
+        self.participantNames = participantNames
+        self.lastMessageAt = lastMessageAt
+        self.unreadCount = unreadCount
+    }
+}
 
 @available(iOS 17, *)
 class OfflineDataManager: ObservableObject {

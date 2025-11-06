@@ -1,14 +1,17 @@
 import Foundation
-import FirebaseAuth
 import Combine
+#if canImport(FirebaseAuth)
+import FirebaseAuth
+#endif
 
 #if os(iOS)
 import AuthenticationServices
 #endif
 
+#if canImport(FirebaseAuth)
 /// A wrapper around FirebaseAuthService that provides a simpler, observable authentication state
 /// for use with SwiftUI views via @EnvironmentObject
-@available(iOS 17.0.0, *)
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
 public class AuthenticationService: ObservableObject {
     public static let shared = AuthenticationService()
     
@@ -36,7 +39,7 @@ public class AuthenticationService: ObservableObject {
         }
     }
     
-    // MARK: - Authentication Methods
+    // MARK: - Public Methods
     
     #if os(iOS)
     @available(iOS 17, *)
@@ -46,19 +49,55 @@ public class AuthenticationService: ObservableObject {
     }
     #endif
     
-    public func signOut() throws {
-        try firebaseAuth.signOut()
+    public func signInWithApple(idToken: String, nonce: String) async throws {
+        let profile = try await firebaseAuth.signInWithApple(idToken: idToken, nonce: nonce)
+        currentUser = AuthUser(uid: profile.id, email: profile.email)
+    }
+    
+    public func signOut() {
+        do {
+            try firebaseAuth.signOut()
+            currentUser = nil
+        } catch {
+            Logger.shared.error("Failed to sign out: \(error)")
+        }
     }
     
     public func deleteAccount(password: String? = nil, reason: String? = nil) async throws {
         try await firebaseAuth.deleteAccount(password: password, reason: reason)
-    }
-    
-    /// Get full user profile from repository if needed
-    public func getCurrentProfile() async throws -> UserProfile? {
-        try await firebaseAuth.currentUser()
+        currentUser = nil
     }
 }
+#else
+// Fallback implementation for platforms without Firebase Auth
+@available(iOS 17.0, macOS 10.15, macCatalyst 13.0, *)
+public class AuthenticationService: ObservableObject {
+    public static let shared = AuthenticationService()
+    
+    @Published public private(set) var currentUser: AuthUser?
+    
+    private init() {}
+    
+    public func signInWithApple(idToken: String, nonce: String) async throws {
+        throw AuthError.unsupportedPlatform
+    }
+    
+    public func signOut() {
+        Logger.shared.info("Sign out called on unsupported platform")
+    }
+    
+    public func deleteAccount() async throws {
+        throw AuthError.unsupportedPlatform
+    }
+}
+#endif
+
+/// Get full user profile from repository if needed
+#if canImport(FirebaseAuth)
+public func getCurrentProfile() async throws -> UserProfile? {
+    try await FirebaseAuthService.shared.currentUser()
+}
+#endif
 
 // MARK: - Auth User Model
 

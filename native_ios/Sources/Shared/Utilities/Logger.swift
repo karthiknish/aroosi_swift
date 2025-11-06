@@ -1,5 +1,4 @@
 import Foundation
-import os
 
 public enum LoggerLevel {
     case info
@@ -9,6 +8,9 @@ public enum LoggerLevel {
 public protocol LoggerSink: AnyObject {
     func log(level: LoggerLevel, message: String)
 }
+
+#if os(iOS)
+import os
 
 @available(iOS 17, *)
 public final class Logger {
@@ -58,3 +60,21 @@ public final class Logger {
         weak var value: LoggerSink?
     }
 }
+
+#else
+
+public final class Logger {
+    public static let shared = Logger()
+
+    private init() {}
+
+    public func info(_ message: String) {}
+
+    public func error(_ message: String) {}
+
+    public func addSink(_ sink: LoggerSink) {}
+
+    public func removeSink(_ sink: LoggerSink) {}
+}
+
+#endif

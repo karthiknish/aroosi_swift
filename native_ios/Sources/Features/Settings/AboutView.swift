@@ -211,7 +211,7 @@ struct AboutView: View {
 }
 
 @available(iOS 17, *)
-private struct InfoRow: View {
+private struct AboutInfoRow: View {
     let label: String
     let value: String
     
@@ -229,7 +229,7 @@ private struct InfoRow: View {
 }
 
 @available(iOS 17, *)
-private struct FeatureRow: View {
+private struct AboutFeatureRow: View {
     let icon: String
     let title: String
     let description: String

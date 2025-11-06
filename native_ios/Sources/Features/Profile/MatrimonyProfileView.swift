@@ -6,8 +6,8 @@ struct MatrimonyProfileView: View {
     @StateObject private var viewModel: MatrimonyProfileViewModel
     @Environment(\.dismiss) private var dismiss
     
-    init(user: User) {
-        _viewModel = StateObject(wrappedValue: MatrimonyProfileViewModel(user: user))
+    init(userID: String) {
+        _viewModel = StateObject(wrappedValue: MatrimonyProfileViewModel(userID: userID))
     }
     
     var body: some View {
@@ -389,7 +389,7 @@ struct MatrimonyProfileView: View {
 
 // MARK: - Supporting Views
 
-struct SectionHeader: View {
+struct MatrimonySectionHeader: View {
     let title: String
     let icon: String
     
@@ -408,7 +408,7 @@ struct SectionHeader: View {
     }
 }
 
-struct InfoRow: View {
+struct MatrimonyInfoRow: View {
     let icon: String
     let title: String
     let value: String
@@ -437,7 +437,7 @@ struct InfoRow: View {
 
 @available(iOS 17, *)
 #Preview {
-    MatrimonyProfileView(user: User.mock)
+    MatrimonyProfileView(userID: "preview-user-123")
         .environmentObject(NavigationCoordinator())
 }
 
